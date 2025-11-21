@@ -51,6 +51,18 @@ const formatDate = (dateStr: string) => {
 // 版本更新历史
 const VERSION_UPDATES: VersionUpdate[] = [
   {
+    version: '1.2.6',
+    title: '配置简化与搜索修复',
+    date: formatDate('2025-11-21'),
+    features: [
+      '简化部署配置：合并环境变量文件，只需复制 .env.example 为 .env 即可',
+      '完善部署文档：Docker 部署步骤更清晰，说明更详细',
+      '优化代理服务：统一了不同部署方式的请求处理逻辑',
+    ],
+    fixes: ['修复 Firefox 浏览器下搜索结果为 0 的问题', '改进请求超时和错误处理，提升稳定性'],
+    breaking: ['⚠️ Docker 用户请重新构建镜像以应用修复：docker-compose up -d --build'],
+  },
+  {
     version: '1.2.5',
     title: '搜索缓存与播放体验升级',
     date: formatDate('2025-11-04'),
