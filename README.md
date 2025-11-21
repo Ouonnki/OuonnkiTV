@@ -34,17 +34,31 @@
 - [🚀 部署](#-部署)
   - [Vercel 部署（推荐）](#vercel-部署推荐)
   - [Docker 部署](#docker-部署)
+    - [方式一：Docker Compose（推荐）](#方式一docker-compose推荐)
+    - [方式二：预构建镜像（快速启动）](#方式二预构建镜像快速启动)
   - [本地运行](#本地运行)
 - [🔄 更新同步](#-更新同步)
   - [Vercel 更新](#vercel-更新)
   - [Docker 更新](#docker-更新)
   - [本地更新](#本地更新)
   - [Fork 同步](#fork-同步)
+    - [方式一：GitHub Action 自动同步（已内置）](#方式一github-action-自动同步已内置)
+    - [方式二：GitHub 原生同步](#方式二github-原生同步)
 - [📥 视频源导入](#-视频源导入)
   - [应用内导入](#应用内导入)
+    - [📁 本地文件导入](#-本地文件导入)
+    - [📝 JSON 文本导入](#-json-文本导入)
+    - [🌐 URL 导入](#-url-导入)
   - [JSON 格式说明](#json-格式说明)
   - [环境变量预配置](#环境变量预配置)
+    - [本地开发或 Docker 部署](#本地开发或-docker-部署)
+    - [在 Vercel 中配置](#在-vercel-中配置)
+    - [其他配置项](#其他配置项)
 - [👨‍💻 给开发者](#-给开发者)
+  - [技术栈](#技术栈)
+  - [项目结构](#项目结构)
+  - [开发指南](#开发指南)
+  - [常用命令](#常用命令)
 - [📜 其他](#-其他)
   - [贡献指南](#贡献指南)
   - [许可证](#许可证)
@@ -96,42 +110,50 @@
 #### 方式一：Docker Compose（推荐）
 
 ```bash
-# 启动服务
-docker-compose up -d
-
-# 访问 http://localhost:3000
+# 首次部署或修改配置后启动（重新构建）
+docker-compose up -d --build
 ```
 
 **环境变量配置**（可选）：
 
-编辑 `.env` 文件进行自定义配置：
+1. 复制环境变量示例文件：
+   ```bash
+   copy .env.example .env
+   ```
 
-```env
-# 初始视频源
-VITE_INITIAL_VIDEO_SOURCES=[{"name":"示例源","url":"https://api.example.com","isEnabled":true}]
+2. 编辑 `.env` 文件进行自定义配置：
+   ```env
+   # 初始视频源（单行 JSON 格式）
+   VITE_INITIAL_VIDEO_SOURCES=[{"name":"示例源","url":"https://api.example.com","isEnabled":true}]
+   
+   # 禁用分析（建议开启）
+   VITE_DISABLE_ANALYTICS=true
+   ```
 
-# 禁用分析（建议开启）
-VITE_DISABLE_ANALYTICS=true
-```
+3. 构建并启动：
+   ```bash
+   docker-compose up -d --build
+   ```
 
-**常用命令：**
-```bash
-docker-compose logs -f    # 查看日志
-docker-compose down       # 停止服务
-docker-compose restart    # 重启服务
-```
+> ⚠️ **重要提示**：
+> - 环境变量在**构建时**注入，修改后必须使用 `--build` 参数重新构建
+> - 如果只运行 `docker-compose up -d`，环境变量的修改不会生效
 
-#### 方式二：预构建镜像
+#### 方式二：预构建镜像（快速启动）
 
 ```bash
 # 拉取并运行最新版本
 docker pull ghcr.io/ouonnki/ouonnkitv:latest
 docker run -d -p 3000:80 ghcr.io/ouonnki/ouonnkitv:latest
+
+# 访问 http://localhost:3000
 ```
 
 **可用镜像标签：**
 - `latest` - 最新稳定版
 - `main` - 主分支最新代码
+> ⚠️ **限制说明**：预构建镜像**无法通过环境变量修改初始配置**，只能使用镜像构建时的默认值。
+> **如需自定义视频源，请在应用内手动导入，或使用 Docker Compose 方式本地构建。**
 
 ---
 
@@ -313,23 +335,75 @@ OuonnkiTV 支持多种方式批量导入视频源配置，方便快速部署和�
 
 ### 环境变量预配置
 
-除了应用内导入，还可以通过环境变量预配置初始视频源。
+除了应用内导入，还可以通过环境变量在构建时预配置初始视频源。
 
-**方式一：直接配置 JSON**
-```env
-VITE_INITIAL_VIDEO_SOURCES=[{"name":"源1","url":"https://api1.com","isEnabled":true}]
+> ⚠️ **重要说明**：环境变量配置仅在**构建时**生效，适用于自行构建部署的场景（本地构建、Docker 构建、Vercel 自动构建）。使用预构建镜像时无法通过环境变量修改配置。
+
+#### 本地开发或 Docker 部署
+
+**步骤 1：创建配置文件**
+```bash
+# 复制示例文件
+copy .env.example .env  # Windows
+# cp .env.example .env  # Linux/Mac
 ```
 
-**方式二：远程 JSON URL**
+**步骤 2：编辑 `.env` 文件**
+
+方式一：直接配置 JSON（单行格式）
+```env
+VITE_INITIAL_VIDEO_SOURCES=[{"name":"源1","url":"https://api1.com","isEnabled":true},{"name":"源2","url":"https://api2.com"}]
+```
+
+方式二：远程 JSON URL
 ```env
 VITE_INITIAL_VIDEO_SOURCES=https://raw.githubusercontent.com/yourname/repo/main/sources.json
 ```
 
-**在 Vercel 中配置：**
-1. 进入项目设置 → Environment Variables
-2. 添加 `VITE_INITIAL_VIDEO_SOURCES` 变量
-3. 填入 JSON 配置或 URL
-4. 重新部署项目
+方式三：留空（默认）
+```env
+VITE_INITIAL_VIDEO_SOURCES=
+```
+
+**步骤 3：构建并运行**
+```bash
+# 本地开发
+pnpm dev
+
+# Docker 部署（必须重新构建）
+docker-compose up -d --build
+```
+
+> 💡 **Docker 注意事项**：修改环境变量后必须使用 `--build` 参数重新构建镜像才能生效。
+
+#### 在 Vercel 中配置
+
+**步骤 1：配置环境变量**
+1. 进入 Vercel 项目设置 → Environment Variables
+2. 添加变量 `VITE_INITIAL_VIDEO_SOURCES`
+3. 填入 JSON 配置或远程 URL：
+   ```
+   [{"name":"源1","url":"https://api.example.com"}]
+   ```
+4. 选择应用环境（Production / Preview / Development）
+
+**步骤 2：重新部署**
+- 点击 "Redeploy" 按钮，或
+- 推送新提交触发自动部署
+
+#### 其他配置项
+
+**禁用分析跟踪：**
+```env
+VITE_DISABLE_ANALYTICS=true
+```
+
+**Docker 构建元数据（可选）：**
+```env
+BUILD_DATE=2025-01-01
+VCS_REF=abc1234
+VERSION=1.0.0
+```
 
 ---
 
