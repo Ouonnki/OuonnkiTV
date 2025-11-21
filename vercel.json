@@ -4,8 +4,8 @@
   "framework": "vite",
   "rewrites": [
     {
-      "source": "/proxy/:path*",
-      "destination": "/api/proxy.ts"
+      "source": "/proxy",
+      "destination": "/api/proxy"
     },
     {
       "source": "/(.*)",

@@ -10,17 +10,12 @@ services:
         VCS_REF: ${VCS_REF:-}
         VERSION: ${VERSION:-dev}
         # 构建时传入环境变量
-        VITE_PROXY_URL: ${VITE_PROXY_URL:-https://api.codetabs.com/v1/proxy?quest=}
         VITE_INITIAL_VIDEO_SOURCES: ${VITE_INITIAL_VIDEO_SOURCES:-}
         VITE_DISABLE_ANALYTICS: ${VITE_DISABLE_ANALYTICS:-true}
     ports:
       - "3000:80"
     environment:
       - NODE_ENV=production
-      # 运行时环境变量（虽然前端构建时已处理，但保持一致性）
-      - VITE_PROXY_URL=${VITE_PROXY_URL:-https://api.codetabs.com/v1/proxy?quest=}
-      - VITE_INITIAL_VIDEO_SOURCES=${VITE_INITIAL_VIDEO_SOURCES:-}
-      - VITE_DISABLE_ANALYTICS=${VITE_DISABLE_ANALYTICS:-true}
     restart: unless-stopped
     container_name: ouonnkitv-dev
     

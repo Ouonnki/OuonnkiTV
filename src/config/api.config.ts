@@ -19,9 +19,8 @@ export const API_CONFIG = {
 }
 
 // 其他配置
-// 优先使用环境变量中的代理URL，如果没有则使用默认值
-export const PROXY_URL =
-  import.meta.env.VITE_PROXY_URL || 'https://api.codetabs.com/v1/proxy?quest='
+// 统一使用内置代理
+export const PROXY_URL = '/proxy?url='
 export const M3U8_PATTERN = /\$https?:\/\/[^"'\s]+?\.m3u8/g
 
 // 从环境变量获取初始视频源

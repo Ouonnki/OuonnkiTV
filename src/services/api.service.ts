@@ -23,6 +23,29 @@ class ApiService {
     }
   }
 
+  private buildApiUrl(baseUrl: string, configPath: string, queryValue: string): string {
+    // 移除 baseUrl 末尾的斜杠
+    const url = baseUrl.replace(/\/+$/, '')
+
+    // 提取 configPath 的路径部分和参数部分
+    // configPath 格式如: /api.php/provide/vod/?ac=videolist&wd=
+    const [pathPart, queryPart] = configPath.split('?')
+
+    // 检查 baseUrl 是否已经包含路径部分
+    // 很多源地址是 https://domain.com/api.php/provide/vod/
+    if (
+      url.toLowerCase().endsWith(pathPart.replace(/\/+$/, '').toLowerCase()) ||
+      url.toLowerCase().includes('/api.php/provide/vod')
+    ) {
+      // 如果 baseUrl 已经包含路径，则只追加参数
+      const prefix = url.includes('?') ? '&' : '?'
+      return `${url}${prefix}${queryPart}${queryValue}`
+    }
+
+    // 否则，拼接完整路径
+    return `${url}${configPath}${queryValue}`
+  }
+
   // 搜索视频
   async searchVideos(query: string, api: VideoApi): Promise<SearchResponse> {
     try {
@@ -34,7 +57,7 @@ class ApiService {
         throw new Error('无效的API配置')
       }
 
-      const apiUrl = `${api.url}${API_CONFIG.search.path}${encodeURIComponent(query)}`
+      const apiUrl = this.buildApiUrl(api.url, API_CONFIG.search.path, encodeURIComponent(query))
 
       const response = await this.fetchWithTimeout(PROXY_URL + encodeURIComponent(apiUrl), {
         headers: API_CONFIG.search.headers,
@@ -89,7 +112,7 @@ class ApiService {
 
       // 使用 detailUrl 如果存在，否则使用 url
       const baseUrl = api.detailUrl || api.url
-      const detailUrl = `${baseUrl}${API_CONFIG.detail.path}${id}`
+      const detailUrl = this.buildApiUrl(baseUrl, API_CONFIG.detail.path, id)
 
       const response = await this.fetchWithTimeout(PROXY_URL + encodeURIComponent(detailUrl), {
         headers: API_CONFIG.detail.headers,

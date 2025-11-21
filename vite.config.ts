@@ -2,6 +2,7 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { fileURLToPath, URL } from 'node:url'
+import { proxyMiddleware } from './src/middleware/proxy.dev'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -10,7 +11,7 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss(), proxyMiddleware()],
   build: {
     // 优化构建性能
     rollupOptions: {

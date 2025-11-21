@@ -1,6 +1,11 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node'
+import express from 'express'
+import cors from 'cors'
 
-async function handleProxyRequest(targetUrl: string): Promise<Response> {
+const app = express()
+const PORT = process.env.PROXY_PORT || 3001
+
+// 统一的代理处理逻辑
+async function handleProxyRequest(targetUrl) {
   try {
     new URL(targetUrl)
   } catch {
@@ -13,25 +18,18 @@ async function handleProxyRequest(targetUrl: string): Promise<Response> {
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
       Accept: 'application/json, text/plain, */*',
     },
+    signal: AbortSignal.timeout(15000),
   })
 
   return response
 }
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // CORS
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+app.use(cors({ origin: '*' }))
 
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end()
-  }
-
+app.get('/proxy', async (req, res) => {
   try {
     const { url } = req.query
-
-    if (!url || typeof url !== 'string') {
+    if (!url) {
       return res.status(400).json({ error: 'URL parameter is required' })
     }
 
@@ -41,10 +39,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const contentType = response.headers.get('content-type') || 'application/json'
 
     res.setHeader('Content-Type', contentType)
-    res.setHeader('Cache-Control', 'public, max-age=60')
     res.status(response.status).send(text)
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error'
-    res.status(500).json({ error: 'Proxy request failed', message })
+    res.status(500).json({
+      error: 'Proxy request failed',
+      message: error.message,
+    })
   }
-}
+})
+
+app.listen(PORT, () => console.log(`Proxy server on :${PORT}`))
