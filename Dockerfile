@@ -45,6 +45,9 @@ LABEL org.opencontainers.image.source="https://github.com/Ouonnki/OuonnkiTV"
 # 安装 nginx 和 supervisor
 RUN apk add --no-cache nginx supervisor
 
+# 安装 pnpm
+RUN npm install -g pnpm@10.15.1
+
 # 创建必要的目录
 RUN mkdir -p /run/nginx /var/log/supervisor /app
 
@@ -55,7 +58,7 @@ WORKDIR /app
 COPY proxy-server.js ./
 
 # 只安装代理所需的依赖
-RUN npm install --production express cors
+RUN pnpm add express cors
 
 # 复制构建产物到 nginx 静态文件目录
 COPY --from=builder /app/dist /usr/share/nginx/html

@@ -41,7 +41,9 @@
     "zustand": "^5.0.5"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20251128.0",
     "@eslint/js": "^9.25.0",
+    "@netlify/functions": "^5.1.0",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
     "@types/lodash": "^4.17.20",
