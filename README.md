@@ -32,7 +32,9 @@
 - [📖 简介](#-简介)
 - [✨ 特性](#-特性)
 - [🚀 部署](#-部署)
-  - [Vercel 部署（推荐）](#vercel-部署推荐)
+  - [Vercel 部署](#vercel-部署)
+  - [Cloudflare Pages 部署](#cloudflare-pages-部署)
+  - [Netlify 部署](#netlify-部署)
   - [Docker 部署](#docker-部署)
     - [方式一：Docker Compose（推荐）](#方式一docker-compose推荐)
     - [方式二：预构建镜像（快速启动）](#方式二预构建镜像快速启动)
@@ -53,6 +55,8 @@
   - [环境变量预配置](#环境变量预配置)
     - [本地开发或 Docker 部署](#本地开发或-docker-部署)
     - [在 Vercel 中配置](#在-vercel-中配置)
+    - [在 Cloudflare Pages 中配置](#在-cloudflare-pages-中配置)
+    - [在 Netlify 中配置](#在-netlify-中配置)
     - [其他配置项](#其他配置项)
 - [👨‍💻 给开发者](#-给开发者)
   - [技术栈](#技术栈)
@@ -84,9 +88,7 @@
 
 ## 🚀 部署
 
-### Vercel 部署（推荐）
-
-> 💡 **推荐使用 Vercel 部署**：零配置、自动 HTTPS、全球 CDN 加速、免费额度充足。
+### Vercel 部署
 
 点击下方按钮，一键部署到 Vercel：
 
@@ -102,6 +104,33 @@
    - Output Directory: `dist`
 5. （可选）添加环境变量配置初始视频源
 6. 点击 "Deploy" 开始部署
+
+---
+
+### Cloudflare Pages 部署
+
+**部署步骤：**
+1. Fork 本仓库到您的 GitHub 账户
+2. 登录 Cloudflare Dashboard，进入 **Workers & Pages**
+3. 点击 **Create application** -> **Pages** -> **Connect to Git**
+4. 选择您的仓库
+5. 配置构建选项：
+   - **Framework preset**: 选择 `Vite`
+   - **Build command**: `pnpm run build`
+   - **Build output directory**: `dist`
+6. 点击 **Save and Deploy**
+
+---
+
+### Netlify 部署
+
+[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/Ouonnki/OuonnkiTV)
+
+**部署步骤：**
+1. 点击上方按钮，或登录 Netlify 点击 "Add new site" -> "Import an existing project"
+2. 连接 GitHub 并选择您的仓库
+3. Netlify 会自动识别配置文件 (`netlify.toml`)，无需手动配置构建命令
+4. 点击 **Deploy site**
 
 ---
 
@@ -390,6 +419,35 @@ docker-compose up -d --build
 **步骤 2：重新部署**
 - 点击 "Redeploy" 按钮，或
 - 推送新提交触发自动部署
+
+#### 在 Cloudflare Pages 中配置
+
+**步骤 1：配置环境变量**
+1. 进入 Cloudflare Pages 项目设置 → **Settings** → **Environment variables**
+2. 点击 **Add variable**
+3. 变量名：`VITE_INITIAL_VIDEO_SOURCES`
+4. 变量值：填入 JSON 配置或远程 URL
+   ```json
+   [{"name":"源1","url":"https://api.example.com"}]
+   ```
+5. 点击 **Save**
+
+**步骤 2：重新部署**
+- 进入 **Deployments** 标签页
+- 点击最新部署右侧的三个点 → **Retry deployment**
+
+#### 在 Netlify 中配置
+
+**步骤 1：配置环境变量**
+1. 进入 Netlify 站点设置 → **Site configuration** → **Environment variables**
+2. 点击 **Add a variable**
+3. Key: `VITE_INITIAL_VIDEO_SOURCES`
+4. Value: 填入 JSON 配置或远程 URL
+5. 点击 **Create variable**
+
+**步骤 2：重新部署**
+- 进入 **Deploys** 标签页
+- 点击 **Trigger deploy** → **Deploy site**
 
 #### 其他配置项
 
