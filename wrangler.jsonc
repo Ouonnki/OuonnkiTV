@@ -1,0 +1,9 @@
+{
+  "name": "ouonnkitv",
+  "main": "worker.ts",
+  "compatibility_date": "2025-12-01",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS"
+  }
+}
