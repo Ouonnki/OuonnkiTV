@@ -6,9 +6,12 @@ class ApiService {
     url: string,
     options: RequestInit = {},
     timeout = 10000,
+    retry = 3,
   ): Promise<Response> {
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), timeout)
+    const timeoutId = setTimeout(() => {
+      controller.abort('request timeout')
+    }, timeout)
 
     try {
       const response = await fetch(url, {
@@ -19,6 +22,12 @@ class ApiService {
       return response
     } catch (error) {
       clearTimeout(timeoutId)
+
+      if (retry > 0) {
+        console.warn(`请求失败，正在重试 (剩余${retry}次):`, error)
+        return this.fetchWithTimeout(url, options, timeout, retry - 1)
+      }
+
       throw error
     }
   }
@@ -59,9 +68,14 @@ class ApiService {
 
       const apiUrl = this.buildApiUrl(api.url, API_CONFIG.search.path, encodeURIComponent(query))
 
-      const response = await this.fetchWithTimeout(PROXY_URL + encodeURIComponent(apiUrl), {
-        headers: API_CONFIG.search.headers,
-      })
+      const response = await this.fetchWithTimeout(
+        PROXY_URL + encodeURIComponent(apiUrl),
+        {
+          headers: API_CONFIG.search.headers,
+        },
+        api.timeout,
+        api.retry,
+      )
 
       if (!response.ok) {
         throw new Error(`API请求失败: ${response.status}`)
