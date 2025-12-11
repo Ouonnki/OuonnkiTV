@@ -158,7 +158,7 @@ export default function VideoSource() {
       <URLSourceModal open={urlSourceModalOpen} onOpenChange={setUrlSourceModalOpen} />
       <TextSourceModal open={textSourceModalOpen} onOpenChange={setTextSourceModalOpen} />
       <div className="flex flex-col gap-2">
-        <div className="flex items-end justify-between px-4 md:px-0">
+        <div className="flex items-end justify-between gap-5 px-4 md:px-0">
           <div className="flex flex-col gap-1 md:pl-2">
             <h1 className="text-md font-semibold text-gray-700">视频源列表</h1>
             <p className="text-xs text-gray-400">
