@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router'
 import { motion } from 'framer-motion'
 import Navigation from '@/components/Navigation'
+import { ScrollArea } from '@/components/ui/scroll-area'
 
 export default function Layout() {
   return (
@@ -10,10 +11,12 @@ export default function Layout() {
       exit={{ opacity: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <Navigation />
-      <div className="mx-auto h-full max-w-300">
-        <Outlet />
-      </div>
+      <ScrollArea className="h-dvh">
+        <Navigation />
+        <div className="mx-auto max-w-300">
+          <Outlet />
+        </div>
+      </ScrollArea>
     </motion.div>
   )
 }

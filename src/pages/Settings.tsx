@@ -62,7 +62,7 @@ export default function SettingsPage() {
         >
           <div className="px-5 md:px-0">
             <SideBar
-              className="w-full border-r-0 border-b border-gray-300/70 pb-4 md:w-full md:border-r md:border-b-0 md:pt-4 md:pr-8 md:pb-15 md:pl-2"
+              className="w-full border-r-0 border-b border-gray-300/70 pb-7 md:w-full md:border-r md:border-b-0 md:pt-4 md:pr-8 md:pb-15 md:pl-2"
               activeId={activeId}
               modules={SideBarModules}
               onSelect={id => {
