@@ -3,6 +3,7 @@ import { devtools, persist } from 'zustand/middleware'
 import { immer } from 'zustand/middleware/immer'
 import type { VideoApi } from '@/types'
 import { getInitialVideoSources } from '@/config/api.config'
+import { v4 as uuidv4 } from 'uuid'
 
 interface ApiState {
   // 自定义 API 列表
@@ -28,6 +29,8 @@ interface ApiActions {
   initializeEnvSources: () => void
   // 批量导入视频源
   importVideoAPIs: (apis: VideoApi[]) => void
+  // 获取选中的视频源
+  getSelectedAPIs: () => VideoApi[]
 }
 
 type ApiStore = ApiState & ApiActions
@@ -35,7 +38,7 @@ type ApiStore = ApiState & ApiActions
 export const useApiStore = create<ApiStore>()(
   devtools(
     persist(
-      immer<ApiStore>(set => ({
+      immer<ApiStore>((set, get) => ({
         videoAPIs: [],
         adFilteringEnabled: true,
 
@@ -51,11 +54,11 @@ export const useApiStore = create<ApiStore>()(
 
         addAndUpdateVideoAPI: (api: VideoApi) => {
           set(state => {
-            const existingApi = state.videoAPIs.find(a => a.name === api.name)
-            if (existingApi) {
-              state.videoAPIs = state.videoAPIs.map(a => (a.id === existingApi.id ? api : a))
+            const index = state.videoAPIs.findIndex(a => a.id === api.id)
+            if (index !== -1) {
+              state.videoAPIs[index] = { ...api, updatedAt: new Date() }
             } else {
-              state.videoAPIs.push(api)
+              state.videoAPIs.push({ ...api, updatedAt: new Date() })
             }
           })
         },
@@ -86,6 +89,7 @@ export const useApiStore = create<ApiStore>()(
 
         initializeEnvSources: async () => {
           const envSources = await getInitialVideoSources()
+          console.log(envSources)
           set(state => {
             if (envSources.length > 0) {
               // 只添加不存在的环境变量源
@@ -116,20 +120,43 @@ export const useApiStore = create<ApiStore>()(
                   (existingApi.name === api.name && existingApi.url === api.url),
               )
               if (!exists) {
-                state.videoAPIs.push(api)
+                state.videoAPIs.push({
+                  id: api.id || uuidv4(),
+                  name: api.name,
+                  url: api.url,
+                  detailUrl: api.detailUrl || '',
+                  timeout: api.timeout || 3000,
+                  retry: api.retry || 3,
+                  isEnabled: api.isEnabled ?? true,
+                  updatedAt: api.updatedAt || new Date(),
+                })
               }
             })
           })
         },
+
+        getSelectedAPIs: () => {
+          return get().videoAPIs.filter(api => api.isEnabled)
+        },
       })),
       {
         name: 'ouonnki-tv-api-store', // 持久化存储的键名
-        version: 4, // 更新版本号以触发迁移
+        version: 5, // 更新版本号以触发迁移
         migrate: (persistedState: unknown, version: number) => {
           const state = persistedState as Partial<ApiState>
 
           if (version < 4) {
             state.videoAPIs = []
+          }
+
+          if (version < 5) {
+            state.videoAPIs =
+              state.videoAPIs?.map(api => ({
+                ...api,
+                timeout: 3000,
+                retry: 3,
+                updatedAt: new Date(),
+              })) || []
           }
 
           return state

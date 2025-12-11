@@ -2,6 +2,7 @@ import React, { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router'
 import { AnimatePresence } from 'framer-motion'
 import { Spinner } from '@heroui/spinner'
+import SettingsPage from '@/pages/Settings'
 
 const Layout = lazy(() => import('@/components/layouts/Layout'))
 const SearchResult = lazy(() => import('@/pages/SearchResult'))
@@ -32,6 +33,7 @@ function AnimatedRoutes({ children }: { children: React.ReactNode }) {
             <Route path="search/:query" element={<SearchResult />} />
             <Route path="video/:sourceCode/:vodId/:episodeIndex" element={<Video />} />
             <Route path="detail/:sourceCode/:vodId" element={<Detail />} />
+            <Route path="settings" element={<SettingsPage />} />
           </Route>
         </Routes>
       </Suspense>

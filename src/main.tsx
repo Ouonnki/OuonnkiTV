@@ -4,6 +4,7 @@ import '@/styles/main.css'
 import { HeroUIProvider, ToastProvider } from '@heroui/react'
 import App from '@/App'
 import MyRouter from '@/router/MyRouter'
+import { Toaster } from '@/components/ui/sonner'
 
 const root = document.getElementById('root')!
 
@@ -13,6 +14,7 @@ const app = (
     <MyRouter>
       <App />
     </MyRouter>
+    <Toaster richColors position="top-center" />
   </HeroUIProvider>
 )
 

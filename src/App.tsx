@@ -11,14 +11,13 @@ import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/react'
 import RecentHistory from '@/components/RecentHistory'
 import { isBrowser } from 'react-device-detect'
-import SettingsModal from '@/components/SettingsModal'
-import { useDisclosure } from '@heroui/react'
+import { useNavigate } from 'react-router'
 
 function App() {
+  // 路由控制
+  const navigate = useNavigate()
   // 删除控制
   const [isSearchHistoryDeleteOpen, setIsSearchHistoryDeleteOpen] = useState(false)
-  // modal  控制
-  const { isOpen, onOpen, onOpenChange } = useDisclosure()
 
   const { searchHistory, removeSearchHistoryItem, clearSearchHistory } = useSearchHistory()
   const { search, setSearch, searchMovie } = useSearch()
@@ -79,9 +78,6 @@ function App() {
 
   return (
     <>
-      <Suspense fallback={null}>
-        <SettingsModal isOpen={isOpen} onOpenChange={onOpenChange} />
-      </Suspense>
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -96,7 +92,9 @@ function App() {
             <RecentHistory />
           </Button>
           <Button
-            onPress={onOpen}
+            onPress={() => {
+              navigate('/settings')
+            }}
             isIconOnly
             className="bg-white/20 shadow-lg shadow-gray-500/10 backdrop-blur-2xl"
           >

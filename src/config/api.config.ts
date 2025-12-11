@@ -68,6 +68,9 @@ export const getInitialVideoSources = async () => {
           url: source.url,
           detailUrl: source.detailUrl || source.url,
           isEnabled: source.isEnabled !== undefined ? source.isEnabled : true,
+          updatedAt: source.updatedAt || new Date(),
+          timeout: source.timeout || 3000,
+          retry: source.retry || 3,
         }
       })
       .filter(Boolean)

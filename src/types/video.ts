@@ -69,5 +69,8 @@ export interface VideoApi {
   name: string
   url: string
   detailUrl?: string
+  timeout?: number
+  retry?: number
   isEnabled: boolean
+  updatedAt: Date
 }
