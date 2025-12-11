@@ -4,7 +4,10 @@ import settingSvg from '@/assets/setting.svg'
 import NoItemSvg from '@/assets/noitem.svg'
 import NoResultSvg from '@/assets/noRes.svg'
 
-export const OkiLogo = ({ size = 36, ...props }: { size?: number }) => {
+export const OkiLogo = ({
+  size = 36,
+  ...props
+}: { size?: number } & React.ImgHTMLAttributes<HTMLImageElement>) => {
   return (
     <img draggable={false} src={logoSvg} alt="Oki Logo" width={size} height={size} {...props} />
   )

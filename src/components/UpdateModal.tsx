@@ -17,22 +17,17 @@ import PastoralIcon from '@/assets/田园犬.svg'
 
 export default function UpdateModal() {
   const { isOpen, onOpen, onClose } = useDisclosure()
-  const {
-    hasNewVersion,
-    getLatestUpdate,
-    markVersionAsViewed,
-    showUpdateModal,
-    setShowUpdateModal,
-  } = useVersionStore()
+  const { getLatestUpdate, markVersionAsViewed, showUpdateModal, setShowUpdateModal } =
+    useVersionStore()
 
-  const updateInfo = getLatestUpdate()
+  const updateInfo = getLatestUpdate() || useVersionStore.getState().updateHistory[0]
 
   useEffect(() => {
     // 检查是否有新版本且需要显示弹窗
-    if (hasNewVersion() && showUpdateModal) {
+    if (showUpdateModal) {
       onOpen()
     }
-  }, [hasNewVersion, showUpdateModal, onOpen])
+  }, [showUpdateModal, onOpen])
 
   const handleClose = () => {
     if (updateInfo) {

@@ -1,12 +1,12 @@
 import { OkiLogo, SearchIcon, SettingIcon, CloseIcon } from '@/components/icons'
 import { Button, Input, Chip, Popover, PopoverTrigger, PopoverContent } from '@heroui/react'
-import React, { useEffect, useState, lazy, Suspense } from 'react'
+import React, { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useSearchHistory, useSearch } from '@/hooks'
-import { useVersionStore } from '@/store/versionStore'
+
 import { useApiStore } from '@/store/apiStore'
 import { useSearchStore } from '@/store/searchStore'
-const UpdateModal = lazy(() => import('@/components/UpdateModal'))
+
 import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/react'
 import RecentHistory from '@/components/RecentHistory'
@@ -21,7 +21,7 @@ function App() {
 
   const { searchHistory, removeSearchHistoryItem, clearSearchHistory } = useSearchHistory()
   const { search, setSearch, searchMovie } = useSearch()
-  const { hasNewVersion, setShowUpdateModal } = useVersionStore()
+
   const { initializeEnvSources } = useApiStore()
   const { cleanExpiredCache } = useSearchStore()
   const [buttonTransitionStatus, setButtonTransitionStatus] = useState({
@@ -59,12 +59,7 @@ function App() {
       initializeEnvSources()
       localStorage.setItem('envSourcesInitialized', 'true')
     }
-
-    // 检查版本更新
-    if (hasNewVersion()) {
-      setShowUpdateModal(true)
-    }
-  }, [initializeEnvSources, hasNewVersion, setShowUpdateModal, cleanExpiredCache])
+  }, [initializeEnvSources, cleanExpiredCache])
 
   const handleSearch = () => {
     searchMovie(search)
@@ -84,9 +79,6 @@ function App() {
         exit={{ opacity: 0 }}
         transition={{ duration: 0.3 }}
       >
-        <Suspense fallback={null}>
-          <UpdateModal />
-        </Suspense>
         <motion.div layoutId="history-icon" className="absolute top-5 right-5 z-50 flex gap-4">
           <Button isIconOnly className="bg-white/20 shadow-lg shadow-gray-500/10 backdrop-blur-2xl">
             <RecentHistory />
