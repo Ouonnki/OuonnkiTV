@@ -2,8 +2,9 @@ import SideBar from '@/components/settings/layouts/SideBar'
 import ModuleContent from '@/components/settings/layouts/ModuleContent'
 import { useState } from 'react'
 import { type SettingModuleList } from '@/types'
-import { ListVideo, Info, ArrowLeft } from 'lucide-react'
+import { ListVideo, Info, ArrowLeft, Menu } from 'lucide-react'
 import VideoSource from '@/components/settings/VideoSource'
+import { cn } from '@/utils'
 import AboutProject from '@/components/settings/AboutProject'
 import { Button } from '@/components/ui/button'
 import { useNavigate } from 'react-router'
@@ -27,25 +28,51 @@ export default function SettingsPage() {
     },
   ]
   const [activeId, setActiveId] = useState(SideBarModules[0].id)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const currentModule = SideBarModules.find(module => module.id === activeId) || SideBarModules[0]
+
   return (
     <div className="min-h-[90vh] pt-3 pb-20">
-      <Button
-        variant="ghost"
-        className="hover:bg-white/20 hover:backdrop-blur-xl"
-        onClick={() => navigate('/')}
-      >
-        <ArrowLeft /> 返回
-      </Button>
-      <div className="mt-2 flex gap-8">
-        <SideBar
-          className="w-70 border-r border-gray-300/70 pt-4 pr-8 pb-15"
-          activeId={activeId}
-          modules={SideBarModules}
-          onSelect={setActiveId}
-        />
-        <ModuleContent
-          module={SideBarModules.find(module => module.id === activeId) || SideBarModules[0]}
-        />
+      <div className="flex items-center justify-between px-1 pr-2 md:px-0">
+        <Button
+          variant="ghost"
+          className="hover:bg-white/20 hover:backdrop-blur-xl"
+          onClick={() => navigate('/')}
+        >
+          <ArrowLeft /> 返回
+        </Button>
+        <div className="flex items-center gap-0 md:hidden">
+          <Button
+            variant="ghost"
+            className="hover:bg-white/20 hover:backdrop-blur-xl"
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          >
+            <span className="text-sm font-medium text-gray-700">{currentModule.name}</span>
+            <Menu />
+          </Button>
+        </div>
+      </div>
+
+      <div className="mt-2 flex flex-col gap-4 md:flex-row md:gap-8">
+        <div
+          className={cn(
+            'overflow-hidden transition-all duration-400 ease-in-out md:block md:h-auto md:w-70 md:opacity-100',
+            isSidebarOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0 md:max-h-none',
+          )}
+        >
+          <div className="px-5 md:px-0">
+            <SideBar
+              className="w-full border-r-0 border-b border-gray-300/70 pb-4 md:w-full md:border-r md:border-b-0 md:pt-4 md:pr-8 md:pb-15 md:pl-2"
+              activeId={activeId}
+              modules={SideBarModules}
+              onSelect={id => {
+                setActiveId(id)
+                setIsSidebarOpen(false)
+              }}
+            />
+          </div>
+        </div>
+        <ModuleContent module={currentModule} />
       </div>
     </div>
   )

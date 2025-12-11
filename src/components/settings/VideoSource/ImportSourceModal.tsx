@@ -174,7 +174,7 @@ export function TextSourceModal({
                 id="content"
                 {...register('content')}
                 placeholder='[{"name": "example", "url": "..."}]'
-                className={`max-h-100 min-h-50 ${errors.content ? 'border-red-500' : ''}`}
+                className={`max-h-50 min-h-50 md:max-h-100 ${errors.content ? 'border-red-500' : ''}`}
               />
               {errors.content && <p className="text-sm text-red-500">{errors.content.message}</p>}
             </div>

@@ -72,12 +72,12 @@ function InputFormItem<T extends FieldValues>({
 }: InputFormItemProps<T>) {
   return (
     <Field>
-      <div className="flex items-center gap-3">
+      <div className="flex flex-col items-start gap-1">
         <FieldLabel className="text-lg" htmlFor={id}>
           {label}
         </FieldLabel>
         <FieldDescription className="flex items-center gap-1">
-          <Info size={16} />
+          <Info size={16} className="hidden md:block" />
           {description}
         </FieldDescription>
       </div>
@@ -126,15 +126,14 @@ function VideoSourceFormItem<T extends FieldValues>({
       errors={errors}
       asChild
     >
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-5">
         <Input
           placeholder="例如：source1"
           {...register('id' as Path<T>)}
           aria-invalid={errors['id'] ? true : false}
           disabled={isRandomId}
-          className="flex-4/5"
         />
-        <div className="flex flex-1/5 items-center justify-end gap-2">
+        <div className="flex w-40 items-center justify-end gap-2">
           <Checkbox checked={isRandomId} onCheckedChange={handleRandomIdChange} />
           <Label>使用随机ID</Label>
         </div>

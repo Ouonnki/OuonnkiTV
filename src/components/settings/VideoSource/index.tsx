@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { CircleX, CircleCheckBig } from 'lucide-react'
+import { CircleX, CircleCheckBig, ChevronRight } from 'lucide-react'
 import { Switch } from '@/components/ui/switch'
 import { cn } from '@/utils'
 import { useRef, useState, useEffect } from 'react'
@@ -9,6 +9,13 @@ import { useApiStore } from '@/store/apiStore'
 import dayjs from 'dayjs'
 import VideoSourceForm from './VideoSourceForm'
 import VideoSourceDropdown from './VideoSourceDropdown'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
 import { v4 as uuidv4 } from 'uuid'
 import { URLSourceModal, TextSourceModal } from './ImportSourceModal'
 
@@ -151,8 +158,8 @@ export default function VideoSource() {
       <URLSourceModal open={urlSourceModalOpen} onOpenChange={setUrlSourceModalOpen} />
       <TextSourceModal open={textSourceModalOpen} onOpenChange={setTextSourceModalOpen} />
       <div className="flex flex-col gap-2">
-        <div className="flex items-end justify-between">
-          <div className="pl-2">
+        <div className="flex items-end justify-between px-4 md:px-0">
+          <div className="flex flex-col gap-1 md:pl-2">
             <h1 className="text-md font-semibold text-gray-700">视频源列表</h1>
             <p className="text-xs text-gray-400">
               您可以在下列视频源中添加、删除、编辑和启用视频源
@@ -167,8 +174,9 @@ export default function VideoSource() {
             onExportToText={handleExportToText}
           />
         </div>
-        <div className="flex border-t border-gray-300/40">
-          <div className="flex w-60 flex-col">
+        <div className="flex flex-col border-t border-gray-300/40 md:flex-row">
+          {/* Desktop: Sidebar List */}
+          <div className="hidden w-60 flex-col md:flex">
             <div className="flex items-center justify-between px-4 py-2">
               <p className="text-sm text-gray-500">
                 已启用 {getSelectedAPIs().length}/{videoAPIs.length}
@@ -201,6 +209,7 @@ export default function VideoSource() {
                   >
                     <p>{source.name}</p>
                     <Switch
+                      onClick={e => e.stopPropagation()}
                       onCheckedChange={() => setApiEnabled(source.id, !source.isEnabled)}
                       checked={source.isEnabled}
                     ></Switch>
@@ -209,15 +218,81 @@ export default function VideoSource() {
               </div>
             </ScrollArea>
           </div>
-          <div className="h-fit flex-1 border-l border-gray-300/40 p-4 backdrop-blur-xl">
+
+          <div className="flex h-full flex-1 flex-col border-t border-gray-300/40 p-4 backdrop-blur-xl md:border-t-0 md:border-l">
             {selectedSource ? (
               <>
                 <div className="flex items-center justify-between border-b border-gray-300/40 pb-2">
-                  <h1 className="text-xl font-semibold text-gray-800">{selectedSource.name}</h1>
-                  <p className="text-xs text-gray-500">
-                    最后更新时间：
-                    {dayjs(selectedSource.updatedAt).format('YYYY-MM-DD HH:mm:ss')}
-                  </p>
+                  <div className="flex flex-col gap-1">
+                    <h1 className="text-xl font-semibold text-gray-800">{selectedSource.name}</h1>
+                    <p className="text-xs text-gray-500">
+                      最后更新时间：
+                      {dayjs(selectedSource.updatedAt).format('YYYY-MM-DD HH:mm:ss')}
+                    </p>
+                  </div>
+                  {/* Mobile: Source Switcher Button */}
+                  <div className="md:hidden">
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button variant="ghost" size="sm" className="bg-white/40 backdrop-blur-xl">
+                          切换视频源
+                          <ChevronRight />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="flex max-h-[80vh] flex-col">
+                        <DialogHeader>
+                          <DialogTitle>选择视频源</DialogTitle>
+                        </DialogHeader>
+                        <div className="flex items-center justify-between py-2">
+                          <p className="text-sm text-gray-500">
+                            已启用 {getSelectedAPIs().length}/{videoAPIs.length}
+                          </p>
+                          <Button
+                            onClick={handleToggleAll}
+                            variant="ghost"
+                            size="sm"
+                            disabled={showVideoAPIs.length === 0}
+                          >
+                            {isAllSelected ? '全部停用' : '全部启用'}
+                          </Button>
+                        </div>
+                        <ScrollArea className="flex-1 rounded-md pr-2">
+                          <div className="flex h-100 flex-col gap-2 rounded-md">
+                            {showVideoAPIs.map((source, index) => (
+                              <div
+                                className={cn(
+                                  'flex h-12 items-center justify-between rounded-md border border-transparent px-4 py-2 transition-colors hover:cursor-pointer',
+                                  selectedSource?.id === source.id
+                                    ? 'border-gray-200 bg-gray-100'
+                                    : 'hover:bg-gray-50',
+                                )}
+                                key={source.id}
+                                onClick={() => setSelectedIndex(index)}
+                              >
+                                <p
+                                  className={cn(
+                                    'font-medium',
+                                    selectedSource?.id === source.id
+                                      ? 'text-primary'
+                                      : 'text-gray-700',
+                                  )}
+                                >
+                                  {source.name}
+                                </p>
+                                <Switch
+                                  onClick={e => e.stopPropagation()}
+                                  onCheckedChange={() =>
+                                    setApiEnabled(source.id, !source.isEnabled)
+                                  }
+                                  checked={source.isEnabled}
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        </ScrollArea>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
                 </div>
                 <VideoSourceForm sourceInfo={selectedSource} />
               </>
