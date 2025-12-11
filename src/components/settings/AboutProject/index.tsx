@@ -26,7 +26,7 @@ export default function AboutProject() {
       </div>
 
       {/* Description Section */}
-      <div className="flex flex-col gap-4 rounded-xl border border-gray-200 bg-white/40 p-6 text-center shadow-sm backdrop-blur-xl md:text-left dark:border-gray-700 dark:bg-gray-800/40">
+      <div className="flex flex-col gap-4 rounded-xl border border-gray-200 bg-white/40 p-6 text-center backdrop-blur-xl hover:shadow-sm md:text-left dark:border-gray-700 dark:bg-gray-800/40">
         <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-200">关于项目</h2>
         <p className="leading-relaxed text-gray-600 dark:text-gray-300">
           Ouonnki TV 是一款精心打造的现代化流媒体聚合平台，致力于提供极致流畅、优雅纯净的观影体验。

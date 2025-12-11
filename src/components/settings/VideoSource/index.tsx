@@ -174,7 +174,7 @@ export default function VideoSource() {
             onExportToText={handleExportToText}
           />
         </div>
-        <div className="flex flex-col border-t border-gray-300/40 md:flex-row">
+        <div className="flex flex-col md:flex-row">
           {/* Desktop: Sidebar List */}
           <div className="hidden w-60 flex-col md:flex">
             <div className="flex items-center justify-between px-4 py-2">

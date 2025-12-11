@@ -56,13 +56,13 @@ export default function SettingsPage() {
       <div className="mt-2 flex flex-col gap-4 md:flex-row md:gap-8">
         <div
           className={cn(
-            'overflow-hidden transition-all duration-400 ease-in-out md:block md:h-auto md:w-70 md:opacity-100',
+            'transition-all duration-400 ease-in md:block md:h-auto md:w-70 md:opacity-100',
             isSidebarOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0 md:max-h-none',
           )}
         >
           <div className="px-5 md:px-0">
             <SideBar
-              className="w-full border-r-0 border-b border-gray-300/70 pb-7 md:w-full md:border-r md:border-b-0 md:pt-4 md:pr-8 md:pb-15 md:pl-2"
+              className="w-full border-r-0 border-gray-300/70 pb-2 md:w-full md:border-r md:pt-4 md:pr-8 md:pb-15 md:pl-2"
               activeId={activeId}
               modules={SideBarModules}
               onSelect={id => {
