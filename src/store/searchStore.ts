@@ -5,9 +5,10 @@ import type { SearchHistory, SearchHistoryItem, VideoItem } from '@/types'
 import { v4 as uuidv4 } from 'uuid'
 
 // 搜索结果缓存最大数量
+// 搜索结果缓存最大数量
 const MAX_CACHE_SIZE = 10
-// 缓存过期时间: 1天 (毫秒)
-const CACHE_EXPIRY_TIME = 24 * 60 * 60 * 1000
+// 缓存过期时间 (默认值, 实际使用 SettingStore 中的配置)
+const DEFAULT_CACHE_EXPIRY_HOURS = 24
 
 // 缓存项接口
 interface SearchCacheItem {
@@ -15,6 +16,7 @@ interface SearchCacheItem {
   completedApiIds: string[] // 已完成搜索的 API ID 列表
   isComplete: boolean // 是否已完成所有 API 的搜索
   timestamp: number // 缓存时间戳
+  videoSourcesSnapshot?: string // 视频源状态快照 (id + isEnabled)
 }
 
 interface SearchState {
@@ -37,6 +39,8 @@ interface SearchActions {
   removeSearchHistoryItem: (id: string) => void
   // 清空搜索历史
   clearSearchHistory: () => void
+  // 删除单个搜索结果缓存
+  removeSearchResultsCacheItem: (query: string) => void
   // 获取缓存的搜索结果
   getCachedResults: (query: string) => SearchCacheItem | undefined
   // 设置搜索结果缓存(增量更新)
@@ -53,6 +57,9 @@ interface SearchActions {
 }
 
 type SearchStore = SearchState & SearchActions
+
+import { useSettingStore } from './settingStore'
+import { useApiStore } from './apiStore'
 
 export const useSearchStore = create<SearchStore>()(
   devtools(
@@ -77,6 +84,11 @@ export const useSearchStore = create<SearchStore>()(
         },
 
         addSearchHistoryItem: (content: string) => {
+          // 检查是否开启了搜索历史记录
+          if (!useSettingStore.getState().search.isSearchHistoryEnabled) {
+            return
+          }
+
           set(state => {
             const existingItem = state.searchHistory.find(
               (item: SearchHistoryItem) => item.content === content,
@@ -117,6 +129,12 @@ export const useSearchStore = create<SearchStore>()(
           })
         },
 
+        removeSearchResultsCacheItem: (query: string) => {
+          set(state => {
+            delete state.searchResultsCache[query]
+          })
+        },
+
         getCachedResults: (query: string) => {
           const cached = get().searchResultsCache[query]
 
@@ -127,11 +145,35 @@ export const useSearchStore = create<SearchStore>()(
 
           // 检查缓存是否过期
           const now = Date.now()
-          const isExpired = now - cached.timestamp > CACHE_EXPIRY_TIME
+          const expiryHours =
+            useSettingStore.getState().search.searchCacheExpiryHours ?? DEFAULT_CACHE_EXPIRY_HOURS
+          const expiryTime = expiryHours * 60 * 60 * 1000
+          // 如果 expiryHours 为 0, 视为永不过期 (或者立即过期? 用户通常设0意为不缓存)
+          // 但根据 request "缓存过期时间设置为0的时候应该为0", 意味着立即过期。
+          // 之前的逻辑: if searchCacheExpiryHours is 0, || DEFAULT takes over (which is 24).
+          // Now ?? takes over only if undefined/null. So if 0, expiryTime is 0.
+          const isExpired = now - cached.timestamp > expiryTime
 
           if (isExpired) {
             console.log(`缓存已过期: ${query}`)
             // 删除过期缓存
+            set(state => {
+              delete state.searchResultsCache[query]
+            })
+            return undefined
+          }
+
+          // 检查视频源状态是否发生变化 (包括源本身的变化和启用状态的变化)
+          const currentSources = useApiStore.getState().videoAPIs
+          const currentSnapshot = JSON.stringify(
+            currentSources
+              .map(s => ({ id: s.id, isEnabled: s.isEnabled, url: s.url }))
+              .sort((a, b) => a.id.localeCompare(b.id)),
+          )
+
+          if (cached.videoSourcesSnapshot && cached.videoSourcesSnapshot !== currentSnapshot) {
+            console.log(`视频源状态已变更, 缓存废弃: ${query}`)
+            // 删除无效缓存
             set(state => {
               delete state.searchResultsCache[query]
             })
@@ -149,6 +191,14 @@ export const useSearchStore = create<SearchStore>()(
         ) => {
           set(state => {
             const existing = state.searchResultsCache[query]
+
+            // 生成当前视频源快照
+            const currentSources = useApiStore.getState().videoAPIs
+            const videoSourcesSnapshot = JSON.stringify(
+              currentSources
+                .map(s => ({ id: s.id, isEnabled: s.isEnabled, url: s.url }))
+                .sort((a, b) => a.id.localeCompare(b.id)),
+            )
 
             if (existing) {
               // 合并结果,去重
@@ -173,6 +223,7 @@ export const useSearchStore = create<SearchStore>()(
                 completedApiIds: mergedApiIds,
                 isComplete: isComplete || existing.isComplete,
                 timestamp: Date.now(),
+                videoSourcesSnapshot: existing.videoSourcesSnapshot || videoSourcesSnapshot,
               }
             } else {
               // 新建缓存项
@@ -201,6 +252,7 @@ export const useSearchStore = create<SearchStore>()(
                 completedApiIds,
                 isComplete,
                 timestamp: Date.now(),
+                videoSourcesSnapshot,
               }
             }
           })
@@ -220,7 +272,12 @@ export const useSearchStore = create<SearchStore>()(
 
             cacheKeys.forEach(key => {
               const cached = state.searchResultsCache[key]
-              if (cached && now - cached.timestamp > CACHE_EXPIRY_TIME) {
+              const expiryHours =
+                useSettingStore.getState().search.searchCacheExpiryHours ??
+                DEFAULT_CACHE_EXPIRY_HOURS
+              const expiryTime = expiryHours * 60 * 60 * 1000
+
+              if (cached && now - cached.timestamp > expiryTime) {
                 delete state.searchResultsCache[key]
                 removedCount++
               }

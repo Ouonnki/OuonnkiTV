@@ -5,16 +5,19 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { lazy, Suspense, useEffect } from 'react'
 import { useVersionStore } from '@/store/versionStore'
 
+import { useSettingStore } from '@/store/settingStore'
+
 const UpdateModal = lazy(() => import('@/components/UpdateModal'))
 
 export default function Layout() {
   const { hasNewVersion, setShowUpdateModal } = useVersionStore()
+  const { system } = useSettingStore()
 
   useEffect(() => {
-    if (hasNewVersion()) {
+    if (hasNewVersion() && system.isUpdateLogEnabled) {
       setShowUpdateModal(true)
     }
-  }, [hasNewVersion, setShowUpdateModal])
+  }, [hasNewVersion, setShowUpdateModal, system.isUpdateLogEnabled])
 
   return (
     <motion.div

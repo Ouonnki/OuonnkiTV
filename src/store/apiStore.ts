@@ -4,6 +4,7 @@ import { immer } from 'zustand/middleware/immer'
 import type { VideoApi } from '@/types'
 import { getInitialVideoSources } from '@/config/api.config'
 import { v4 as uuidv4 } from 'uuid'
+import { useSettingStore } from './settingStore'
 
 interface ApiState {
   // 自定义 API 列表
@@ -125,8 +126,8 @@ export const useApiStore = create<ApiStore>()(
                   name: api.name,
                   url: api.url,
                   detailUrl: api.detailUrl || '',
-                  timeout: api.timeout || 3000,
-                  retry: api.retry || 3,
+                  timeout: api.timeout || useSettingStore.getState().network.defaultTimeout || 3000,
+                  retry: api.retry || useSettingStore.getState().network.defaultRetry || 3,
                   isEnabled: api.isEnabled ?? true,
                   updatedAt: api.updatedAt || new Date(),
                 })

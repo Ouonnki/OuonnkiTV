@@ -2,9 +2,14 @@ import { OkiLogo } from '@/components/icons'
 import { Github, History } from 'lucide-react'
 import { useVersionStore } from '@/store/versionStore'
 
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
+import { useSettingStore } from '@/store/settingStore'
+
 export default function AboutProject() {
   const currentYear = new Date().getFullYear()
   const { currentVersion, setShowUpdateModal } = useVersionStore()
+  const { system, setSystemSettings } = useSettingStore()
 
   return (
     <div className="flex flex-col gap-6 px-4 md:px-8">
@@ -22,6 +27,20 @@ export default function AboutProject() {
               v{currentVersion}
             </span>
           </div>
+        </div>
+      </div>
+
+      {/* Settings Section */}
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-row items-center justify-between rounded-lg border border-gray-200 bg-white/40 p-4 transition-all hover:border-gray-300 hover:bg-white/60 hover:shadow-sm dark:border-gray-700 dark:bg-gray-800/40 dark:hover:bg-gray-800/60">
+          <div className="space-y-0.5">
+            <Label className="text-base text-gray-800 dark:text-gray-100">自动显示更新日志</Label>
+            <p className="text-sm text-gray-500">检测到新版本时自动弹出更新说明</p>
+          </div>
+          <Switch
+            checked={system.isUpdateLogEnabled}
+            onCheckedChange={checked => setSystemSettings({ isUpdateLogEnabled: checked })}
+          />
         </div>
       </div>
 

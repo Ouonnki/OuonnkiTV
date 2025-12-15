@@ -19,7 +19,7 @@ export default defineConfig({
         manualChunks: {
           'react-vendor': ['react', 'react-dom', 'react-router'],
           'ui-vendor': ['@heroui/react', 'framer-motion'],
-          'player-vendor': ['xgplayer', 'xgplayer-hls'],
+          'player-vendor': ['artplayer', 'hls.js'],
         },
       },
     },

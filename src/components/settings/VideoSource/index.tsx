@@ -6,6 +6,7 @@ import { cn } from '@/utils'
 import { useRef, useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { useApiStore } from '@/store/apiStore'
+import { useSettingStore } from '@/store/settingStore'
 import dayjs from 'dayjs'
 import VideoSourceForm from './VideoSourceForm'
 import VideoSourceDropdown from './VideoSourceDropdown'
@@ -65,8 +66,8 @@ export default function VideoSource() {
         name: '新增源',
         url: '',
         detailUrl: '',
-        timeout: 3000,
-        retry: 3,
+        timeout: useSettingStore.getState().network.defaultTimeout || 3000,
+        retry: useSettingStore.getState().network.defaultRetry || 3,
         isEnabled: true,
         updatedAt: new Date(),
       },

@@ -6,8 +6,21 @@ import { motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
 import RecentHistory from '@/components/RecentHistory'
 
+import { useSearchStore } from '@/store/searchStore'
+import { useSettingStore } from '@/store/settingStore'
+import { TrashIcon } from '@/components/icons'
+import { Card } from '@heroui/react'
+
 export default function Navigation() {
-  const { search, searchMovie } = useSearch()
+  const { search: searchQuery, searchMovie } = useSearch()
+  const { searchHistory, removeSearchHistoryItem, clearSearchHistory } = useSearchStore()
+  const { search: searchSettings } = useSettingStore()
+
+  const [isFocused, setIsFocused] = useState(false)
+  // Delay blur to allow item click
+  const handleBlur = () => {
+    setTimeout(() => setIsFocused(false), 200)
+  }
   const [inputContent, setInputContent] = useState('')
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === 'Enter') {
@@ -15,8 +28,8 @@ export default function Navigation() {
     }
   }
   useEffect(() => {
-    setInputContent(search)
-  }, [search])
+    setInputContent(searchQuery)
+  }, [searchQuery])
   return (
     <motion.div
       className="sticky top-0 z-50 flex justify-center"
@@ -70,7 +83,48 @@ export default function Navigation() {
               onClear={() => {
                 setInputContent('')
               }}
+              onFocus={() => setIsFocused(true)}
+              onBlur={handleBlur}
             />
+            {isFocused && searchSettings.isSearchHistoryVisible && searchHistory.length > 0 && (
+              <div className="absolute top-12 left-0 w-full px-2">
+                <Card className="w-full bg-white/80 p-2 shadow-xl backdrop-blur-md dark:bg-black/80">
+                  <div className="mb-2 flex items-center justify-between px-2 text-xs text-gray-500">
+                    <span>搜索历史</span>
+                    <span
+                      className="cursor-pointer hover:text-red-500"
+                      onClick={clearSearchHistory}
+                    >
+                      清空
+                    </span>
+                  </div>
+                  <div className="max-h-60 overflow-y-auto">
+                    {searchHistory.map(item => (
+                      <div
+                        key={item.id}
+                        className="flex cursor-pointer items-center justify-between rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-gray-800"
+                        onClick={() => {
+                          setInputContent(item.content)
+                          searchMovie(item.content)
+                          setIsFocused(false)
+                        }}
+                      >
+                        <span className="line-clamp-1 text-sm">{item.content}</span>
+                        <div
+                          className="flex h-5 w-5 items-center justify-center rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
+                          onClick={e => {
+                            e.stopPropagation()
+                            removeSearchHistoryItem(item.id)
+                          }}
+                        >
+                          <TrashIcon size={12} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+              </div>
+            )}
           </motion.div>
           <motion.div
             layoutId="history-icon"

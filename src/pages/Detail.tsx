@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { apiService } from '@/services/api.service'
 import { type DetailResponse } from '@/types'
 import { useApiStore } from '@/store/apiStore'
+import { useSettingStore } from '@/store/settingStore'
 import { Chip, Button, Spinner, Tooltip, Divider, Select, SelectItem } from '@heroui/react'
 import { useDocumentTitle } from '@/hooks'
 import { ArrowUpIcon, ArrowDownIcon } from '@/components/icons'
@@ -12,10 +13,11 @@ export default function Detail() {
   const { sourceCode, vodId } = useParams<{ sourceCode: string; vodId: string }>()
   const navigate = useNavigate()
   const { videoAPIs } = useApiStore()
+  const { playback } = useSettingStore()
 
   const [detail, setDetail] = useState<DetailResponse | null>(null)
   const [loading, setLoading] = useState(true)
-  const [isReversed, setIsReversed] = useState(true)
+  const [isReversed, setIsReversed] = useState(playback.defaultEpisodeOrder === 'desc')
   const [currentPageRange, setCurrentPageRange] = useState<string>('')
   const [openTooltipIndex, setOpenTooltipIndex] = useState<number | null>(null)
   const [episodesPerPage, setEpisodesPerPage] = useState(100)

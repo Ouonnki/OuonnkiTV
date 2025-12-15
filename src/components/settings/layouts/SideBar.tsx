@@ -14,13 +14,13 @@ export default function SideBar({
   className?: string
 }) {
   return (
-    <div className={cn(`relative flex h-fit w-full flex-col gap-3`, className)}>
+    <div className={cn(`relative flex h-full w-full flex-col gap-3`, className)}>
       {modules.map(module => (
         <div
           key={module.id}
           className={`relative z-10 flex h-12 cursor-pointer items-center gap-2 rounded-lg p-3 transition-colors duration-300 ${
             activeId === module.id ? 'text-white' : 'text-gray-500 hover:text-gray-700'
-          }`}
+          } ${module.id === 'about_project' ? 'md:mt-auto' : ''}`}
           onClick={() => onSelect(module.id)}
         >
           {activeId === module.id && (

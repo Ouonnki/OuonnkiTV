@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
 import { immer } from 'zustand/middleware/immer'
 import type { ViewingHistoryItem } from '@/types'
+import { useSettingStore } from './settingStore'
 
 interface ViewingHistoryState {
   // 观看历史列表
@@ -28,6 +29,11 @@ export const useViewingHistoryStore = create<ViewingHistoryStore>()(
 
         // Actions
         addViewingHistory: (item: ViewingHistoryItem) => {
+          // 检查是否开启了观看历史记录
+          if (!useSettingStore.getState().playback.isViewingHistoryEnabled) {
+            return
+          }
+
           set(state => {
             if (item.duration <= 0) return
             // 检查是否已经存在相同视频的记录

@@ -1,27 +1,88 @@
 import { useEffect, useRef, useState, useMemo } from 'react'
 import { useNavigate, useParams } from 'react-router'
-import Player from 'xgplayer'
-import { Events } from 'xgplayer'
-import HlsPlugin from 'xgplayer-hls'
-import 'xgplayer/dist/index.min.css'
-import {
-  Card,
-  CardHeader,
-  CardBody,
-  Button,
-  Chip,
-  Spinner,
-  Tooltip,
-  Select,
-  SelectItem,
-} from '@heroui/react'
+import Artplayer from 'artplayer'
+import Hls, {
+  type LoaderContext,
+  type LoaderCallbacks,
+  type LoaderResponse,
+  type LoaderStats,
+  type HlsConfig,
+  type LoaderConfiguration,
+} from 'hls.js'
+import { Card, CardBody, Button, Chip, Spinner, Tooltip, Select, SelectItem } from '@heroui/react'
 import type { DetailResponse } from '@/types'
 import { apiService } from '@/services/api.service'
 import { useApiStore } from '@/store/apiStore'
 import { useViewingHistoryStore } from '@/store/viewingHistoryStore'
+import { useSettingStore } from '@/store/settingStore'
 import { useDocumentTitle } from '@/hooks'
 import { ArrowUpIcon, ArrowDownIcon } from '@/components/icons'
 import _ from 'lodash'
+import { toast } from 'sonner'
+
+// 过滤可疑的广告内容
+function filterAdsFromM3U8(m3u8Content: string) {
+  if (!m3u8Content) return ''
+
+  // 按行分割M3U8内容
+  const lines = m3u8Content.split('\n')
+  const filteredLines = []
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+
+    // 只过滤#EXT-X-DISCONTINUITY标识
+    if (!line.includes('#EXT-X-DISCONTINUITY')) {
+      filteredLines.push(line)
+    }
+  }
+
+  return filteredLines.join('\n')
+}
+
+// 扩展 LoaderContext 类型以包含 type 属性
+interface ExtendedLoaderContext extends LoaderContext {
+  type: string
+}
+
+// 扩展 Artplayer 类型以包含 hls 属性
+interface ArtplayerWithHls extends Artplayer {
+  hls?: Hls
+}
+
+// 自定义M3U8 Loader用于过滤广告
+class CustomHlsJsLoader extends Hls.DefaultConfig.loader {
+  constructor(config: HlsConfig) {
+    super(config)
+    const load = this.load.bind(this)
+    this.load = function (
+      context: LoaderContext,
+      config: LoaderConfiguration,
+      callbacks: LoaderCallbacks<LoaderContext>,
+    ) {
+      // 拦截manifest和level请求
+      const ctx = context as ExtendedLoaderContext
+      if (ctx.type === 'manifest' || ctx.type === 'level') {
+        const onSuccess = callbacks.onSuccess
+        callbacks.onSuccess = function (
+          response: LoaderResponse,
+          stats: LoaderStats,
+          context: LoaderContext,
+          networkDetails: unknown,
+        ) {
+          // 如果是m3u8文件，处理内容以移除广告分段
+          if (response.data && typeof response.data === 'string') {
+            // 过滤掉广告段 - 实现更精确的广告过滤逻辑
+            response.data = filterAdsFromM3U8(response.data)
+          }
+          return onSuccess(response, stats, context, networkDetails)
+        }
+      }
+      // 执行原始load方法
+      load(context, config, callbacks)
+    }
+  }
+}
 
 export default function Video() {
   const navigate = useNavigate()
@@ -31,12 +92,22 @@ export default function Video() {
     episodeIndex: string
   }>()
 
-  const playerRef = useRef<Player | null>(null)
+  const playerRef = useRef<Artplayer | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
   // 从 store 获取 API 配置
-  const { videoAPIs } = useApiStore()
+  const { videoAPIs, adFilteringEnabled } = useApiStore()
   const { addViewingHistory, viewingHistory } = useViewingHistoryStore()
+  const { playback } = useSettingStore()
+
+  // Use refs to access latest values in main useEffect without triggering re-renders
+  const viewingHistoryRef = useRef(viewingHistory)
+  const playbackRef = useRef(playback)
+
+  useEffect(() => {
+    viewingHistoryRef.current = viewingHistory
+    playbackRef.current = playback
+  }, [viewingHistory, playback])
 
   // 状态管理
   const [detail, setDetail] = useState<DetailResponse | null>(null)
@@ -46,7 +117,7 @@ export default function Video() {
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [isReversed, setIsReversed] = useState(true)
+  const [isReversed, setIsReversed] = useState(playback.defaultEpisodeOrder === 'desc')
   const [currentPageRange, setCurrentPageRange] = useState<string>('')
   const [episodesPerPage, setEpisodesPerPage] = useState(100)
 
@@ -138,38 +209,97 @@ export default function Video() {
   }, [episodeIndex, selectedEpisode])
 
   useEffect(() => {
-    if (!detail?.episodes || !detail.episodes[selectedEpisode]) return
+    if (!detail?.episodes || !detail.episodes[selectedEpisode] || !containerRef.current) return
 
     // 销毁旧的播放器实例
-    if (playerRef.current) {
-      playerRef.current.destroy()
+    if (playerRef.current && playerRef.current.destroy) {
+      playerRef.current.destroy(false)
+    }
+
+    const nextEpisode = () => {
+      if (!playbackRef.current.isAutoPlayEnabled) return
+
+      const total = detail.videoInfo?.episodes_names?.length || 0
+      if (selectedEpisode < total - 1) {
+        const nextIndex = selectedEpisode + 1
+        setSelectedEpisode(nextIndex)
+        navigate(`/video/${sourceCode}/${vodId}/${nextIndex}`, {
+          replace: true,
+        })
+        toast.info(`即将播放下一集: ${detail.videoInfo?.episodes_names?.[nextIndex]}`)
+      }
     }
 
     // 创建新的播放器实例
-    playerRef.current = new Player({
-      id: 'player',
+    const art = new Artplayer({
+      container: containerRef.current,
       url: detail.episodes[selectedEpisode],
-      fluid: true,
-      playbackRate: [0.5, 0.75, 1, 1.25, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5],
+      volume: 0.7,
+      isLive: false,
+      muted: false,
+      autoplay: playbackRef.current.isAutoPlayEnabled,
       pip: true,
+      autoSize: true,
+      autoMini: true,
+      screenshot: true,
+      setting: true,
+      loop: false,
+      flip: true,
+      playbackRate: true,
+      aspectRatio: true,
+      fullscreen: true,
+      fullscreenWeb: true,
+      subtitleOffset: true,
+      miniProgressBar: true,
+      mutex: true,
+      backdrop: true,
+      playsInline: true,
+      // autoPlayback: true, // Removed to avoid duplicate resume logic with viewingHistoryStore
+      airplay: true,
+      theme: '#23ade5',
       lang: 'zh-cn',
-      plugins: [HlsPlugin],
-      ignores: ['download'],
+      moreVideoAttr: {
+        crossOrigin: 'anonymous',
+      },
+      customType: {
+        m3u8: function (video: HTMLMediaElement, url: string, art: Artplayer) {
+          const artWithHls = art as ArtplayerWithHls
+          if (Hls.isSupported()) {
+            if (artWithHls.hls) artWithHls.hls.destroy()
+            const hlsConfig: Partial<HlsConfig> = adFilteringEnabled
+              ? { loader: CustomHlsJsLoader as unknown as typeof Hls.DefaultConfig.loader }
+              : {}
+            const hls = new Hls(hlsConfig)
+            hls.loadSource(url)
+            hls.attachMedia(video)
+            artWithHls.hls = hls
+            art.on('destroy', () => hls.destroy())
+          } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            video.src = url
+          } else {
+            art.notice.show = 'Unsupported playback format: m3u8'
+          }
+        },
+      },
     })
 
+    playerRef.current = art
+
     // 自动续播
-    const existingHistory = viewingHistory.find(
-      item =>
-        item.sourceCode === sourceCode &&
-        item.vodId === vodId &&
-        item.episodeIndex === selectedEpisode,
-    )
-    if (existingHistory) {
-      playerRef.current.currentTime = existingHistory.playbackPosition || 0
-    }
+    art.on('ready', () => {
+      const existingHistory = viewingHistoryRef.current.find(
+        item =>
+          item.sourceCode === sourceCode &&
+          item.vodId === vodId &&
+          item.episodeIndex === selectedEpisode,
+      )
+      if (existingHistory && existingHistory.playbackPosition > 0) {
+        art.seek = existingHistory.playbackPosition
+        toast.success('已自动跳转到上次观看位置')
+      }
+    })
 
     // 记录观看历史
-    const player = playerRef.current
     const normalAddHistory = () => {
       if (!sourceCode || !vodId || !detail?.videoInfo) return
       addViewingHistory({
@@ -180,24 +310,27 @@ export default function Video() {
         vodId: vodId || '',
         episodeIndex: selectedEpisode,
         episodeName: detail.videoInfo.episodes_names?.[selectedEpisode],
-        playbackPosition: player.currentTime || 0,
-        duration: player.duration || 0,
+        playbackPosition: art.currentTime || 0,
+        duration: art.duration || 0,
         timestamp: Date.now(),
       })
     }
 
-    player.on(Events.PLAY, normalAddHistory)
-    player.on(Events.PAUSE, normalAddHistory)
-    player.on(Events.ENDED, normalAddHistory)
-    player.on(Events.ERROR, normalAddHistory)
+    art.on('video:play', normalAddHistory)
+    art.on('video:pause', normalAddHistory)
+    art.on('video:ended', () => {
+      normalAddHistory()
+      nextEpisode()
+    })
+    art.on('video:error', normalAddHistory)
 
     let lastTimeUpdate = 0
     const TIME_UPDATE_INTERVAL = 3000
 
     const timeUpdateHandler = () => {
       if (!sourceCode || !vodId || !detail?.videoInfo) return
-      const currentTime = player.currentTime || 0
-      const duration = player.duration || 0
+      const currentTime = art.currentTime || 0
+      const duration = art.duration || 0
       const timeSinceLastUpdate = Date.now() - lastTimeUpdate
 
       if (timeSinceLastUpdate >= TIME_UPDATE_INTERVAL && currentTime > 0 && duration > 0) {
@@ -217,18 +350,17 @@ export default function Video() {
       }
     }
 
-    player.on('timeupdate', _.throttle(timeUpdateHandler, TIME_UPDATE_INTERVAL))
+    art.on('video:timeupdate', _.throttle(timeUpdateHandler, TIME_UPDATE_INTERVAL))
 
     // 清理函数
     return () => {
-      if (playerRef.current) {
+      if (playerRef.current && playerRef.current.destroy) {
         normalAddHistory()
-        player.offAll()
-        playerRef.current.destroy()
+        playerRef.current.destroy(false)
         playerRef.current = null
       }
     }
-  }, [selectedEpisode, detail, sourceCode, vodId, addViewingHistory])
+  }, [selectedEpisode, detail, sourceCode, vodId, addViewingHistory, navigate, adFilteringEnabled])
 
   // 处理集数切换
   const handleEpisodeChange = (displayIndex: number) => {
@@ -404,30 +536,26 @@ export default function Video() {
       </div>
 
       {/* 播放器卡片 */}
-      <Card className="mb-4 border-none sm:mb-6" radius="lg">
-        <CardHeader className="absolute top-1 z-10 hidden w-full p-3 md:block">
-          <div className="flex w-full items-start justify-between">
-            <div className="rounded-large bg-black/20 px-3 py-2 backdrop-blur">
-              <p className="text-tiny font-bold text-white/80 uppercase">{sourceName}</p>
-              <h4 className="text-lg font-medium text-white">{getTitle()}</h4>
-            </div>
-            <div className="rounded-large flex items-center gap-2 bg-black/20 px-3 py-2 backdrop-blur">
-              <Chip size="sm" variant="flat" className="bg-white/20 backdrop-blur">
-                第 {selectedEpisode + 1} 集
-              </Chip>
-              <p className="text-tiny text-white/80">共 {detail.episodes.length} 集</p>
-              <Button
-                size="sm"
-                className="text-tiny ml-2 bg-black/20 text-white"
-                radius="lg"
-                variant="flat"
-                onPress={() => navigate(-1)}
-              >
-                返回
-              </Button>
-            </div>
+      <div className="mb-4 hidden items-center justify-between md:flex">
+        <div className="flex items-center gap-4">
+          <div>
+            <p className="text-sm font-semibold text-gray-500">{sourceName}</p>
+            <h4 className="text-xl font-bold">{getTitle()}</h4>
           </div>
-        </CardHeader>
+          <div className="flex items-center gap-2">
+            <Chip size="sm" color="primary" variant="flat">
+              第 {selectedEpisode + 1} 集
+            </Chip>
+            <p className="text-sm text-gray-500">共 {detail.episodes.length} 集</p>
+          </div>
+        </div>
+        <Button size="sm" variant="flat" onPress={() => navigate(-1)}>
+          返回
+        </Button>
+      </div>
+
+      <Card className="mb-4 border-none sm:mb-6" radius="lg">
+        {/* Removed absolute header to fix display issues, moved info to top of card or separate div above */}
         <CardBody className="p-0">
           <div id="player" ref={containerRef} className="aspect-video w-full rounded-lg bg-black" />
         </CardBody>

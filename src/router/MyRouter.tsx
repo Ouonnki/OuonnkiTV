@@ -9,8 +9,27 @@ const SearchResult = lazy(() => import('@/pages/SearchResult'))
 const Detail = lazy(() => import('@/pages/Detail'))
 const Video = lazy(() => import('@/pages/Video'))
 
+import { useApiStore } from '@/store/apiStore'
+import { useSearchStore } from '@/store/searchStore'
+import { useEffect } from 'react'
+
 function AnimatedRoutes({ children }: { children: React.ReactNode }) {
   const location = useLocation()
+  const { initializeEnvSources } = useApiStore()
+  const { cleanExpiredCache } = useSearchStore()
+
+  useEffect(() => {
+    // 清理过期的搜索缓存
+    cleanExpiredCache()
+
+    // 检查是否需要初始化
+    const needsInitialization = localStorage.getItem('envSourcesInitialized') !== 'true'
+    if (needsInitialization) {
+      // 初始化环境变量中的视频源
+      initializeEnvSources()
+      localStorage.setItem('envSourcesInitialized', 'true')
+    }
+  }, [initializeEnvSources, cleanExpiredCache])
 
   return (
     <AnimatePresence mode="wait">
