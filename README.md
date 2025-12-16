@@ -52,12 +52,13 @@
     - [📝 JSON 文本导入](#-json-文本导入)
     - [🌐 URL 导入](#-url-导入)
   - [JSON 格式说明](#json-格式说明)
-  - [环境变量预配置](#环境变量预配置)
-    - [本地开发或 Docker 部署](#本地开发或-docker-部署)
-    - [在 Vercel 中配置](#在-vercel-中配置)
-    - [在 Cloudflare Pages 中配置](#在-cloudflare-pages-中配置)
-    - [在 Netlify 中配置](#在-netlify-中配置)
-    - [其他配置项](#其他配置项)
+- [⚙️ 配置管理](#️-配置管理)
+  - [核心功能](#核心功能)
+  - [环境变量参考](#环境变量参考)
+    - [1. 默认视频源](#1-默认视频源)
+    - [2. 应用默认设置](#2-应用默认设置)
+    - [3. 其他配置](#3-其他配置)
+  - [操作指南](#操作指南)
 - [👨‍💻 给开发者](#-给开发者)
   - [技术栈](#技术栈)
   - [项目结构](#项目结构)
@@ -370,113 +371,60 @@ OuonnkiTV 支持多种方式批量导入视频源配置，方便快速部署和�
 
 ---
 
-### 环境变量预配置
+## ⚙️ 配置管理
 
-除了应用内导入，还可以通过环境变量在构建时预配置初始视频源。
+OuonnkiTV 支持一键恢复默认配置，方便您快速重置应用状态。初始状态由构建时的环境变量决定，方便统一部署和分发。
 
-> ⚠️ **重要说明**：环境变量配置仅在**构建时**生效，适用于自行构建部署的场景（本地构建、Docker 构建、Vercel 自动构建）。使用预构建镜像时无法通过环境变量修改配置。
+### 核心功能
+你可以通过设置环境变量来预定义应用的默认配置（包括视频源和应用设置）。当用户点击 **设置** -> **关于项目** -> **配置操作** -> **恢复默认配置** 时，应用将重置为这些预定义的默认值。
 
-#### 本地开发或 Docker 部署
+### 环境变量参考
 
-**步骤 1：创建配置文件**
-```bash
-# 复制示例文件
-copy .env.example .env  # Windows
-# cp .env.example .env  # Linux/Mac
-```
+以下环境变量仅在**构建时**生效。
 
-**步骤 2：编辑 `.env` 文件**
+#### 1. 全局初始配置（推荐）
 
-方式一：直接配置 JSON（单行格式）
+使用 `VITE_INITIAL_CONFIG` 变量导入完整配置（包含所有设置项和视频源）。该值的格式应与“导出个人配置”生成的 JSON 内容一致。
+
 ```env
-VITE_INITIAL_VIDEO_SOURCES=[{"name":"源1","url":"https://api1.com","isEnabled":true},{"name":"源2","url":"https://api2.com"}]
+# 示例：将导出的 JSON 内容压缩为单行字符串
+# 注意：如果 JSON 中包含空格，建议用单引号包裹整个字符串
+VITE_INITIAL_CONFIG='{"settings":{...},"videoSources":[...],"meta":{...}}'
 ```
 
-方式二：远程 JSON URL
+#### 2. 独立配置项（备选）
+
+如果您不使用 `VITE_INITIAL_CONFIG`，也可以单独配置以下项作为默认值：
+
+**默认视频源：**
 ```env
-VITE_INITIAL_VIDEO_SOURCES=https://raw.githubusercontent.com/yourname/repo/main/sources.json
+VITE_INITIAL_VIDEO_SOURCES=[{"name":"源1","url":"..."}]
 ```
 
-方式三：留空（默认）
+**应用设置：**
 ```env
-VITE_INITIAL_VIDEO_SOURCES=
+VITE_DEFAULT_TIMEOUT=5000
+VITE_DEFAULT_RETRY=3
+# ... 其他 VITE_DEFAULT_* 变量
 ```
 
-**步骤 3：构建并运行**
-```bash
-# 本地开发
-pnpm dev
+> **优先级说明**：如果同时配置了 `VITE_INITIAL_CONFIG` 和独立配置项，优先使用 `VITE_INITIAL_CONFIG` 中的值。
 
-# Docker 部署（必须重新构建）
-docker-compose up -d --build
-```
-
-> 💡 **Docker 注意事项**：修改环境变量后必须使用 `--build` 参数重新构建镜像才能生效。
-
-#### 在 Vercel 中配置
-
-**步骤 1：配置环境变量**
-1. 进入 Vercel 项目设置 → Environment Variables
-2. 添加变量 `VITE_INITIAL_VIDEO_SOURCES`
-3. 填入 JSON 配置或远程 URL：
-   ```
-   [{"name":"源1","url":"https://api.example.com"}]
-   ```
-4. 选择应用环境（Production / Preview / Development）
-
-**步骤 2：重新部署**
-- 点击 "Redeploy" 按钮，或
-- 推送新提交触发自动部署
-
-#### 在 Cloudflare Pages 中配置
-
-**步骤 1：配置环境变量**
-1. 进入 Cloudflare Pages 项目设置 → **Settings** → **Environment variables**
-2. 点击 **Add variable**
-3. 变量名：`VITE_INITIAL_VIDEO_SOURCES`
-4. 变量值：填入 JSON 配置或远程 URL
-   ```json
-   [{"name":"源1","url":"https://api.example.com"}]
-   ```
-5. 点击 **Save**
-
-**步骤 2：重新部署**
-- 进入 **Deployments** 标签页
-- 点击最新部署右侧的三个点 → **Retry deployment**
-
-#### 在 Netlify 中配置
-
-**步骤 1：配置环境变量**
-1. 进入 Netlify 站点设置 → **Site configuration** → **Environment variables**
-2. 点击 **Add a variable**
-3. Key: `VITE_INITIAL_VIDEO_SOURCES`
-4. Value: 填入 JSON 配置或远程 URL
-5. 点击 **Create variable**
-
-**步骤 2：重新部署**
-- 进入 **Deploys** 标签页
-- 点击 **Trigger deploy** → **Deploy site**
-
-#### 其他配置项
-
-**禁用分析跟踪：**
+#### 3. 其他配置
 ```env
+# 禁用分析跟踪
 VITE_DISABLE_ANALYTICS=true
-```
 
-**访问密码保护：**
-```env
+# 访问密码保护
 VITE_ACCESS_PASSWORD=your_secure_password
 ```
 
-**Docker 构建元数据（可选）：**
-```env
-BUILD_DATE=2025-01-01
-VCS_REF=abc1234
-VERSION=1.0.0
-```
+### 操作指南
 
----
+1. **导出模版**：在应用中配置好理想状态，点击 **导出个人配置** -> **导出为文本**。
+2. **设置变量**：将复制的 JSON 内容赋值给 `VITE_INITIAL_CONFIG` 环境变量。
+3. **构建应用**：重新构建。
+4. **恢复默认**：执行“恢复默认配置”，应用将加载该 JSON 中的状态。
 
 ## 👨‍💻 给开发者
 

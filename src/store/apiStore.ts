@@ -32,6 +32,8 @@ interface ApiActions {
   importVideoAPIs: (apis: VideoApi[]) => void
   // 获取选中的视频源
   getSelectedAPIs: () => VideoApi[]
+  // 重置视频源
+  resetVideoSources: () => Promise<void>
 }
 
 type ApiStore = ApiState & ApiActions
@@ -138,6 +140,13 @@ export const useApiStore = create<ApiStore>()(
 
         getSelectedAPIs: () => {
           return get().videoAPIs.filter(api => api.isEnabled)
+        },
+
+        resetVideoSources: async () => {
+          set(state => {
+            state.videoAPIs = []
+          })
+          await get().initializeEnvSources()
         },
       })),
       {

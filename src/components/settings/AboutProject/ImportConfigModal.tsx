@@ -14,11 +14,11 @@ import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
-import { useApiStore } from '@/store/apiStore'
-import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
+import { Textarea } from '@/components/ui/textarea'
+import { usePersonalConfig } from '@/hooks/usePersonalConfig'
 
-export function URLSourceModal({
+export function URLConfigModal({
   open,
   onOpenChange,
 }: {
@@ -30,7 +30,7 @@ export function URLSourceModal({
   })
 
   type URLSchema = z.infer<typeof urlSchema>
-  const { importVideoAPIs } = useApiStore()
+  const { importConfigFromURL } = usePersonalConfig()
   const [isLoading, setIsLoading] = useState(false)
   const {
     register,
@@ -41,26 +41,14 @@ export function URLSourceModal({
     resolver: zodResolver(urlSchema),
   })
 
-  // 提交
   const onSubmit = async (data: URLSchema) => {
     setIsLoading(true)
     try {
-      const response = await fetch(data.url)
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-      const sources = await response.json()
-      if (Array.isArray(sources)) {
-        importVideoAPIs(sources)
-        toast.success(`成功导入 ${sources.length} 个视频源`)
+      const success = await importConfigFromURL(data.url)
+      if (success) {
         onOpenChange(false)
         reset()
-      } else {
-        toast.error('导入失败：文件格式错误，应为数组格式')
       }
-    } catch (error) {
-      console.error('Import error:', error)
-      toast.error('导入失败：请求错误或解析失败')
     } finally {
       setIsLoading(false)
     }
@@ -73,8 +61,8 @@ export function URLSourceModal({
         overlayClassName="bg-white/40 backdrop-blur-xs"
       >
         <DialogHeader>
-          <DialogTitle>从 URL 导入视频源</DialogTitle>
-          <DialogDescription>请输入有效的 URL，即 JSON 文件的直链 URL</DialogDescription>
+          <DialogTitle>从 URL 导入个人配置</DialogTitle>
+          <DialogDescription>请输入有效的 URL，即配置 JSON 文件的直链 URL</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="grid gap-4 pb-6">
@@ -83,7 +71,7 @@ export function URLSourceModal({
               <Input
                 id="url"
                 {...register('url')}
-                placeholder="https://example.com/source.json"
+                placeholder="https://example.com/config.json"
                 className={errors.url ? 'border-red-500' : ''}
               />
               {errors.url && <p className="text-sm text-red-500">{errors.url.message}</p>}
@@ -106,28 +94,26 @@ export function URLSourceModal({
   )
 }
 
-import { Textarea } from '@/components/ui/textarea'
-
-export function TextSourceModal({
+export function TextConfigModal({
   open,
   onOpenChange,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
-  const { importVideoAPIs } = useApiStore()
+  const { importConfigFromText } = usePersonalConfig()
   const textSchema = z.object({
     content: z.string().refine(
       val => {
         try {
           const parsed = JSON.parse(val)
-          return Array.isArray(parsed)
+          return typeof parsed === 'object' && parsed !== null // Basic object check
         } catch {
           return false
         }
       },
       {
-        message: '请输入有效的 JSON 数组格式',
+        message: '请输入有效的 JSON 格式',
       },
     ),
   })
@@ -144,15 +130,10 @@ export function TextSourceModal({
   })
 
   const onSubmit = (data: TextSchema) => {
-    try {
-      const sources = JSON.parse(data.content)
-      importVideoAPIs(sources)
-      toast.success(`成功导入 ${sources.length} 个视频源`)
+    const success = importConfigFromText(data.content)
+    if (success) {
       onOpenChange(false)
       reset()
-    } catch (error) {
-      console.error('Import error:', error)
-      toast.error('导入失败：JSON 解析错误')
     }
   }
 
@@ -163,8 +144,8 @@ export function TextSourceModal({
         overlayClassName="bg-white/40 backdrop-blur-xs"
       >
         <DialogHeader>
-          <DialogTitle>从文本导入视频源</DialogTitle>
-          <DialogDescription>请粘贴 JSON 格式的视频源配置数组</DialogDescription>
+          <DialogTitle>从文本导入个人配置</DialogTitle>
+          <DialogDescription>请粘贴配置 JSON 内容</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="grid gap-4 pb-6">
@@ -173,7 +154,7 @@ export function TextSourceModal({
               <Textarea
                 id="content"
                 {...register('content')}
-                placeholder='[{"name": "example", "url": "..."}]'
+                placeholder='{"settings": {...}, "videoSources": [...]}'
                 className={`max-h-50 min-h-50 md:max-h-100 ${errors.content ? 'border-red-500' : ''}`}
               />
               {errors.content && <p className="text-sm text-red-500">{errors.content.message}</p>}

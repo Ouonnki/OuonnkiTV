@@ -8,8 +8,8 @@ import { toast } from 'sonner'
 import { useApiStore } from '@/store/apiStore'
 import { useSettingStore } from '@/store/settingStore'
 import dayjs from 'dayjs'
+import ActionDropdown from '@/components/common/ActionDropdown'
 import VideoSourceForm from './VideoSourceForm'
-import VideoSourceDropdown from './VideoSourceDropdown'
 import {
   Dialog,
   DialogContent,
@@ -166,13 +166,46 @@ export default function VideoSource() {
               您可以在下列视频源中添加、删除、编辑和启用视频源
             </p>
           </div>
-          <VideoSourceDropdown
-            addVideoSource={addVideoSource}
-            addVideoSourceFromJSONFile={addVideoSourceFromJSONFile}
-            addVideoSourceFromURL={addVideoSourceFromURL}
-            addVideoSourceFromText={addVideoSourceFromText}
-            onExportToFile={handleExportToFile}
-            onExportToText={handleExportToText}
+          <ActionDropdown
+            label="添加源"
+            items={[
+              {
+                label: '手动添加',
+                onClick: addVideoSource,
+              },
+              {
+                label: '导入视频源',
+                type: 'sub',
+                children: [
+                  {
+                    label: '从文件导入',
+                    onClick: addVideoSourceFromJSONFile,
+                  },
+                  {
+                    label: '从URL导入',
+                    onClick: addVideoSourceFromURL,
+                  },
+                  {
+                    label: '从文本导入',
+                    onClick: addVideoSourceFromText,
+                  },
+                ],
+              },
+              {
+                label: '导出视频源',
+                type: 'sub',
+                children: [
+                  {
+                    label: '导出为文件',
+                    onClick: handleExportToFile,
+                  },
+                  {
+                    label: '导出为文本',
+                    onClick: handleExportToText,
+                  },
+                ],
+              },
+            ]}
           />
         </div>
         <div className="flex flex-col md:flex-row">

@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
 import { immer } from 'zustand/middleware/immer'
+import { DEFAULT_SETTINGS } from '@/config/settings.config'
 
 interface NetworkSettings {
   defaultTimeout: number
@@ -44,6 +45,9 @@ interface SettingActions {
 
   // System
   setSystemSettings: (settings: Partial<SystemSettings>) => void
+
+  // Reset
+  resetSettings: () => void
 }
 
 type SettingStore = SettingState & SettingActions
@@ -52,25 +56,10 @@ export const useSettingStore = create<SettingStore>()(
   devtools(
     persist(
       immer<SettingStore>(set => ({
-        network: {
-          defaultTimeout: 3000,
-          defaultRetry: 3,
-        },
-        search: {
-          isSearchHistoryEnabled: true,
-          isSearchHistoryVisible: true,
-          searchCacheExpiryHours: 24,
-        },
-        playback: {
-          isViewingHistoryEnabled: true,
-          isViewingHistoryVisible: true,
-          isAutoPlayEnabled: false,
-          defaultEpisodeOrder: 'asc',
-          adFilteringEnabled: true,
-        },
-        system: {
-          isUpdateLogEnabled: true,
-        },
+        network: DEFAULT_SETTINGS.network,
+        search: DEFAULT_SETTINGS.search,
+        playback: DEFAULT_SETTINGS.playback,
+        system: DEFAULT_SETTINGS.system,
 
         setNetworkSettings: settings => {
           set(state => {
@@ -93,6 +82,15 @@ export const useSettingStore = create<SettingStore>()(
         setSystemSettings: settings => {
           set(state => {
             state.system = { ...state.system, ...settings }
+          })
+        },
+
+        resetSettings: () => {
+          set(state => {
+            state.network = DEFAULT_SETTINGS.network
+            state.search = DEFAULT_SETTINGS.search
+            state.playback = DEFAULT_SETTINGS.playback
+            state.system = DEFAULT_SETTINGS.system
           })
         },
       })),

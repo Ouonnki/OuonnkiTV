@@ -315,7 +315,7 @@ export default function VideoSourceForm({ sourceInfo }: { sourceInfo: VideoApi }
               </span>
             </AlertDialogTrigger>
             <AlertDialogContent
-              className="bg-white/20 backdrop-blur-md"
+              className="h-fit bg-white/20 backdrop-blur-md"
               overlayClassName="bg-white/40 backdrop-blur-xs"
             >
               <AlertDialogHeader>

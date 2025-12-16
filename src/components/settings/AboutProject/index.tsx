@@ -5,11 +5,32 @@ import { useVersionStore } from '@/store/versionStore'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { useSettingStore } from '@/store/settingStore'
+import ActionDropdown from '@/components/common/ActionDropdown'
+import { usePersonalConfig } from '@/hooks/usePersonalConfig'
+import { useRef, useState } from 'react'
+import { URLConfigModal, TextConfigModal } from './ImportConfigModal'
+import { ConfirmModal } from '@/components/common/ConfirmModal'
 
 export default function AboutProject() {
   const currentYear = new Date().getFullYear()
   const { currentVersion, setShowUpdateModal } = useVersionStore()
   const { system, setSystemSettings } = useSettingStore()
+
+  const { exportConfig, exportConfigToText, importConfig, restoreDefault } = usePersonalConfig()
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    importConfig(file)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
+  const [urlConfigModalOpen, setUrlConfigModalOpen] = useState(false)
+  const [textConfigModalOpen, setTextConfigModalOpen] = useState(false)
+  const [confirmRestoreOpen, setConfirmRestoreOpen] = useState(false)
 
   return (
     <div className="flex flex-col gap-6 px-4 md:px-8">
@@ -42,7 +63,75 @@ export default function AboutProject() {
             onCheckedChange={checked => setSystemSettings({ isUpdateLogEnabled: checked })}
           />
         </div>
+
+        {/* Personal Config Section */}
+        <div className="flex flex-row items-center justify-between rounded-lg border border-gray-200 bg-white/40 p-4 transition-all hover:border-gray-300 hover:bg-white/60 hover:shadow-sm dark:border-gray-700 dark:bg-gray-800/40 dark:hover:bg-gray-800/60">
+          <div className="space-y-0.5">
+            <Label className="text-base text-gray-800 dark:text-gray-100">个人配置管理</Label>
+            <p className="text-sm text-gray-500">导入/导出设置与视频源，或恢复默认</p>
+          </div>
+          <ActionDropdown
+            label="配置操作"
+            items={[
+              {
+                label: '导出个人配置',
+                type: 'sub',
+                children: [
+                  {
+                    label: '导出为文件',
+                    onClick: exportConfig,
+                  },
+                  {
+                    label: '导出为文本',
+                    onClick: exportConfigToText,
+                  },
+                ],
+              },
+              {
+                label: '导入个人配置',
+                type: 'sub',
+                children: [
+                  {
+                    label: '从文件导入',
+                    onClick: () => fileInputRef.current?.click(),
+                  },
+                  {
+                    label: '从URL导入',
+                    onClick: () => setUrlConfigModalOpen(true),
+                  },
+                  {
+                    label: '从文本导入',
+                    onClick: () => setTextConfigModalOpen(true),
+                  },
+                ],
+              },
+              {
+                label: '恢复默认配置',
+                className: 'text-red-600 focus:text-red-600 focus:bg-red-50',
+                onClick: () => setConfirmRestoreOpen(true),
+              },
+            ]}
+          />
+          <input
+            type="file"
+            ref={fileInputRef}
+            className="hidden"
+            accept=".json"
+            onChange={handleFileChange}
+          />
+        </div>
       </div>
+      <URLConfigModal open={urlConfigModalOpen} onOpenChange={setUrlConfigModalOpen} />
+      <TextConfigModal open={textConfigModalOpen} onOpenChange={setTextConfigModalOpen} />
+      <ConfirmModal
+        isOpen={confirmRestoreOpen}
+        onClose={() => setConfirmRestoreOpen(false)}
+        onConfirm={restoreDefault}
+        title="确认恢复默认配置？"
+        description="此操作将重置所有设置并清除所有已添加的视频源，恢复到初始默认状态。该操作无法撤销。"
+        confirmText="确认恢复"
+        isDestructive={true}
+      />
 
       {/* Description Section */}
       <div className="flex flex-col gap-4 rounded-xl border border-gray-200 bg-white/40 p-6 text-center backdrop-blur-xl hover:shadow-sm md:text-left dark:border-gray-700 dark:bg-gray-800/40">
