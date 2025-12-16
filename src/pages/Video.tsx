@@ -237,7 +237,7 @@ export default function Video() {
       volume: 0.7,
       isLive: false,
       muted: false,
-      autoplay: playbackRef.current.isAutoPlayEnabled,
+      autoplay: false,
       pip: true,
       autoSize: true,
       autoMini: true,
