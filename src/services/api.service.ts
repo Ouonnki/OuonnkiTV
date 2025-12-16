@@ -149,8 +149,25 @@ class ApiService {
       // 提取播放地址
       if (videoDetail.vod_play_url) {
         const playSources = videoDetail.vod_play_url.split('$$$')
+        const playFroms = (videoDetail.vod_play_from || '').split('$$$')
+
         if (playSources.length > 0) {
-          const mainSource = playSources[playSources.length - 1]
+          // 优先选择包含 m3u8 的源
+          let sourceIndex = playFroms.findIndex((from: string) =>
+            from.toLowerCase().includes('m3u8'),
+          )
+
+          // 如果没找到，默认使用最后一个（原有逻辑）
+          if (sourceIndex === -1) {
+            sourceIndex = playSources.length - 1
+          }
+
+          // 确保索引在有效范围内
+          if (sourceIndex >= playSources.length) {
+            sourceIndex = playSources.length - 1
+          }
+
+          const mainSource = playSources[sourceIndex]
           const episodeList = mainSource.split('#')
 
           episodes = episodeList

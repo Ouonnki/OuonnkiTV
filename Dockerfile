@@ -13,7 +13,7 @@ ARG VITE_DISABLE_ANALYTICS
 WORKDIR /app
 
 # 安装 pnpm
-RUN npm install -g pnpm@10.15.1
+RUN npm install -g pnpm@10.15.1 --registry=https://registry.npmmirror.com
 
 # 复制依赖声明及 .npmrc（确保私有源/registry 配置在安装时生效）
 COPY package.json pnpm-lock.yaml .npmrc ./
@@ -34,6 +34,11 @@ RUN pnpm build
 # 第二阶段：运行时环境
 FROM node:20-alpine AS production
 
+# Re-declare ARGs for use in labels
+ARG BUILD_DATE
+ARG VCS_REF
+ARG VERSION
+
 # 添加标签
 LABEL org.opencontainers.image.title="OuonnkiTV"
 LABEL org.opencontainers.image.description="OuonnkiTV Web Application"
@@ -43,10 +48,11 @@ LABEL org.opencontainers.image.revision=${VCS_REF}
 LABEL org.opencontainers.image.source="https://github.com/Ouonnki/OuonnkiTV"
 
 # 安装 nginx 和 supervisor
-RUN apk add --no-cache nginx supervisor
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories && \
+    apk add --no-cache nginx supervisor
 
 # 安装 pnpm
-RUN npm install -g pnpm@10.15.1
+RUN npm install -g pnpm@10.15.1 --registry=https://registry.npmmirror.com
 
 # 创建必要的目录
 RUN mkdir -p /run/nginx /var/log/supervisor /app
