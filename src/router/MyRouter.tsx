@@ -13,6 +13,8 @@ import { useApiStore } from '@/store/apiStore'
 import { useSearchStore } from '@/store/searchStore'
 import { useEffect } from 'react'
 
+import AuthGuard from '@/components/AuthGuard'
+
 function AnimatedRoutes({ children }: { children: React.ReactNode }) {
   const location = useLocation()
   const { initializeEnvSources } = useApiStore()
@@ -32,31 +34,33 @@ function AnimatedRoutes({ children }: { children: React.ReactNode }) {
   }, [initializeEnvSources, cleanExpiredCache])
 
   return (
-    <AnimatePresence mode="wait">
-      <Suspense
-        fallback={
-          <div className="flex flex-col items-center py-40">
-            <Spinner
-              classNames={{ label: 'text-gray-500 text-sm' }}
-              variant="default"
-              size="lg"
-              color="default"
-              label="加载中..."
-            />
-          </div>
-        }
-      >
-        <Routes location={location} key={location.pathname}>
-          <Route path="/" element={children} />
-          <Route element={<Layout />}>
-            <Route path="search/:query" element={<SearchResult />} />
-            <Route path="video/:sourceCode/:vodId/:episodeIndex" element={<Video />} />
-            <Route path="detail/:sourceCode/:vodId" element={<Detail />} />
-            <Route path="settings" element={<SettingsPage />} />
-          </Route>
-        </Routes>
-      </Suspense>
-    </AnimatePresence>
+    <AuthGuard>
+      <AnimatePresence mode="wait">
+        <Suspense
+          fallback={
+            <div className="flex flex-col items-center py-40">
+              <Spinner
+                classNames={{ label: 'text-gray-500 text-sm' }}
+                variant="default"
+                size="lg"
+                color="default"
+                label="加载中..."
+              />
+            </div>
+          }
+        >
+          <Routes location={location} key={location.pathname}>
+            <Route path="/" element={children} />
+            <Route element={<Layout />}>
+              <Route path="search/:query" element={<SearchResult />} />
+              <Route path="video/:sourceCode/:vodId/:episodeIndex" element={<Video />} />
+              <Route path="detail/:sourceCode/:vodId" element={<Detail />} />
+              <Route path="settings" element={<SettingsPage />} />
+            </Route>
+          </Routes>
+        </Suspense>
+      </AnimatePresence>
+    </AuthGuard>
   )
 }
 

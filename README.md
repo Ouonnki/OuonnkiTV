@@ -86,7 +86,10 @@
 - **🚀 高性能优化** - 代码分割、懒加载、并发控制
 - **💾 状态持久化** - 基于 Zustand 的状态管理，数据本地存储
 
+
+
 ## 🚀 部署
+
 
 ### Vercel 部署
 
@@ -102,7 +105,9 @@
    - Install Command: `pnpm install`
    - Build Command: `pnpm build`
    - Output Directory: `dist`
-5. （可选）添加环境变量配置初始视频源
+5. （可选）配置环境变量：
+   - `VITE_INITIAL_VIDEO_SOURCES`: 初始视频源配置
+   - `VITE_ACCESS_PASSWORD`: 访问密码（留空则公开访问）
 6. 点击 "Deploy" 开始部署
 
 ---
@@ -157,6 +162,9 @@ docker-compose up -d --build
    
    # 禁用分析（建议开启）
    VITE_DISABLE_ANALYTICS=true
+
+   # 访问密码（可选）
+   VITE_ACCESS_PASSWORD=your_secure_password
    ```
 
 3. 构建并启动：
@@ -454,6 +462,11 @@ docker-compose up -d --build
 **禁用分析跟踪：**
 ```env
 VITE_DISABLE_ANALYTICS=true
+```
+
+**访问密码保护：**
+```env
+VITE_ACCESS_PASSWORD=your_secure_password
 ```
 
 **Docker 构建元数据（可选）：**
