@@ -557,7 +557,11 @@ export default function Video() {
       <Card className="mb-4 border-none sm:mb-6" radius="lg">
         {/* Removed absolute header to fix display issues, moved info to top of card or separate div above */}
         <CardBody className="p-0">
-          <div id="player" ref={containerRef} className="aspect-video w-full rounded-lg bg-black" />
+          <div
+            id="player"
+            ref={containerRef}
+            className="flex aspect-video w-full items-center rounded-lg bg-black"
+          />
         </CardBody>
       </Card>
 
