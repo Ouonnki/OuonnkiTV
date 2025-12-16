@@ -51,6 +51,17 @@ const formatDate = (dateStr: string) => {
 // 版本更新历史
 const VERSION_UPDATES: VersionUpdate[] = [
   {
+    version: '1.3.1',
+    title: '个人配置管理',
+    date: formatDate('2025-12-16'),
+    features: [
+      '新增个人配置管理功能，支持一键导出/导入完整配置（设置 + 视频源）',
+      '支持多种导入方式：本地 JSON 文件、剪贴板文本、远程 URL 链接',
+      '新增「恢复默认配置」功能，可快速重置系统状态',
+    ],
+    fixes: ['优化配置状态管理逻辑，统一接口调用'],
+  },
+  {
     version: '1.3.0',
     title: '播放器升级与访问控制',
     date: formatDate('2025-12-16'),
