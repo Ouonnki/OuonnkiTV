@@ -51,6 +51,23 @@ const formatDate = (dateStr: string) => {
 // 版本更新历史
 const VERSION_UPDATES: VersionUpdate[] = [
   {
+    version: '1.3.0',
+    title: '播放器升级与访问控制',
+    date: formatDate('2025-12-16'),
+    features: [
+      '全新播放器内核：迁移至 Artplayer + hls.js，播放体验更流畅',
+      '新增广告过滤功能：自动过滤切片广告，提升观看体验',
+      '新增站点访问密码：支持设置全局访问密码，保护私有部署',
+      '视频源管理升级：支持完整的增删改查及导入导出功能',
+      '部署方式扩展：新增 Cloudflare Pages 和 Netlify 部署支持',
+    ],
+    fixes: [
+      '重构 API 服务，支持请求并发控制',
+      '优化设置页面 UI 与交互体验',
+      '统一代理服务逻辑，移除外部依赖',
+    ],
+  },
+  {
     version: '1.2.6',
     title: '配置简化与搜索修复',
     date: formatDate('2025-11-21'),
