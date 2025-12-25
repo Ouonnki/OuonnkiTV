@@ -157,3 +157,73 @@
     cursor: pointer;
   }
 }
+
+/* ===== Theme Transition Styles ===== */
+
+/* 主题过渡动画持续时间 */
+:root {
+  --theme-transition-duration: 300ms;
+}
+
+/* 全局颜色过渡 (仅在非 View Transition 时生效) */
+@layer base {
+  *,
+  *::before,
+  *::after {
+    transition:
+      color var(--theme-transition-duration) ease,
+      background-color var(--theme-transition-duration) ease,
+      border-color var(--theme-transition-duration) ease,
+      fill var(--theme-transition-duration) ease,
+      stroke var(--theme-transition-duration) ease;
+  }
+}
+
+/* View Transitions API - 圆形扩散动画 */
+/* 禁用默认动画 */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+/* ====== 扩散动画 (切换到暗色模式) ====== */
+/* 新视图在上层，从点击位置向外扩散 */
+[data-theme-transition='expand']::view-transition-new(root) {
+  z-index: 999;
+  animation: theme-expand 400ms ease-out;
+}
+[data-theme-transition='expand']::view-transition-old(root) {
+  z-index: 1;
+}
+
+/* ====== 收缩动画 (切换到亮色模式) ====== */
+/* 旧视图在上层，向点击位置收缩消失 */
+[data-theme-transition='contract']::view-transition-old(root) {
+  z-index: 999;
+  animation: theme-contract 400ms ease-in forwards;
+}
+[data-theme-transition='contract']::view-transition-new(root) {
+  z-index: 1;
+  animation: none;
+}
+
+/* 扩散动画 - 从中心向外 */
+@keyframes theme-expand {
+  from {
+    clip-path: circle(0% at var(--vt-x, 50%) var(--vt-y, 50%));
+  }
+  to {
+    clip-path: circle(150% at var(--vt-x, 50%) var(--vt-y, 50%));
+  }
+}
+
+/* 收缩动画 - 从外向中心 */
+@keyframes theme-contract {
+  from {
+    clip-path: circle(150% at var(--vt-x, 50%) var(--vt-y, 50%));
+  }
+  to {
+    clip-path: circle(0% at var(--vt-x, 50%) var(--vt-y, 50%));
+  }
+}
