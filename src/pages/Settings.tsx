@@ -2,11 +2,12 @@ import SideBar from '@/components/settings/layouts/SideBar'
 import ModuleContent from '@/components/settings/layouts/ModuleContent'
 import { useState } from 'react'
 import { type SettingModuleList } from '@/types'
-import { ListVideo, Info, ArrowLeft, Menu, Globe, Search, Play } from 'lucide-react'
+import { ListVideo, Info, ArrowLeft, Menu, Globe, Search, Play, Palette } from 'lucide-react'
 import VideoSource from '@/components/settings/VideoSource'
 import NetworkSettings from '@/components/settings/NetworkSettings'
 import SearchSettings from '@/components/settings/SearchSettings'
 import PlaybackSettings from '@/components/settings/PlaybackSettings'
+import ThemeSettings from '@/components/settings/ThemeSettings'
 import { cn } from '@/utils'
 import AboutProject from '@/components/settings/AboutProject'
 import { Button } from '@/components/ui/button'
@@ -40,6 +41,12 @@ export default function SettingsPage() {
       name: '播放设置',
       icon: <Play />,
       component: <PlaybackSettings />,
+    },
+    {
+      id: 'theme_settings',
+      name: '主题设置',
+      icon: <Palette />,
+      component: <ThemeSettings />,
     },
     {
       id: 'about_project',

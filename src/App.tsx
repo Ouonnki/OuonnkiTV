@@ -80,7 +80,10 @@ function App() {
         transition={{ duration: 0.3 }}
       >
         <motion.div layoutId="history-icon" className="absolute top-5 right-5 z-50 flex gap-4">
-          <Button isIconOnly className="bg-white/20 shadow-lg shadow-gray-500/10 backdrop-blur-2xl">
+          <Button
+            isIconOnly
+            className="bg-white/20 shadow-lg shadow-gray-500/10 backdrop-blur-2xl dark:bg-black/20"
+          >
             <RecentHistory />
           </Button>
           <Button
@@ -88,7 +91,7 @@ function App() {
               navigate('/settings')
             }}
             isIconOnly
-            className="bg-white/20 shadow-lg shadow-gray-500/10 backdrop-blur-2xl"
+            className="bg-white/20 shadow-lg shadow-gray-500/10 backdrop-blur-2xl dark:bg-black/20"
           >
             <SettingIcon size={25} />
           </Button>

@@ -24,7 +24,7 @@ export const useSearch = () => {
 
       // 导航到搜索页面
       if (isNavigating) {
-        navigate(`/search/${query}`)
+        navigate(`/search?q=${encodeURIComponent(query)}`)
       }
     }
   }

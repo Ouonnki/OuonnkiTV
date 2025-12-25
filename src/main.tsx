@@ -3,10 +3,12 @@ import { createRoot } from 'react-dom/client'
 import '@/styles/main.css'
 import { HeroUIProvider, ToastProvider } from '@heroui/react'
 import { ThemeProvider } from 'next-themes'
-import App from '@/App'
-import MyRouter from '@/router/MyRouter'
+import AppRouter from '@/router'
 import { Toaster } from '@/components/ui/sonner'
 import { ThemeInitializer, ThemeToggle } from '@/components/theme'
+
+import { Analytics } from '@vercel/analytics/react'
+import { SpeedInsights } from '@vercel/speed-insights/react'
 
 const root = document.getElementById('root')!
 
@@ -19,10 +21,14 @@ const app = (
       <div className="fixed bottom-5 left-5 z-[9999]">
         <ThemeToggle />
       </div>
-      <MyRouter>
-        <App />
-      </MyRouter>
+      <AppRouter />
       <Toaster richColors position="top-center" />
+      {import.meta.env.VITE_DISABLE_ANALYTICS !== 'true' && (
+        <>
+          <Analytics />
+          <SpeedInsights />
+        </>
+      )}
     </HeroUIProvider>
   </ThemeProvider>
 )
