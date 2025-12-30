@@ -4,7 +4,18 @@ import { apiService } from '@/services/api.service'
 import { type DetailResponse } from '@/types'
 import { useApiStore } from '@/store/apiStore'
 import { useSettingStore } from '@/store/settingStore'
-import { Chip, Button, Spinner, Tooltip, Divider, Select, SelectItem } from '@heroui/react'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Spinner } from '@/components/ui/spinner'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { Separator } from '@/components/ui/separator'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useDocumentTitle } from '@/hooks'
 import { ArrowUpIcon, ArrowDownIcon } from '@/components/icons'
 import { motion } from 'framer-motion'
@@ -210,6 +221,14 @@ export default function Detail() {
     )
   }
 
+  // Badge 变体映射
+  const badgeVariants = {
+    primary: 'default' as const,
+    secondary: 'secondary' as const,
+    warning: 'warning' as const,
+    danger: 'destructive' as const,
+  }
+
   return (
     <div className="container mx-auto overflow-x-hidden p-4 pb-15 md:pt-10">
       {/* 视频信息卡片 */}
@@ -293,9 +312,9 @@ export default function Detail() {
                       transition={{ duration: 0.2, delay: 0.4 + index * 0.05 }}
                       style={{ display: 'inline-block' }}
                     >
-                      <Chip size="sm" color={chip.color} variant="shadow" className="mr-1 mb-1">
+                      <Badge variant={badgeVariants[chip.color]} className="mr-1 mb-1 text-xs">
                         {chip.value}
-                      </Chip>
+                      </Badge>
                     </motion.div>
                   ))}
                 </motion.div>
@@ -344,9 +363,9 @@ export default function Detail() {
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.3, delay: 0.4 + chip.delay }}
               >
-                <Chip color={chip.color} variant="shadow" className="mr-2">
+                <Badge variant={badgeVariants[chip.color]} className="mr-2">
                   {chip.value}
-                </Chip>
+                </Badge>
               </motion.div>
             ))}
           </motion.div>
@@ -423,27 +442,26 @@ export default function Detail() {
               </div>
               <div className="flex items-end">
                 {pageRanges.length > 1 && (
-                  <Select
-                    size="sm"
-                    selectedKeys={[currentPageRange]}
-                    onChange={e => setCurrentPageRange(e.target.value)}
-                    className="w-35"
-                    classNames={{
-                      trigger: 'bg-white/30 backdrop-blur-md border border-gray-200',
-                      value: 'text-gray-800 font-medium',
-                      popoverContent: 'bg-white/40 backdrop-blur-2xl border border-gray-200/50',
-                    }}
-                    aria-label="选择集数范围"
-                    placeholder="选择集数范围"
-                  >
-                    {pageRanges.map(range => (
-                      <SelectItem key={range.value}>{range.label}</SelectItem>
-                    ))}
+                  <Select value={currentPageRange} onValueChange={setCurrentPageRange}>
+                    <SelectTrigger
+                      size="sm"
+                      className="w-35 border-gray-200 bg-white/30 font-medium text-gray-800 backdrop-blur-md"
+                      aria-label="选择集数范围"
+                    >
+                      <SelectValue placeholder="选择集数范围" />
+                    </SelectTrigger>
+                    <SelectContent className="border-gray-200/50 bg-white/40 backdrop-blur-2xl">
+                      {pageRanges.map(range => (
+                        <SelectItem key={range.value} value={range.value}>
+                          {range.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
                   </Select>
                 )}
               </div>
             </div>
-            <Divider></Divider>
+            <Separator />
           </motion.div>
           {/* 列表 */}
           <motion.div
@@ -462,25 +480,26 @@ export default function Detail() {
                 }}
               >
                 <Tooltip
-                  content={name}
-                  placement="top"
-                  delay={1000}
-                  isOpen={openTooltipIndex === displayIndex}
+                  open={openTooltipIndex === displayIndex}
                   onOpenChange={open => {
                     if (!open) setOpenTooltipIndex(null)
                   }}
                 >
-                  <Button
-                    size="md"
-                    color="default"
-                    variant="shadow"
-                    className="w-full border border-gray-200 bg-white/30 text-gray-800 drop-shadow-2xl backdrop-blur-md transition-all duration-300 hover:scale-105 hover:bg-black/80 hover:text-white"
-                    onPress={() => handlePlayEpisode(displayIndex)}
-                    onPressStart={() => handleLongPressStart(displayIndex)}
-                    onPressEnd={handleLongPressEnd}
-                  >
-                    <span className="overflow-hidden text-ellipsis whitespace-nowrap">{name}</span>
-                  </Button>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full border border-gray-200 bg-white/30 text-gray-800 drop-shadow-2xl backdrop-blur-md transition-all duration-300 hover:scale-105 hover:bg-black/80 hover:text-white"
+                      onClick={() => handlePlayEpisode(displayIndex)}
+                      onPointerDown={() => handleLongPressStart(displayIndex)}
+                      onPointerUp={handleLongPressEnd}
+                      onPointerLeave={handleLongPressEnd}
+                    >
+                      <span className="overflow-hidden text-ellipsis whitespace-nowrap">{name}</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    <p>{name}</p>
+                  </TooltipContent>
                 </Tooltip>
               </motion.div>
             ))}
@@ -493,12 +512,12 @@ export default function Detail() {
           >
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <Button
+                variant="ghost"
                 size="sm"
-                variant="light"
-                onPress={() => setIsReversed(!isReversed)}
-                startContent={isReversed ? <ArrowUpIcon size={18} /> : <ArrowDownIcon size={18} />}
-                className="min-w-unit-16 text-sm text-gray-600"
+                onClick={() => setIsReversed(!isReversed)}
+                className="min-w-16 text-sm text-gray-600"
               >
+                {isReversed ? <ArrowUpIcon size={18} /> : <ArrowDownIcon size={18} />}
                 {isReversed ? '正序' : '倒序'}
               </Button>
             </motion.div>

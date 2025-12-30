@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Input, Button } from '@heroui/react'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Spinner } from '@/components/ui/spinner'
 import { useAuthStore } from '@/store/authStore'
 import { OkiLogo } from '@/components/icons'
 import { toast } from 'sonner'
@@ -30,20 +32,16 @@ export default function AuthGuard({ children }: AuthGuardProps) {
     checkAuth()
   }, [validateSession, isProtectionEnabled])
 
-  // While checking auth status, show nothing or a loading spinner?
-  // Showing nothing avoids flash of content.
   if (isProtectionEnabled && isAuthenticated === null) {
     return null
   }
 
-  // If protection disabled or authenticated, show children
   if (!isProtectionEnabled || isAuthenticated) {
     return <>{children}</>
   }
 
   const handleLogin = async () => {
     setIsLoading(true)
-    // Small artificial delay for better UX
     await new Promise(resolve => setTimeout(resolve, 600))
 
     const success = await login(password)
@@ -90,24 +88,18 @@ export default function AuthGuard({ children }: AuthGuardProps) {
               type="password"
               placeholder="请输入访问密码"
               value={password}
-              onValueChange={setPassword}
+              onChange={e => setPassword(e.target.value)}
               onKeyDown={handleKeyDown}
-              size="lg"
-              variant="bordered"
-              classNames={{
-                inputWrapper:
-                  'bg-black/5 border-black/10 hover:border-black/20 focus-within:!border-black/40 text-black shadow-inner',
-                input: 'text-black placeholder:text-gray-400',
-              }}
-              isClearable
+              className="h-12 border-black/10 bg-black/5 text-black shadow-inner placeholder:text-gray-400 hover:border-black/20 focus:border-black/40"
             />
 
             <Button
               className="w-full bg-black font-bold text-white shadow-lg hover:bg-gray-800"
               size="lg"
-              onPress={handleLogin}
-              isLoading={isLoading}
+              onClick={handleLogin}
+              disabled={isLoading}
             >
+              {isLoading ? <Spinner size="sm" className="mr-2" /> : null}
               进入网站
             </Button>
           </div>

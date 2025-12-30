@@ -1,7 +1,7 @@
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Input } from '@/components/ui/input'
-import { Button } from '@heroui/react'
+import { Button } from '@/components/ui/button'
 import { useTheme, useThemeStore } from '@/components/theme'
 import { useState, useRef } from 'react'
 import { Palette, RotateCcw, Sun, Moon, Monitor } from 'lucide-react'
@@ -33,7 +33,6 @@ export default function ThemeSettings() {
     }
   }
 
-  // 封装带坐标捕获的模式切换
   const handleModeChange = (newMode: 'light' | 'dark' | 'system') => {
     changeMode(newMode, lastClickEvent.current ?? undefined)
     lastClickEvent.current = null
@@ -57,37 +56,34 @@ export default function ThemeSettings() {
         <h2 className="text-base font-semibold text-gray-700 dark:text-gray-200">主题模式</h2>
         <div className="grid grid-cols-3 gap-3">
           <Button
-            variant={mode === 'light' ? 'solid' : 'bordered'}
-            color={mode === 'light' ? 'primary' : 'default'}
+            variant={mode === 'light' ? 'default' : 'outline'}
             onPointerDown={e => {
               lastClickEvent.current = e.nativeEvent as unknown as MouseEvent
             }}
-            onPress={() => handleModeChange('light')}
-            className="flex flex-col gap-1 py-4"
+            onClick={() => handleModeChange('light')}
+            className="flex h-auto flex-col gap-1 py-4"
           >
             <Sun size={20} />
             <span className="text-xs">亮色</span>
           </Button>
           <Button
-            variant={mode === 'dark' ? 'solid' : 'bordered'}
-            color={mode === 'dark' ? 'primary' : 'default'}
+            variant={mode === 'dark' ? 'default' : 'outline'}
             onPointerDown={e => {
               lastClickEvent.current = e.nativeEvent as unknown as MouseEvent
             }}
-            onPress={() => handleModeChange('dark')}
-            className="flex flex-col gap-1 py-4"
+            onClick={() => handleModeChange('dark')}
+            className="flex h-auto flex-col gap-1 py-4"
           >
             <Moon size={20} />
             <span className="text-xs">暗色</span>
           </Button>
           <Button
-            variant={mode === 'system' ? 'solid' : 'bordered'}
-            color={mode === 'system' ? 'primary' : 'default'}
+            variant={mode === 'system' ? 'default' : 'outline'}
             onPointerDown={e => {
               lastClickEvent.current = e.nativeEvent as unknown as MouseEvent
             }}
-            onPress={() => handleModeChange('system')}
-            className="flex flex-col gap-1 py-4"
+            onClick={() => handleModeChange('system')}
+            className="flex h-auto flex-col gap-1 py-4"
           >
             <Monitor size={20} />
             <span className="text-xs">跟随系统</span>
@@ -126,9 +122,7 @@ export default function ThemeSettings() {
             onChange={e => setCustomColor(e.target.value)}
             className="flex-1"
           />
-          <Button onPress={handleCustomColorApply} color="primary" size="md">
-            应用
-          </Button>
+          <Button onClick={handleCustomColorApply}>应用</Button>
         </div>
 
         {/* 当前颜色显示 */}
@@ -155,13 +149,8 @@ export default function ThemeSettings() {
       </div>
 
       {/* 重置 */}
-      <Button
-        variant="bordered"
-        color="danger"
-        onPress={resetTheme}
-        startContent={<RotateCcw size={16} />}
-        className="w-full"
-      >
+      <Button variant="outline" onClick={resetTheme} className="w-full text-destructive">
+        <RotateCcw size={16} className="mr-2" />
         重置主题设置
       </Button>
     </div>

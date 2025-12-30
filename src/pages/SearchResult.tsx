@@ -4,19 +4,14 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { type VideoItem } from '@/types'
 import { useApiStore } from '@/store/apiStore'
 import { useSearchStore } from '@/store/searchStore'
-import {
-  Card,
-  CardFooter,
-  CardHeader,
-  Chip,
-  Image,
-  addToast,
-  Pagination,
-  Skeleton,
-} from '@heroui/react'
+import { Card, CardFooter, CardHeader } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Pagination } from '@/components/ui/pagination'
 import { NoResultIcon } from '@/components/icons'
 import { PaginationConfig } from '@/config/video.config'
 import { useDocumentTitle } from '@/hooks'
+import { toast } from 'sonner'
 
 export default function SearchResult() {
   const abortCtrlRef = useRef<AbortController | null>(null)
@@ -115,15 +110,7 @@ export default function SearchResult() {
             updateCachedResults(keyword, hasNewResults ? [] : allResults, finalApiIds, isComplete)
 
             const totalCount = existingResults.length + allResults.length
-            addToast({
-              title: `搜索完成！${isComplete ? '总计' : '当前'} ${totalCount} 条结果`,
-              radius: 'lg',
-              color: 'success',
-              timeout: 2000,
-              classNames: {
-                base: 'bg-white/60 backdrop-blur-lg border-0',
-              },
-            })
+            toast.success(`搜索完成！${isComplete ? '总计' : '当前'} ${totalCount} 条结果`)
           })
           .catch(error => {
             if ((error as Error).name === 'AbortError') {
@@ -136,15 +123,8 @@ export default function SearchResult() {
             setLoading(false)
           })
 
-        addToast({
-          title: '持续搜索内容中......',
-          promise: searchPromise,
-          radius: 'lg',
-          timeout: 1,
-          hideCloseButton: true,
-          classNames: {
-            base: 'bg-white/60 backdrop-blur-lg border-0',
-          },
+        toast.promise(searchPromise, {
+          loading: '持续搜索内容中......',
         })
       }
 
@@ -235,26 +215,6 @@ export default function SearchResult() {
     }
   }, [paginationRes.length, curPage])
 
-  const paginationTheme = invertPagination
-    ? {
-        base: 'bg-transparent transition-all',
-        wrapper:
-          'px-[1vw] h-[5vh] rounded-full  bg-white/5 backdrop-blur-xl backdrop-saturate-150 supports-[backdrop-filter:blur(0)]:bg-white/10 supports-not-[backdrop-filter:blur(0)]:bg-white/10',
-        item: 'shadow-sm rounded-full bg-transparent text-black/80 data-[active=true]:text-black md:hover:cursor-pointer md:[&[data-hover=true]:not([data-active=true])]:!bg-black/10 [&[data-pressed=true]]:!bg-black/20',
-        prev: 'rounded-full bg-transparent text-black/70 data-[disabled=true]:text-black/30 md:hover:cursor-pointer md:[&[data-hover=true]:not([data-active=true])]:!bg-black/10 [&[data-pressed=true]]:!bg-black/20',
-        next: 'rounded-full bg-transparent text-black/70 data-[disabled=true]:text-black/30 md:hover:cursor-pointer md:[&[data-hover=true]:not([data-active=true])]:!bg-black/10 [&[data-pressed=true]]:!bg-black/20',
-        cursor: 'rounded-full bg-black/70 text-white backdrop-blur-sm',
-      }
-    : {
-        base: 'bg-transparent transition-all',
-        wrapper:
-          'px-[1vw] h-[5vh] rounded-full ring-1 ring-white/20 shadow-lg bg-white/10 backdrop-blur-xl backdrop-saturate-150 supports-[backdrop-filter:blur(0)]:bg-white/40 supports-not-[backdrop-filter:blur(0)]:bg-white/70',
-        item: 'rounded-full bg-transparent text-white/90 data-[active=true]:text-white md:hover:cursor-pointer md:[&[data-hover=true]:not([data-active=true])]:!bg-black/20 [&[data-pressed=true]]:!bg-black/30',
-        prev: 'rounded-full bg-transparent text-white/80 data-[disabled=true]:text-white/30 md:hover:cursor-pointer md:[&[data-hover=true]:not([data-active=true])]:!bg-black/20 [&[data-pressed=true]]:!bg-black/30',
-        next: 'rounded-full bg-transparent text-white/80 data-[disabled=true]:text-white/30 md:hover:cursor-pointer md:[&[data-hover=true]:not([data-active=true])]:!bg-black/20 [&[data-pressed=true]]:!bg-black/30',
-        cursor: 'rounded-full bg-black/60 backdrop-blur-sm',
-      }
-
   // 处理切页
   const onPageChange = (page: number) => {
     setCurPage(page)
@@ -270,44 +230,36 @@ export default function SearchResult() {
             {paginationRes[curPage - 1]?.map((item: VideoItem, index: number) => (
               <Card
                 key={`${item.source_code}_${item.vod_id}_${index}`}
-                isPressable
-                isFooterBlurred
-                onPress={() => navigate(`/detail/${item.source_code}/${item.vod_id}`)}
-                className="flex h-[27vh] w-full items-center border-none transition-transform hover:scale-103 lg:h-[35vh]"
-                radius="lg"
+                className="group relative flex h-[27vh] w-full cursor-pointer items-center overflow-hidden border-none p-0 transition-transform hover:scale-103 lg:h-[35vh]"
+                onClick={() => navigate(`/detail/${item.source_code}/${item.vod_id}`)}
               >
-                <CardHeader className="absolute top-1 z-10 flex-col items-start p-3">
-                  <div className="rounded-large bg-black/20 px-2 py-1 backdrop-blur">
-                    <p className="text-tiny font-bold text-white/80 uppercase">
+                <CardHeader className="absolute top-1 z-10 flex-col items-start gap-0 p-3">
+                  <div className="rounded-lg bg-black/20 px-2 py-1 backdrop-blur">
+                    <p className="text-xs font-bold uppercase text-white/80">
                       {item.source_name}
                     </p>
                   </div>
                   {item.vod_remarks && (
-                    <Chip
-                      size="sm"
-                      color="warning"
-                      variant="flat"
-                      className="bg-warning/80 mt-2 backdrop-blur"
+                    <Badge
+                      variant="warning"
+                      className="mt-2 bg-amber-500/80 backdrop-blur"
                     >
                       {item.vod_remarks}
-                    </Chip>
+                    </Badge>
                   )}
                 </CardHeader>
-                <Image
-                  removeWrapper
-                  isZoomed
-                  isBlurred
+                <img
                   loading="lazy"
                   alt={item.vod_name}
-                  className="z-0 h-full w-full object-cover"
+                  className="z-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                   src={
                     item.vod_pic ||
                     'https://placehold.jp/30/ffffff/000000/300x450.png?text=暂无封面'
                   }
                 />
-                <CardFooter className="rounded-large shadow-small absolute bottom-[3%] z-10 min-h-[8vh] w-[92%] justify-between overflow-hidden border-1 border-white/20 py-2 backdrop-blur before:rounded-xl before:bg-white/10">
+                <CardFooter className="absolute bottom-[3%] z-10 min-h-[8vh] w-[92%] justify-between overflow-hidden rounded-lg border border-white/20 py-2 shadow-sm backdrop-blur before:rounded-xl before:bg-white/10">
                   <div className="flex flex-grow flex-col gap-1 px-1">
-                    <p className="text-tiny text-white/80">
+                    <p className="text-xs text-white/80">
                       {item.type_name} · {item.vod_year}
                     </p>
                     <p className="line-clamp-2 text-sm font-semibold text-white">{item.vod_name}</p>
@@ -317,14 +269,21 @@ export default function SearchResult() {
             ))}
           </div>
           <div className="sticky bottom-[2vh] z-50 flex justify-center transition-all">
-            <Pagination
-              classNames={paginationTheme}
-              onChange={onPageChange}
-              showControls
-              size={window.innerWidth < 640 ? 'sm' : 'lg'}
-              initialPage={1}
-              total={paginationRes.length}
-            />
+            <div
+              className={`rounded-full px-2 py-1 backdrop-blur-xl backdrop-saturate-150 ${
+                invertPagination
+                  ? 'bg-white/5'
+                  : 'bg-white/10 shadow-lg ring-1 ring-white/20'
+              }`}
+            >
+              <Pagination
+                onChange={onPageChange}
+                showControls
+                size={window.innerWidth < 640 ? 'sm' : 'default'}
+                page={curPage}
+                total={paginationRes.length}
+              />
+            </div>
           </div>
         </div>
       )}
@@ -335,18 +294,17 @@ export default function SearchResult() {
           {new Array(PaginationConfig.singlePageSize).fill(null).map((_, index: number) => (
             <Card
               key={index}
-              isPressable
-              isFooterBlurred
-              className="flex h-[27vh] w-full items-center border-none transition-transform hover:scale-103 lg:h-[35vh]"
-              radius="lg"
+              className="flex h-[27vh] w-full items-center overflow-hidden border-none p-0 transition-transform hover:scale-103 lg:h-[35vh]"
             >
-              <Skeleton className="mt-[5%] h-[59%] w-[90%] rounded-lg md:h-[66%]" />
-              <CardFooter className="shadow-small absolute bottom-[4%] z-10 min-h-[8vh] w-[90%] justify-between overflow-hidden rounded-lg border-1 border-white/20 py-2 backdrop-blur before:rounded-xl before:bg-white/10">
-                <div className="flex flex-grow flex-col gap-3 px-1">
-                  <Skeleton className="h-4 w-full rounded-lg md:h-5 md:w-[40%]" />
-                  <Skeleton className="h-4 w-full rounded-lg md:h-5 md:w-[60%]" />
-                </div>
-              </CardFooter>
+              <div className="flex h-full w-full flex-col items-center justify-center gap-4 p-4">
+                <Skeleton className="h-[59%] w-[90%] rounded-lg md:h-[66%]" />
+                <CardFooter className="absolute bottom-[4%] z-10 min-h-[8vh] w-[90%] justify-between overflow-hidden rounded-lg border border-white/20 py-2 shadow-sm backdrop-blur before:rounded-xl before:bg-white/10">
+                  <div className="flex flex-grow flex-col gap-3 px-1">
+                    <Skeleton className="h-4 w-full rounded-lg md:h-5 md:w-[40%]" />
+                    <Skeleton className="h-4 w-full rounded-lg md:h-5 md:w-[60%]" />
+                  </div>
+                </CardFooter>
+              </div>
             </Card>
           ))}
         </div>

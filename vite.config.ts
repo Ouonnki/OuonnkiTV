@@ -18,7 +18,7 @@ export default defineConfig({
       output: {
         manualChunks: {
           'react-vendor': ['react', 'react-dom', 'react-router'],
-          'ui-vendor': ['@heroui/react', 'framer-motion'],
+          'ui-vendor': ['framer-motion', '@radix-ui/react-dialog', '@radix-ui/react-select'],
           'player-vendor': ['artplayer', 'hls.js'],
         },
       },

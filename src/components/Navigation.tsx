@@ -1,4 +1,4 @@
-import { Navbar, NavbarBrand, NavbarContent, Input } from '@heroui/react'
+import { Navbar, NavbarBrand, NavbarContent } from '@/components/ui/navbar'
 import { OkiLogo, SearchIcon } from '@/components/icons'
 import { NavLink } from 'react-router'
 import { useSearch } from '@/hooks'
@@ -9,7 +9,8 @@ import RecentHistory from '@/components/RecentHistory'
 import { useSearchStore } from '@/store/searchStore'
 import { useSettingStore } from '@/store/settingStore'
 import { TrashIcon } from '@/components/icons'
-import { Card } from '@heroui/react'
+import { Card } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 
 export default function Navigation() {
   const { search: searchQuery, searchMovie } = useSearch()
@@ -41,7 +42,7 @@ export default function Navigation() {
         ease: 'easeOut',
       }}
     >
-      <Navbar classNames={{ wrapper: 'max-w-300 p-2' }}>
+      <Navbar className="max-w-[75rem] p-2">
         <NavbarBrand className="!flex-none">
           <NavLink to="/" className="flex items-center gap-2">
             <motion.div layoutId="app-logo" className="flex items-end gap-2">
@@ -57,35 +58,23 @@ export default function Navigation() {
             </motion.div>
           </NavLink>
         </NavbarBrand>
-        <NavbarContent as="div" className="items-center" justify="end">
-          <motion.div layoutId="search-container" className="flex w-full justify-end">
-            <Input
-              classNames={{
-                base: 'max-w-full sm:max-w-[15rem] h-10 hover:max-w-[24rem] transition-all duration-600',
-                mainWrapper: 'h-full',
-                input: 'text-small',
-                inputWrapper:
-                  'h-full font-normal text-default-500 bg-default-400/20 dark:bg-default-500/20',
-              }}
-              placeholder="输入内容搜索..."
-              size="sm"
-              variant="flat"
-              startContent={
-                <motion.div layoutId="search-icon">
-                  <SearchIcon size={18} />
-                </motion.div>
-              }
-              type="search"
-              radius="full"
-              value={inputContent}
-              onValueChange={setInputContent}
-              onKeyDown={handleKeyDown}
-              onClear={() => {
-                setInputContent('')
-              }}
-              onFocus={() => setIsFocused(true)}
-              onBlur={handleBlur}
-            />
+        <NavbarContent justify="end" className="items-center">
+          <motion.div layoutId="search-container" className="relative flex w-full justify-end">
+            <div className="relative flex h-10 w-full max-w-[15rem] items-center rounded-full bg-muted/40 px-3 transition-all duration-300 hover:max-w-[24rem] dark:bg-muted/20">
+              <motion.div layoutId="search-icon" className="mr-2">
+                <SearchIcon size={18} />
+              </motion.div>
+              <Input
+                className="h-full flex-1 border-0 bg-transparent text-sm shadow-none focus-visible:ring-0"
+                placeholder="输入内容搜索..."
+                type="search"
+                value={inputContent}
+                onChange={e => setInputContent(e.target.value)}
+                onKeyDown={handleKeyDown}
+                onFocus={() => setIsFocused(true)}
+                onBlur={handleBlur}
+              />
+            </div>
             {isFocused && searchSettings.isSearchHistoryVisible && searchHistory.length > 0 && (
               <div className="absolute top-12 left-0 w-full px-2">
                 <Card className="w-full bg-white/80 p-2 shadow-xl backdrop-blur-md dark:bg-black/80">

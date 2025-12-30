@@ -9,7 +9,23 @@ import Hls, {
   type HlsConfig,
   type LoaderConfiguration,
 } from 'hls.js'
-import { Card, CardBody, Button, Chip, Spinner, Tooltip, Select, SelectItem } from '@heroui/react'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Spinner } from '@/components/ui/spinner'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import type { DetailResponse } from '@/types'
 import { apiService } from '@/services/api.service'
 import { useApiStore } from '@/store/apiStore'
@@ -20,7 +36,6 @@ import { ArrowUpIcon, ArrowDownIcon } from '@/components/icons'
 import _ from 'lodash'
 import { toast } from 'sonner'
 
-// 过滤可疑的广告内容
 function filterAdsFromM3U8(m3u8Content: string) {
   if (!m3u8Content) return ''
 
@@ -37,17 +52,14 @@ function filterAdsFromM3U8(m3u8Content: string) {
   return filteredLines.join('\n')
 }
 
-// 扩展 LoaderContext 类型以包含 type 属性
 interface ExtendedLoaderContext extends LoaderContext {
   type: string
 }
 
-// 扩展 Artplayer 类型以包含 hls 属性
 interface ArtplayerWithHls extends Artplayer {
   hls?: Hls
 }
 
-// 自定义M3U8 Loader用于过滤广告
 class CustomHlsJsLoader extends Hls.DefaultConfig.loader {
   constructor(config: HlsConfig) {
     super(config)
@@ -80,13 +92,11 @@ class CustomHlsJsLoader extends Hls.DefaultConfig.loader {
 /**
  * RawPlayer - 直连模式播放器
  * 路由: /play/raw?id=xxx&source=xxx&ep=xxx
- * 从原 Video.tsx 迁移，使用 query params
  */
 export default function RawPlayer() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
 
-  // 从 query params 获取参数
   const vodId = searchParams.get('id') || ''
   const sourceCode = searchParams.get('source') || ''
   const episodeIndexParam = searchParams.get('ep') || '0'
@@ -94,12 +104,10 @@ export default function RawPlayer() {
   const playerRef = useRef<Artplayer | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  // 从 store 获取 API 配置
   const { videoAPIs, adFilteringEnabled } = useApiStore()
   const { addViewingHistory, viewingHistory } = useViewingHistoryStore()
   const { playback } = useSettingStore()
 
-  // Use refs to access latest values in main useEffect without triggering re-renders
   const viewingHistoryRef = useRef(viewingHistory)
   const playbackRef = useRef(playback)
 
@@ -108,7 +116,6 @@ export default function RawPlayer() {
     playbackRef.current = playback
   }, [viewingHistory, playback])
 
-  // 状态管理
   const [detail, setDetail] = useState<DetailResponse | null>(null)
   const [selectedEpisode, setSelectedEpisode] = useState(() => {
     const index = parseInt(episodeIndexParam)
@@ -120,7 +127,6 @@ export default function RawPlayer() {
   const [currentPageRange, setCurrentPageRange] = useState<string>('')
   const [episodesPerPage, setEpisodesPerPage] = useState(100)
 
-  // 计算响应式的每页集数
   useEffect(() => {
     const calculateEpisodesPerPage = () => {
       const width = window.innerWidth
@@ -146,11 +152,9 @@ export default function RawPlayer() {
     return () => window.removeEventListener('resize', calculateEpisodesPerPage)
   }, [])
 
-  // 获取显示信息
   const getTitle = () => detail?.videoInfo?.title || '未知视频'
   const sourceName = detail?.videoInfo?.source_name || '未知来源'
 
-  // 动态更新页面标题
   const pageTitle = useMemo(() => {
     const title = detail?.videoInfo?.title
     if (title) {
@@ -161,7 +165,6 @@ export default function RawPlayer() {
 
   useDocumentTitle(pageTitle)
 
-  // 获取视频详情
   useEffect(() => {
     const fetchVideoDetail = async () => {
       if (!sourceCode || !vodId) {
@@ -197,7 +200,6 @@ export default function RawPlayer() {
     fetchVideoDetail()
   }, [sourceCode, vodId, videoAPIs])
 
-  // 监听 URL 参数变化
   useEffect(() => {
     const urlEpisodeIndex = parseInt(episodeIndexParam)
     if (!isNaN(urlEpisodeIndex) && urlEpisodeIndex !== selectedEpisode) {
@@ -205,7 +207,6 @@ export default function RawPlayer() {
     }
   }, [episodeIndexParam, selectedEpisode])
 
-  // 播放器初始化
   useEffect(() => {
     if (!detail?.episodes || !detail.episodes[selectedEpisode] || !containerRef.current) return
 
@@ -280,7 +281,6 @@ export default function RawPlayer() {
 
     playerRef.current = art
 
-    // 自动续播
     art.on('ready', () => {
       const existingHistory = viewingHistoryRef.current.find(
         item =>
@@ -294,7 +294,6 @@ export default function RawPlayer() {
       }
     })
 
-    // 记录观看历史
     const normalAddHistory = () => {
       if (!sourceCode || !vodId || !detail?.videoInfo) return
       addViewingHistory({
@@ -356,7 +355,6 @@ export default function RawPlayer() {
     }
   }, [selectedEpisode, detail, sourceCode, vodId, addViewingHistory, navigate, adFilteringEnabled])
 
-  // 处理集数切换
   const handleEpisodeChange = (displayIndex: number) => {
     const actualIndex = isReversed
       ? (detail?.videoInfo?.episodes_names?.length || 0) - 1 - displayIndex
@@ -367,7 +365,6 @@ export default function RawPlayer() {
     })
   }
 
-  // 计算分页范围
   const pageRanges = useMemo(() => {
     const totalEpisodes = detail?.videoInfo?.episodes_names?.length || 0
     if (totalEpisodes === 0) return []
@@ -403,7 +400,6 @@ export default function RawPlayer() {
     return ranges
   }, [detail?.videoInfo?.episodes_names?.length, episodesPerPage, isReversed])
 
-  // 初始化当前页范围
   useEffect(() => {
     if (pageRanges.length === 0 || !detail?.videoInfo?.episodes_names) return
 
@@ -422,7 +418,6 @@ export default function RawPlayer() {
     }
   }, [pageRanges, selectedEpisode, isReversed, detail?.videoInfo?.episodes_names])
 
-  // 当前页显示的剧集
   const currentPageEpisodes = useMemo(() => {
     if (!currentPageRange || !detail?.videoInfo?.episodes_names) return []
 
@@ -452,7 +447,6 @@ export default function RawPlayer() {
     }
   }, [currentPageRange, detail?.videoInfo?.episodes_names, isReversed])
 
-  // 加载状态
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center p-4">
@@ -464,156 +458,144 @@ export default function RawPlayer() {
     )
   }
 
-  // 错误状态
   if (error) {
     return (
       <div className="flex min-h-screen items-center justify-center p-4">
         <Card className="w-full max-w-sm">
-          <CardBody className="text-center">
+          <CardContent className="pt-6 text-center">
             <p className="mb-4 text-red-500">{error}</p>
-            <Button className="w-full" onPress={() => navigate(-1)} variant="flat">
+            <Button className="w-full" onClick={() => navigate(-1)} variant="secondary">
               返回
             </Button>
-          </CardBody>
+          </CardContent>
         </Card>
       </div>
     )
   }
 
-  // 如果没有数据
   if (!detail || !detail.episodes || detail.episodes.length === 0) {
     return (
       <div className="flex min-h-screen items-center justify-center p-4">
         <Card className="w-full max-w-sm">
-          <CardBody className="text-center">
+          <CardContent className="pt-6 text-center">
             <p className="mb-4 text-gray-500">无法获取播放信息</p>
-            <Button className="w-full" onPress={() => navigate(-1)} variant="flat">
+            <Button className="w-full" onClick={() => navigate(-1)} variant="secondary">
               返回
             </Button>
-          </CardBody>
+          </CardContent>
         </Card>
       </div>
     )
   }
 
   return (
-    <div className="container mx-auto max-w-6xl p-2 sm:p-4">
-      {/* 视频信息 - 移动端 */}
-      <div className="mb-4 flex flex-col gap-2 md:hidden">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-semibold text-gray-600">{sourceName}</p>
-            <h4 className="text-lg font-bold">{getTitle()}</h4>
+    <TooltipProvider>
+      <div className="container mx-auto max-w-6xl p-2 sm:p-4">
+        {/* 视频信息 - 移动端 */}
+        <div className="mb-4 flex flex-col gap-2 md:hidden">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold text-gray-600">{sourceName}</p>
+              <h4 className="text-lg font-bold">{getTitle()}</h4>
+            </div>
+            <Button size="sm" variant="secondary" onClick={() => navigate(-1)}>
+              返回
+            </Button>
           </div>
-          <Button size="sm" variant="flat" onPress={() => navigate(-1)}>
+          <div className="flex items-center gap-2">
+            <Badge variant="default">第 {selectedEpisode + 1} 集</Badge>
+            <p className="text-sm text-gray-600">共 {detail.episodes.length} 集</p>
+          </div>
+        </div>
+
+        {/* 视频信息 - 桌面端 */}
+        <div className="mb-4 hidden items-center justify-between md:flex">
+          <div className="flex items-center gap-4">
+            <div>
+              <p className="text-sm font-semibold text-gray-500">{sourceName}</p>
+              <h4 className="text-xl font-bold">{getTitle()}</h4>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="default">第 {selectedEpisode + 1} 集</Badge>
+              <p className="text-sm text-gray-500">共 {detail.episodes.length} 集</p>
+            </div>
+          </div>
+          <Button size="sm" variant="secondary" onClick={() => navigate(-1)}>
             返回
           </Button>
         </div>
-        <div className="flex items-center gap-2">
-          <Chip size="sm" color="primary" variant="flat">
-            第 {selectedEpisode + 1} 集
-          </Chip>
-          <p className="text-sm text-gray-600">共 {detail.episodes.length} 集</p>
-        </div>
-      </div>
 
-      {/* 视频信息 - 桌面端 */}
-      <div className="mb-4 hidden items-center justify-between md:flex">
-        <div className="flex items-center gap-4">
-          <div>
-            <p className="text-sm font-semibold text-gray-500">{sourceName}</p>
-            <h4 className="text-xl font-bold">{getTitle()}</h4>
-          </div>
-          <div className="flex items-center gap-2">
-            <Chip size="sm" color="primary" variant="flat">
-              第 {selectedEpisode + 1} 集
-            </Chip>
-            <p className="text-sm text-gray-500">共 {detail.episodes.length} 集</p>
-          </div>
-        </div>
-        <Button size="sm" variant="flat" onPress={() => navigate(-1)}>
-          返回
-        </Button>
-      </div>
+        {/* 播放器 */}
+        <Card className="mb-4 overflow-hidden border-none sm:mb-6">
+          <CardContent className="p-0">
+            <div
+              id="player"
+              ref={containerRef}
+              className="flex aspect-video w-full items-center rounded-lg bg-black"
+            />
+          </CardContent>
+        </Card>
 
-      {/* 播放器 */}
-      <Card className="mb-4 border-none sm:mb-6" radius="lg">
-        <CardBody className="p-0">
-          <div
-            id="player"
-            ref={containerRef}
-            className="flex aspect-video w-full items-center rounded-lg bg-black"
-          />
-        </CardBody>
-      </Card>
-
-      {/* 选集列表 */}
-      {detail.videoInfo?.episodes_names && detail.videoInfo?.episodes_names.length > 0 && (
-        <div className="mt-4 flex flex-col">
-          <div className="flex flex-col gap-2 p-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-semibold text-gray-900">选集</h2>
-              <div className="flex items-center gap-2">
-                <Button
-                  size="sm"
-                  variant="light"
-                  onPress={() => setIsReversed(!isReversed)}
-                  startContent={
-                    isReversed ? <ArrowUpIcon size={18} /> : <ArrowDownIcon size={18} />
-                  }
-                  className="min-w-unit-16 text-sm text-gray-600"
-                >
-                  {isReversed ? '正序' : '倒序'}
-                </Button>
-                {pageRanges.length > 1 && (
-                  <Select
+        {/* 选集列表 */}
+        {detail.videoInfo?.episodes_names && detail.videoInfo?.episodes_names.length > 0 && (
+          <div className="mt-4 flex flex-col">
+            <div className="flex flex-col gap-2 p-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-semibold text-gray-900">选集</h2>
+                <div className="flex items-center gap-2">
+                  <Button
                     size="sm"
-                    selectedKeys={[currentPageRange]}
-                    onChange={e => setCurrentPageRange(e.target.value)}
-                    className="w-32"
-                    classNames={{
-                      trigger: 'bg-white/30 backdrop-blur-md border border-gray-200',
-                      value: 'text-gray-800 font-medium',
-                      popoverContent: 'bg-white/40 backdrop-blur-2xl border border-gray-200/50',
-                    }}
-                    aria-label="选择集数范围"
+                    variant="ghost"
+                    onClick={() => setIsReversed(!isReversed)}
+                    className="text-sm text-gray-600"
                   >
-                    {pageRanges.map(range => (
-                      <SelectItem key={range.value}>{range.label}</SelectItem>
-                    ))}
-                  </Select>
-                )}
+                    {isReversed ? <ArrowUpIcon size={18} /> : <ArrowDownIcon size={18} />}
+                    <span className="ml-1">{isReversed ? '正序' : '倒序'}</span>
+                  </Button>
+                  {pageRanges.length > 1 && (
+                    <Select value={currentPageRange} onValueChange={setCurrentPageRange}>
+                      <SelectTrigger className="w-32 border-gray-200 bg-white/30 font-medium text-gray-800 backdrop-blur-md">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="border-gray-200/50 bg-white/40 backdrop-blur-2xl">
+                        {pageRanges.map(range => (
+                          <SelectItem key={range.value} value={range.value}>
+                            {range.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
               </div>
             </div>
+            <div className="grid grid-cols-2 gap-3 rounded-lg bg-white/30 p-4 pt-0 shadow-lg/5 backdrop-blur-md sm:grid-cols-3 md:grid-cols-6 lg:grid-cols-8">
+              {currentPageEpisodes.map(({ name, displayIndex, actualIndex }) => {
+                return (
+                  <Tooltip key={`${name}-${displayIndex}`} delayDuration={1000}>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="secondary"
+                        className={
+                          selectedEpisode === actualIndex
+                            ? 'border border-gray-200 bg-gray-900 text-white drop-shadow-2xl'
+                            : 'border border-gray-200 bg-white/30 text-gray-800 drop-shadow-2xl backdrop-blur-md transition-all duration-300 hover:scale-105 hover:bg-black/80 hover:text-white'
+                        }
+                        onClick={() => handleEpisodeChange(displayIndex)}
+                      >
+                        <span className="overflow-hidden text-ellipsis whitespace-nowrap">
+                          {name}
+                        </span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>{name}</TooltipContent>
+                  </Tooltip>
+                )
+              })}
+            </div>
           </div>
-          <div className="grid grid-cols-2 gap-3 rounded-lg bg-white/30 p-4 pt-0 shadow-lg/5 backdrop-blur-md sm:grid-cols-3 md:grid-cols-6 lg:grid-cols-8">
-            {currentPageEpisodes.map(({ name, displayIndex, actualIndex }) => {
-              return (
-                <Tooltip
-                  key={`${name}-${displayIndex}`}
-                  content={name}
-                  placement="top"
-                  delay={1000}
-                >
-                  <Button
-                    size="md"
-                    color="default"
-                    variant="shadow"
-                    className={
-                      selectedEpisode === actualIndex
-                        ? 'border border-gray-200 bg-gray-900 text-white drop-shadow-2xl'
-                        : 'border border-gray-200 bg-white/30 text-gray-800 drop-shadow-2xl backdrop-blur-md transition-all duration-300 hover:scale-105 hover:bg-black/80 hover:text-white'
-                    }
-                    onPress={() => handleEpisodeChange(displayIndex)}
-                  >
-                    <span className="overflow-hidden text-ellipsis whitespace-nowrap">{name}</span>
-                  </Button>
-                </Tooltip>
-              )
-            })}
-          </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </TooltipProvider>
   )
 }

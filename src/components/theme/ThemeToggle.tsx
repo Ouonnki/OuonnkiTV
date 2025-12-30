@@ -1,4 +1,4 @@
-import { Button } from '@heroui/react'
+import { Button } from '@/components/ui/button'
 import { Moon, Sun } from 'lucide-react'
 import { useThemeControl } from './hooks/useTheme'
 import { useRef } from 'react'
@@ -13,13 +13,13 @@ export function ThemeToggle() {
 
   return (
     <Button
-      isIconOnly
+      size="icon"
+      variant="ghost"
       className="bg-white/20 shadow-lg shadow-gray-500/10 backdrop-blur-2xl dark:bg-black/20"
-      // 使用 onPointerDown 捕获原生事件坐标
       onPointerDown={e => {
         lastClickEvent.current = e.nativeEvent as unknown as MouseEvent
       }}
-      onPress={() => {
+      onClick={() => {
         toggleDarkMode(lastClickEvent.current ?? undefined)
         lastClickEvent.current = null
       }}

@@ -1,6 +1,9 @@
 import { CloseIcon, NoItemIcon, RecentIcon, TrashIcon } from '@/components/icons'
-import { Card, Chip, Image, Tooltip, Progress } from '@heroui/react'
-import { ScrollShadow } from '@heroui/react'
+import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { useViewingHistoryStore } from '@/store/viewingHistoryStore'
 import dayjs from 'dayjs'
 import duration from 'dayjs/plugin/duration'
@@ -53,14 +56,11 @@ const HistoryList = ({
   }
   return (
     <>
-      <ScrollShadow hideScrollBar className="max-h-[50vh] overflow-y-auto bg-transparent p-2">
+      <ScrollArea className="max-h-[50vh] overflow-y-auto bg-transparent p-2">
         {filteredHistory.map((item, index) => (
           <Card
-            className="@container mb-[.6rem] h-[30vw] w-full bg-white/30 shadow-md/5 transition-all duration-500 hover:scale-101 hover:shadow-lg md:h-[8rem] md:w-[25rem]"
+            className="@container group mb-[.6rem] h-[30vw] w-full cursor-pointer overflow-hidden border-none bg-white/30 p-0 shadow-md/5 transition-all duration-500 hover:scale-101 hover:shadow-lg md:h-[8rem] md:w-[25rem]"
             key={index}
-            isPressable
-            shadow="sm"
-            onPress={() => console.log('item pressed')}
           >
             <NavLink
               className="w-full"
@@ -68,42 +68,29 @@ const HistoryList = ({
             >
               <div className="flex h-[30vw] w-full md:h-[8rem]">
                 <div className="relative shrink-0">
-                  <Image
-                    alt={item.title}
-                    radius="lg"
-                    shadow="sm"
-                    loading="lazy"
-                    isZoomed
-                    isBlurred
-                    classNames={{
-                      zoomedWrapper: 'h-full aspect-square',
-                      wrapper: 'h-full aspect-square',
-                      img: 'h-full w-full object-cover',
-                    }}
-                    src={item.imageUrl}
-                  />
-                  <Progress
-                    aria-label="Progress"
-                    value={(item.playbackPosition / item.duration) * 100}
-                    color="primary"
-                    className="absolute bottom-0 z-10 w-full"
-                    classNames={{
-                      base: 'h-[1.5cqw]',
-                    }}
-                  />
+                  <div className="aspect-square h-full overflow-hidden rounded-lg">
+                    <img
+                      alt={item.title}
+                      loading="lazy"
+                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      src={item.imageUrl}
+                    />
+                  </div>
+                  <div className="absolute bottom-0 z-10 w-full">
+                    <Progress
+                      value={(item.playbackPosition / item.duration) * 100}
+                      className="h-1 rounded-none"
+                    />
+                  </div>
                 </div>
                 <div className="group flex h-full w-full flex-col items-start justify-between p-[4cqw] md:gap-3 md:p-4">
                   <div className="flex w-full items-center justify-between gap-[2cqw] md:gap-2">
-                    <Chip
-                      color="primary"
-                      variant="solid"
-                      classNames={{
-                        base: 'h-[6cqw] px-[3%] md:h-6 md:px-2',
-                        content: 'text-[3cqw] md:text-xs',
-                      }}
+                    <Badge
+                      variant="default"
+                      className="h-[6cqw] px-[3%] text-[3cqw] md:h-6 md:px-2 md:text-xs"
                     >
                       {item.sourceName}
-                    </Chip>
+                    </Badge>
                     <div className="flex items-center justify-center gap-[.6rem] text-[3.5cqw] text-gray-500 md:text-sm">
                       <p>{dayjs(item.timestamp).fromNow()}</p>
                       <motion.div
@@ -130,13 +117,6 @@ const HistoryList = ({
                       已看 {((item.playbackPosition / item.duration) * 100).toFixed(0)}%{' '}
                     </div>
                   </div>
-                  {/* <Progress
-                    aria-label="Progress"
-                    label={`${dayjs.duration(item.playbackPosition, 'seconds').format('HH:mm:ss')} / ${dayjs.duration(item.duration, 'seconds').format('HH:mm:ss')}`}
-                    value={(item.playbackPosition / item.duration) * 100}
-                    color="primary"
-                    size="sm"
-                  /> */}
                 </div>
               </div>
             </NavLink>
@@ -145,7 +125,7 @@ const HistoryList = ({
         <div className="mt-5 flex items-center justify-center">
           <p className="text-sm text-gray-500">没有更多了</p>
         </div>
-      </ScrollShadow>
+      </ScrollArea>
     </>
   )
 }
@@ -155,17 +135,22 @@ export default function RecentHistory() {
   const { viewingHistory, removeViewingHistory, clearViewingHistory } = useViewingHistoryStore()
   return (
     <>
-      <Tooltip
-        isOpen={isBrowser ? undefined : false}
-        // isOpen={true}
-        classNames={{
-          base: 'bg-transparent',
-          content:
-            'flex justify-start min-h-[40vh] max-h-[60vh] p-2 bg-white/50 shadow-xl/30 shadow-gray-500/30 backdrop-blur-lg',
-        }}
-        content={
-          <>
-            <div className="h-full">
+      <Popover open={isBrowser ? undefined : isOpen} onOpenChange={isBrowser ? undefined : setIsOpen}>
+        <PopoverTrigger asChild>
+          <div
+            onClick={isBrowser ? undefined : () => setIsOpen(!isOpen)}
+            className="flex h-full w-full cursor-pointer items-center justify-center"
+          >
+            <RecentIcon size={24} />
+          </div>
+        </PopoverTrigger>
+        {isBrowser && (
+          <PopoverContent
+            side="bottom"
+            sideOffset={30}
+            className="flex min-h-[40vh] max-h-[60vh] w-auto min-w-[25rem] justify-start bg-white/50 p-2 shadow-xl/30 shadow-gray-500/30 backdrop-blur-lg"
+          >
+            <div className="h-full w-full">
               <div className="mt-2 mb-2 flex w-full items-end justify-between">
                 <div className="flex-1"></div>
                 <div className="text-center text-lg font-bold text-gray-800">观看记录</div>
@@ -191,19 +176,9 @@ export default function RecentHistory() {
                 />
               </div>
             </div>
-          </>
-        }
-        shadow="lg"
-        placement="bottom"
-        offset={30}
-      >
-        <div
-          onClick={isBrowser ? undefined : () => setIsOpen(!isOpen)}
-          className="flex h-full w-full items-center justify-center"
-        >
-          <RecentIcon size={24} />
-        </div>
-      </Tooltip>
+          </PopoverContent>
+        )}
+      </Popover>
       {!isBrowser &&
         isOpen &&
         createPortal(

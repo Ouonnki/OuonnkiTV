@@ -1,5 +1,8 @@
 import { OkiLogo, SearchIcon, CloseIcon } from '@/components/icons'
-import { Button, Input, Chip, Popover, PopoverTrigger, PopoverContent } from '@heroui/react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
 import React, { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useSearchHistory, useSearch } from '@/hooks'
@@ -77,49 +80,38 @@ export default function HomeView() {
         }}
         className="mt-[1rem] h-fit px-4 md:px-0"
       >
-        <Input
-          classNames={{
-            base: 'max-w-full h-13',
-            mainWrapper: 'h-full',
-            input: 'text-md',
-            inputWrapper: 'h-full font-normal text-default-500 pr-2 shadow-lg',
-          }}
-          placeholder="输入内容搜索..."
-          size="lg"
-          variant="bordered"
-          startContent={
-            <motion.div layoutId="search-icon">
-              <SearchIcon size={18} />
-            </motion.div>
-          }
-          type="search"
-          radius="full"
-          value={search}
-          onValueChange={setSearch}
-          onKeyDown={handleKeyDown}
-          endContent={
-            <motion.div
-              initial={{ opacity: 0, filter: 'blur(5px)' }}
-              animate={{
-                opacity: buttonTransitionStatus.opacity,
-                filter: buttonTransitionStatus.filter,
-              }}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.95 }}
-              transition={{ duration: 0.2 }}
+        <div className="relative flex h-13 w-full items-center rounded-full border border-border bg-background px-4 shadow-lg">
+          <motion.div layoutId="search-icon" className="mr-3">
+            <SearchIcon size={18} />
+          </motion.div>
+          <Input
+            className="h-full flex-1 border-0 bg-transparent text-md shadow-none focus-visible:ring-0"
+            placeholder="输入内容搜索..."
+            type="search"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            onKeyDown={handleKeyDown}
+          />
+          <motion.div
+            initial={{ opacity: 0, filter: 'blur(5px)' }}
+            animate={{
+              opacity: buttonTransitionStatus.opacity,
+              filter: buttonTransitionStatus.filter,
+            }}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.95 }}
+            transition={{ duration: 0.2 }}
+          >
+            <Button
+              className="bg-gradient-to-br from-gray-500 to-gray-950 font-bold text-white shadow-lg"
+              size="sm"
+              onClick={handleSearch}
+              disabled={buttonIsDisabled}
             >
-              <Button
-                className="bg-gradient-to-br from-gray-500 to-gray-950 font-bold text-white shadow-lg"
-                size="md"
-                radius="full"
-                onPress={handleSearch}
-                isDisabled={buttonIsDisabled}
-              >
-                搜索
-              </Button>
-            </motion.div>
-          }
-        />
+              搜索
+            </Button>
+          </motion.div>
+        </div>
       </motion.div>
       {useSettingStore.getState().search.isSearchHistoryVisible && searchHistory.length > 0 && (
         <motion.div
@@ -141,24 +133,26 @@ export default function HomeView() {
                     exit={{ opacity: 0, filter: 'blur(5px)' }}
                     onMouseEnter={() => setHoveredChipId(item.id)}
                     onMouseLeave={() => setHoveredChipId(null)}
+                    className="group relative"
                   >
-                    <Chip
-                      classNames={{
-                        base: 'cursor-pointer border-2 border-gray-400 hover:border-black hover:scale-101 transition-all duration-300',
-                        content: `transition-all duration-200 ${hoveredChipId === item.id ? 'translate-x-0' : 'translate-x-2'}`,
-                        closeButton: `transition-opacity duration-200 ${hoveredChipId === item.id ? 'opacity-100' : 'opacity-0'}`,
-                      }}
-                      variant="bordered"
-                      size="lg"
+                    <Badge
+                      variant="outline"
+                      className="cursor-pointer border-2 border-gray-400 px-3 py-1 text-sm transition-all duration-300 hover:scale-101 hover:border-black"
                       onClick={() => searchMovie(item.content)}
-                      onClose={() => {
-                        if (hoveredChipId === item.id) {
-                          removeSearchHistoryItem(item.id)
-                        }
-                      }}
                     >
                       {item.content}
-                    </Chip>
+                      <span
+                        className={`ml-2 cursor-pointer text-gray-400 transition-opacity duration-200 hover:text-gray-600 ${hoveredChipId === item.id ? 'opacity-100' : 'opacity-0'}`}
+                        onClick={e => {
+                          e.stopPropagation()
+                          if (hoveredChipId === item.id) {
+                            removeSearchHistoryItem(item.id)
+                          }
+                        }}
+                      >
+                        ×
+                      </span>
+                    </Badge>
                   </motion.div>
                 ))}
               </AnimatePresence>
@@ -166,17 +160,10 @@ export default function HomeView() {
             <div className="flex justify-end">
               <div className="w-fit">
                 <Popover
-                  placement={isBrowser ? 'top-end' : 'bottom-start'}
-                  isOpen={isSearchHistoryDeleteOpen}
+                  open={isSearchHistoryDeleteOpen}
                   onOpenChange={setIsSearchHistoryDeleteOpen}
-                  isKeyboardDismissDisabled
-                  crossOffset={isBrowser ? -20 : -5}
-                  classNames={{
-                    base: 'bg-transparent',
-                    content: 'bg-white/20 shadow-lg shadow-gray-500/10 backdrop-blur-xl',
-                  }}
                 >
-                  <PopoverTrigger>
+                  <PopoverTrigger asChild>
                     <motion.div
                       initial={{ color: '#cccccc' }}
                       whileHover={{ color: '#999999' }}
@@ -187,24 +174,30 @@ export default function HomeView() {
                       <p className="text-sm">清除全部</p>
                     </motion.div>
                   </PopoverTrigger>
-                  <PopoverContent>
+                  <PopoverContent
+                    className="w-auto bg-white/20 shadow-lg shadow-gray-500/10 backdrop-blur-xl"
+                    side={isBrowser ? 'top' : 'bottom'}
+                    align="end"
+                  >
                     <div className="px-1 py-2">
                       <p>确定要清除全部搜索记录吗？</p>
                       <div className="mt-[.6rem] flex justify-end gap-[.5rem]">
                         <Button
-                          className="h-[1.5rem] w-[3rem] min-w-[3rem] text-[.7rem] font-bold"
-                          radius="sm"
-                          variant="shadow"
-                          onPress={() => setIsSearchHistoryDeleteOpen(false)}
+                          size="sm"
+                          variant="secondary"
+                          className="h-[1.5rem] text-[.7rem] font-bold"
+                          onClick={() => setIsSearchHistoryDeleteOpen(false)}
                         >
                           取消
                         </Button>
                         <Button
-                          className="h-[1.5rem] w-[3rem] min-w-[3rem] text-[.7rem] font-bold"
-                          variant="shadow"
-                          color="danger"
-                          radius="sm"
-                          onPress={clearSearchHistory}
+                          size="sm"
+                          variant="destructive"
+                          className="h-[1.5rem] text-[.7rem] font-bold"
+                          onClick={() => {
+                            clearSearchHistory()
+                            setIsSearchHistoryDeleteOpen(false)
+                          }}
                         >
                           确定
                         </Button>

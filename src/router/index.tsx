@@ -1,6 +1,6 @@
 import { lazy, Suspense } from 'react'
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router'
-import { Spinner } from '@heroui/spinner'
+import { Spinner } from '@/components/ui/spinner'
 import AuthGuard from '@/components/AuthGuard'
 
 // Layouts
@@ -27,13 +27,7 @@ const RawPlayer = lazy(() => import('@/views/player/RawPlayer'))
 // Loading fallback
 const LoadingFallback = () => (
   <div className="flex flex-col items-center py-40">
-    <Spinner
-      classNames={{ label: 'text-gray-500 text-sm' }}
-      variant="default"
-      size="lg"
-      color="default"
-      label="加载中..."
-    />
+    <Spinner size="lg" label="加载中..." />
   </div>
 )
 

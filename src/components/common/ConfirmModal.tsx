@@ -5,7 +5,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
-import { Button } from '@heroui/react'
+import { Button } from '@/components/ui/button'
 
 interface ConfirmModalProps {
   isOpen: boolean
@@ -35,15 +35,15 @@ export const ConfirmModal = ({
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
         <div className="py-2">
-          <p className="text-default-500 text-sm">{description}</p>
+          <p className="text-muted-foreground text-sm">{description}</p>
         </div>
         <DialogFooter>
-          <Button variant="light" onPress={onClose}>
+          <Button variant="ghost" onClick={onClose}>
             {cancelText}
           </Button>
           <Button
-            color={isDestructive ? 'danger' : 'primary'}
-            onPress={() => {
+            variant={isDestructive ? 'destructive' : 'default'}
+            onClick={() => {
               onConfirm()
               onClose()
             }}
