@@ -4,7 +4,7 @@ import cors from 'cors'
 const app = express()
 const PORT = process.env.PROXY_PORT || 3001
 
-// 统一的代理处理逻辑
+// 内联核心代理逻辑（CommonJS 兼容）
 async function handleProxyRequest(targetUrl) {
   try {
     new URL(targetUrl)

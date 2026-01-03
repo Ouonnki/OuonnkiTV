@@ -1,22 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-
-async function handleProxyRequest(targetUrl: string): Promise<Response> {
-  try {
-    new URL(targetUrl)
-  } catch {
-    throw new Error('Invalid URL format')
-  }
-
-  const response = await fetch(targetUrl, {
-    headers: {
-      'User-Agent':
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-      Accept: 'application/json, text/plain, */*',
-    },
-  })
-
-  return response
-}
+import { handleProxyRequest, getTargetUrl } from '../src/utils/proxy'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // CORS

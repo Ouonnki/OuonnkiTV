@@ -1,4 +1,4 @@
-import AboutProject from '@/components/settings/AboutProject'
+import AboutProject from '../components/AboutProject'
 
 /**
  * AboutSettings - 关于页

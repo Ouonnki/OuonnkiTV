@@ -1,6 +1,6 @@
-import NetworkSettings from '@/components/settings/NetworkSettings'
-import SearchSettings from '@/components/settings/SearchSettings'
-import ThemeSettings from '@/components/settings/ThemeSettings'
+import NetworkSettings from '../components/NetworkSettings'
+import SearchSettings from '../components/SearchSettings'
+import ThemeSettings from '../components/ThemeSettings'
 
 /**
  * SystemSettings - 系统设置页

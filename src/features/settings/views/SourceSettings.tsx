@@ -1,4 +1,4 @@
-import VideoSource from '@/components/settings/VideoSource'
+import VideoSource from '../components/VideoSource'
 
 /**
  * SourceSettings - 视频源管理设置页

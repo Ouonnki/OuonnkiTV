@@ -27,3 +27,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Claude
+/.claude
+
+# TypeScript build info
+*.tsbuildinfo

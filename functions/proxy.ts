@@ -1,11 +1,30 @@
 // Cloudflare Pages Function
 // 部署到 Cloudflare Pages 时，此文件会自动处理 /proxy 路由
-// 需要安装类型定义: pnpm add -D @cloudflare/workers-types
+// 注意：Cloudflare Workers 环境不支持直接导入 src 模块，需要内联核心逻辑
 
 interface Context {
   request: Request
   env: unknown
   params: unknown
+}
+
+// 内联核心代理逻辑（Cloudflare Workers 环境限制）
+async function handleProxyRequest(targetUrl: string): Promise<Response> {
+  try {
+    new URL(targetUrl)
+  } catch {
+    throw new Error('Invalid URL format')
+  }
+
+  const response = await fetch(targetUrl, {
+    headers: {
+      'User-Agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+      Accept: 'application/json, text/plain, */*',
+    },
+  })
+
+  return response
 }
 
 export const onRequest = async (context: Context) => {
@@ -37,16 +56,7 @@ export const onRequest = async (context: Context) => {
   }
 
   try {
-    // Validate URL
-    new URL(targetUrl)
-
-    const response = await fetch(targetUrl, {
-      headers: {
-        'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-        Accept: 'application/json, text/plain, */*',
-      },
-    })
+    const response = await handleProxyRequest(targetUrl)
 
     // Create a new response with the body from the fetch
     const newResponse = new Response(response.body, response)

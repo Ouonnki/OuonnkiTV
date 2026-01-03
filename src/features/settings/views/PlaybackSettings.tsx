@@ -1,4 +1,4 @@
-import PlaybackSettingsComponent from '@/components/settings/PlaybackSettings'
+import PlaybackSettingsComponent from '../components/PlaybackSettings'
 
 /**
  * PlaybackSettings - 播放设置页

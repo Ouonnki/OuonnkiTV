@@ -1,28 +1,30 @@
 import { lazy, Suspense } from 'react'
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router'
 import { Spinner } from '@/components/ui/spinner'
-import AuthGuard from '@/components/AuthGuard'
 
 // Layouts
 import MainLayout from '@/layouts/MainLayout'
 import PlayerLayout from '@/layouts/PlayerLayout'
 import SettingsLayout from '@/layouts/SettingsLayout'
 
-// Views (lazy loaded)
-const HomeView = lazy(() => import('@/views/HomeView'))
-const SearchHubView = lazy(() => import('@/views/SearchHubView'))
-const FavoritesView = lazy(() => import('@/views/FavoritesView'))
-const HistoryView = lazy(() => import('@/views/HistoryView'))
+// Auth
+const AuthGuard = lazy(() => import('@/features/auth/components/AuthGuard'))
+
+// Views (lazy loaded from features)
+const HomeView = lazy(() => import('@/features/home/views/HomeView'))
+const SearchHubView = lazy(() => import('@/features/search/views/SearchHubView'))
+const FavoritesView = lazy(() => import('@/features/favorites/views/FavoritesView'))
+const HistoryView = lazy(() => import('@/features/history/views/HistoryView'))
 
 // Settings sub-routes
-const SourceSettings = lazy(() => import('@/views/settings/SourceSettings'))
-const PlaybackSettings = lazy(() => import('@/views/settings/PlaybackSettings'))
-const SystemSettings = lazy(() => import('@/views/settings/SystemSettings'))
-const AboutSettings = lazy(() => import('@/views/settings/AboutSettings'))
+const SourceSettings = lazy(() => import('@/features/settings/views/SourceSettings'))
+const PlaybackSettings = lazy(() => import('@/features/settings/views/PlaybackSettings'))
+const SystemSettings = lazy(() => import('@/features/settings/views/SystemSettings'))
+const AboutSettings = lazy(() => import('@/features/settings/views/AboutSettings'))
 
 // Player views
-const StandardPlayer = lazy(() => import('@/views/player/StandardPlayer'))
-const RawPlayer = lazy(() => import('@/views/player/RawPlayer'))
+const StandardPlayer = lazy(() => import('@/features/player/components/StandardPlayer'))
+const RawPlayer = lazy(() => import('@/features/player/components/RawPlayer'))
 
 // Loading fallback
 const LoadingFallback = () => (
@@ -149,8 +151,10 @@ const router = createBrowserRouter([
  */
 export default function AppRouter() {
   return (
-    <AuthGuard>
-      <RouterProvider router={router} />
-    </AuthGuard>
+    <Suspense fallback={<LoadingFallback />}>
+      <AuthGuard>
+        <RouterProvider router={router} />
+      </AuthGuard>
+    </Suspense>
   )
 }
