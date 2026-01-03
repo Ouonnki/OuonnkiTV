@@ -47,12 +47,10 @@ LABEL org.opencontainers.image.created=${BUILD_DATE}
 LABEL org.opencontainers.image.revision=${VCS_REF}
 LABEL org.opencontainers.image.source="https://github.com/Ouonnki/OuonnkiTV"
 
-# 安装 nginx 和 supervisor
+# 安装 nginx 和 supervisor，并清理缓存
 RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories && \
-    apk add --no-cache nginx supervisor
-
-# 安装 pnpm
-RUN npm install -g pnpm@10.15.1 --registry=https://registry.npmmirror.com
+    apk add --no-cache nginx supervisor && \
+    rm -rf /var/cache/apk/*
 
 # 创建必要的目录
 RUN mkdir -p /run/nginx /var/log/supervisor /app
@@ -63,8 +61,9 @@ WORKDIR /app
 # 复制代理服务器文件
 COPY proxy-server.js ./
 
-# 只安装代理所需的依赖
-RUN pnpm add express cors
+# 只安装代理所需的依赖（使用 npm 而非 pnpm，避免额外安装 pnpm）
+RUN npm install --registry=https://registry.npmmirror.com --no-audit --no-fund express cors && \
+    npm cache clean --force
 
 # 复制构建产物到 nginx 静态文件目录
 COPY --from=builder /app/dist /usr/share/nginx/html
