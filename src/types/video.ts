@@ -1,53 +1,11 @@
-// 视频搜索结果项
-export interface VideoItem {
-  vod_id: string
-  vod_name: string
-  vod_pic?: string
-  vod_remarks?: string
-  type_name?: string
-  vod_year?: string
-  vod_area?: string
-  vod_director?: string
-  vod_actor?: string
-  vod_content?: string
-  vod_play_url?: string
-  // 添加的源信息
-  source_name?: string
-  source_code?: string
-  api_url?: string
-}
-
-// 视频详情
-export interface VideoDetail {
-  title: string
-  cover?: string
-  desc?: string
-  type?: string
-  year?: string
-  area?: string
-  director?: string
-  actor?: string
-  remarks?: string
-  source_name?: string
-  source_code?: string
-  episodes_names?: string[]
-}
-
-// 搜索响应
-export interface SearchResponse {
-  code: number
-  list: VideoItem[]
-  msg?: string
-}
-
-// 详情响应
-export interface DetailResponse {
-  code: number
-  episodes: string[]
-  detailUrl?: string
-  videoInfo?: VideoDetail
-  msg?: string
-}
+// 从 cms-core 重新导出类型（保持向后兼容）
+export type {
+  VideoItem,
+  VideoDetail,
+  SearchResult,
+  DetailResult,
+  VideoSource as VideoApi,
+} from '@ouonnki/cms-core'
 
 // 观看历史项
 export interface ViewingHistoryItem {
@@ -63,8 +21,8 @@ export interface ViewingHistoryItem {
   duration: number
 }
 
-// 自定义 API
-export interface VideoApi {
+// 扩展的 VideoApi 类型（用于需要 updatedAt 必填的场景）
+export interface VideoApiWithDate {
   id: string
   name: string
   url: string

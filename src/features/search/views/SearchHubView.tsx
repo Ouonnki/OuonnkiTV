@@ -1,9 +1,9 @@
 import { useSearchParams, useNavigate } from 'react-router'
-import { apiService } from '@/services/api.service'
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
-import { type VideoItem } from '@/types'
+import { type VideoItem } from '@ouonnki/cms-core'
 import { useApiStore } from '@/store/apiStore'
 import { useSearchStore } from '@/store/searchStore'
+import { useCmsClient } from '@/hooks'
 import { Card, CardFooter, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -15,7 +15,7 @@ import { toast } from 'sonner'
 
 /**
  * SearchHubView - 搜索中心视图
- * 重构自 SearchResult.tsx，使用 query params
+ * 使用 cms-core 进行搜索
  * ?q=keyword - 搜索关键词
  * ?mode=tmdb|direct - 搜索模式 (未来支持)
  */
@@ -27,6 +27,7 @@ export default function SearchHubView() {
   const abortCtrlRef = useRef<AbortController | null>(null)
   const { videoAPIs } = useApiStore()
   const { getCachedResults, updateCachedResults } = useSearchStore()
+  const cmsClient = useCmsClient()
 
   const [searchRes, setSearchRes] = useState<VideoItem[]>([])
   const [curPage, setCurPage] = useState(1)
@@ -77,31 +78,29 @@ export default function SearchHubView() {
         const completedApiIds = [...existingApiIds]
         let hasNewResults = false
 
-        const searchPromise = apiService
-          .aggregatedSearch(
-            keyword,
-            apisToSearch,
-            newResults => {
-              hasNewResults = true
-              setSearchRes(prevResults => {
-                const mergedRes = [...prevResults, ...newResults]
-                if (mergedRes.length >= PaginationConfig.singlePageSize) setLoading(false)
-                return mergedRes
-              })
+        // 订阅增量结果事件
+        const unsubResult = cmsClient.on('search:result', event => {
+          hasNewResults = true
+          setSearchRes(prevResults => {
+            const mergedRes = [...prevResults, ...event.items]
+            if (mergedRes.length >= PaginationConfig.singlePageSize) setLoading(false)
+            return mergedRes
+          })
 
-              const newApiIds = Array.from(
-                new Set(newResults.map(r => r.source_code).filter((id): id is string => !!id)),
-              )
-              newApiIds.forEach(id => {
-                if (!completedApiIds.includes(id)) {
-                  completedApiIds.push(id)
-                }
-              })
-
-              updateCachedResults(keyword, newResults, completedApiIds, false)
-            },
-            controller.signal,
+          const newApiIds = Array.from(
+            new Set(event.items.map(r => r.source_code).filter((id): id is string => !!id)),
           )
+          newApiIds.forEach(id => {
+            if (!completedApiIds.includes(id)) {
+              completedApiIds.push(id)
+            }
+          })
+
+          updateCachedResults(keyword, event.items, completedApiIds, false)
+        })
+
+        const searchPromise = cmsClient
+          .aggregatedSearch(keyword, apisToSearch, controller.signal)
           .then(allResults => {
             const allApiIds = apisToSearch.map(api => api.id)
             const finalApiIds = Array.from(new Set([...existingApiIds, ...allApiIds]))
@@ -122,6 +121,7 @@ export default function SearchHubView() {
             }
           })
           .finally(() => {
+            unsubResult()
             setLoading(false)
           })
 
@@ -157,7 +157,7 @@ export default function SearchHubView() {
       setSearchRes([])
       await searchAPIs(selectedAPIs, [], [])
     },
-    [selectedAPIs, getCachedResults, updateCachedResults],
+    [selectedAPIs, getCachedResults, updateCachedResults, cmsClient],
   )
 
   // 监听搜索词变化

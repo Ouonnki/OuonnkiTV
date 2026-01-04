@@ -1,14 +1,26 @@
 import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
 import { immer } from 'zustand/middleware/immer'
-import type { VideoApi } from '@/types'
+import type { VideoSource, SourceStore } from '@ouonnki/cms-core'
+import {
+  addSource,
+  removeSource,
+  setSourceEnabled,
+  selectAllSources,
+  deselectAllSources,
+  getEnabledSources,
+  importSources,
+} from '@ouonnki/cms-core/source'
 import { getInitialVideoSources } from '@/config/api.config'
 import { v4 as uuidv4 } from 'uuid'
 import { useSettingStore } from './settingStore'
 
+// 保持向后兼容的类型别名
+export type VideoApi = VideoSource
+
 interface ApiState {
-  // 自定义 API 列表
-  videoAPIs: VideoApi[]
+  // 视频源列表
+  videoAPIs: VideoSource[]
   // 广告过滤开关
   adFilteringEnabled: boolean
 }
@@ -17,7 +29,7 @@ interface ApiActions {
   // 设置 API 启用状态
   setApiEnabled: (apiId: string, enabled: boolean) => void
   // 添加视频 API
-  addAndUpdateVideoAPI: (api: VideoApi) => void
+  addAndUpdateVideoAPI: (api: VideoSource) => void
   // 删除视频 API
   removeVideoAPI: (apiId: string) => void
   // 设置广告过滤
@@ -29,14 +41,31 @@ interface ApiActions {
   // 初始化环境变量中的视频源
   initializeEnvSources: () => void
   // 批量导入视频源
-  importVideoAPIs: (apis: VideoApi[]) => void
+  importVideoAPIs: (apis: VideoSource[]) => void
   // 获取选中的视频源
-  getSelectedAPIs: () => VideoApi[]
+  getSelectedAPIs: () => VideoSource[]
   // 重置视频源
   resetVideoSources: () => Promise<void>
 }
 
 type ApiStore = ApiState & ApiActions
+
+/**
+ * 将ApiState转换为SourceStore格式以便使用cms-core纯函数
+ */
+function toSourceStore(state: ApiState): SourceStore {
+  return {
+    sources: state.videoAPIs,
+    version: 1,
+  }
+}
+
+/**
+ * 从SourceStore提取sources到videoAPIs
+ */
+function fromSourceStore(store: SourceStore): VideoSource[] {
+  return store.sources
+}
 
 export const useApiStore = create<ApiStore>()(
   devtools(
@@ -45,30 +74,32 @@ export const useApiStore = create<ApiStore>()(
         videoAPIs: [],
         adFilteringEnabled: true,
 
-        // Actions
+        // Actions - 使用cms-core纯函数
         setApiEnabled: (apiId: string, enabled: boolean) => {
           set(state => {
-            const api = state.videoAPIs.find(a => a.id === apiId)
-            if (api) {
-              api.isEnabled = enabled
-            }
+            const store = toSourceStore(state)
+            const newStore = setSourceEnabled(store, apiId, enabled)
+            state.videoAPIs = fromSourceStore(newStore)
           })
         },
 
-        addAndUpdateVideoAPI: (api: VideoApi) => {
+        addAndUpdateVideoAPI: (api: VideoSource) => {
           set(state => {
-            const index = state.videoAPIs.findIndex(a => a.id === api.id)
-            if (index !== -1) {
-              state.videoAPIs[index] = { ...api, updatedAt: new Date() }
-            } else {
-              state.videoAPIs.push({ ...api, updatedAt: new Date() })
-            }
+            const store = toSourceStore(state)
+            // addSource会自动处理添加或更新
+            const newStore = addSource(store, {
+              ...api,
+              updatedAt: new Date(),
+            })
+            state.videoAPIs = fromSourceStore(newStore)
           })
         },
 
         removeVideoAPI: (apiId: string) => {
           set(state => {
-            state.videoAPIs = state.videoAPIs.filter(api => api.id !== apiId)
+            const store = toSourceStore(state)
+            const newStore = removeSource(store, apiId)
+            state.videoAPIs = fromSourceStore(newStore)
           })
         },
 
@@ -80,13 +111,17 @@ export const useApiStore = create<ApiStore>()(
 
         selectAllAPIs: () => {
           set(state => {
-            state.videoAPIs = state.videoAPIs.map(api => ({ ...api, isEnabled: true }))
+            const store = toSourceStore(state)
+            const newStore = selectAllSources(store)
+            state.videoAPIs = fromSourceStore(newStore)
           })
         },
 
         deselectAllAPIs: () => {
           set(state => {
-            state.videoAPIs = state.videoAPIs.map(api => ({ ...api, isEnabled: false }))
+            const store = toSourceStore(state)
+            const newStore = deselectAllSources(store)
+            state.videoAPIs = fromSourceStore(newStore)
           })
         },
 
@@ -95,51 +130,37 @@ export const useApiStore = create<ApiStore>()(
           console.log(envSources)
           set(state => {
             if (envSources.length > 0) {
-              // 只添加不存在的环境变量源
-              envSources.forEach(envSource => {
-                if (envSource) {
-                  // 确保 envSource 不为 null
-                  const exists = state.videoAPIs.some(
-                    api =>
-                      api.id === envSource.id ||
-                      (api.name === envSource.name && api.url === envSource.url),
-                  )
-                  if (!exists) {
-                    state.videoAPIs.push(envSource)
-                  }
-                }
+              const store = toSourceStore(state)
+              const { store: newStore } = importSources(store, envSources, {
+                defaultTimeout: useSettingStore.getState().network.defaultTimeout || 3000,
+                defaultRetry: useSettingStore.getState().network.defaultRetry || 3,
+                skipInvalid: true,
               })
+              state.videoAPIs = fromSourceStore(newStore)
             }
           })
         },
 
-        importVideoAPIs: (apis: VideoApi[]) => {
+        importVideoAPIs: (apis: VideoSource[]) => {
           set(state => {
-            apis.forEach(api => {
-              // 检查是否已存在相同的源（基于name和url）
-              const exists = state.videoAPIs.some(
-                existingApi =>
-                  existingApi.id === api.id ||
-                  (existingApi.name === api.name && existingApi.url === api.url),
-              )
-              if (!exists) {
-                state.videoAPIs.push({
-                  id: api.id || uuidv4(),
-                  name: api.name,
-                  url: api.url,
-                  detailUrl: api.detailUrl || '',
-                  timeout: api.timeout || useSettingStore.getState().network.defaultTimeout || 3000,
-                  retry: api.retry || useSettingStore.getState().network.defaultRetry || 3,
-                  isEnabled: api.isEnabled ?? true,
-                  updatedAt: api.updatedAt || new Date(),
-                })
-              }
+            const store = toSourceStore(state)
+            // 为没有ID的源生成UUID
+            const apisWithIds = apis.map(api => ({
+              ...api,
+              id: api.id || uuidv4(),
+            }))
+            const { store: newStore } = importSources(store, apisWithIds, {
+              defaultTimeout: useSettingStore.getState().network.defaultTimeout || 3000,
+              defaultRetry: useSettingStore.getState().network.defaultRetry || 3,
+              skipInvalid: true,
             })
+            state.videoAPIs = fromSourceStore(newStore)
           })
         },
 
         getSelectedAPIs: () => {
-          return get().videoAPIs.filter(api => api.isEnabled)
+          const store = toSourceStore(get())
+          return getEnabledSources(store)
         },
 
         resetVideoSources: async () => {
@@ -151,7 +172,7 @@ export const useApiStore = create<ApiStore>()(
       })),
       {
         name: 'ouonnki-tv-api-store', // 持久化存储的键名
-        version: 5, // 更新版本号以触发迁移
+        version: 5, // 保持版本号不变以兼容现有数据
         migrate: (persistedState: unknown, version: number) => {
           const state = persistedState as Partial<ApiState>
 

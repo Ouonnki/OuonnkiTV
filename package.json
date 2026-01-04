@@ -18,6 +18,7 @@
     "docker:logs": "docker-compose logs -f"
   },
   "dependencies": {
+    "@ouonnki/cms-core": "workspace:*",
     "@fontsource/inter": "^5.1.1",
     "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-alert-dialog": "^1.1.15",

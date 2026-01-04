@@ -1,14 +1,9 @@
 import { useEffect, useRef, useState, useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
 import Artplayer from 'artplayer'
-import Hls, {
-  type LoaderContext,
-  type LoaderCallbacks,
-  type LoaderResponse,
-  type LoaderStats,
-  type HlsConfig,
-  type LoaderConfiguration,
-} from 'hls.js'
+import Hls, { type HlsConfig } from 'hls.js'
+import { type DetailResult } from '@ouonnki/cms-core'
+import { createM3u8Processor, createHlsLoaderClass } from '@ouonnki/cms-core/m3u8'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -26,68 +21,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import type { DetailResponse } from '@/types'
-import { apiService } from '@/services/api.service'
 import { useApiStore } from '@/store/apiStore'
 import { useViewingHistoryStore } from '@/store/viewingHistoryStore'
 import { useSettingStore } from '@/store/settingStore'
-import { useDocumentTitle } from '@/hooks'
+import { useDocumentTitle, useCmsClient } from '@/hooks'
 import { ArrowUpIcon, ArrowDownIcon } from '@/components/icons'
 import _ from 'lodash'
 import { toast } from 'sonner'
-
-function filterAdsFromM3U8(m3u8Content: string) {
-  if (!m3u8Content) return ''
-
-  const lines = m3u8Content.split('\n')
-  const filteredLines = []
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i]
-    if (!line.includes('#EXT-X-DISCONTINUITY')) {
-      filteredLines.push(line)
-    }
-  }
-
-  return filteredLines.join('\n')
-}
-
-interface ExtendedLoaderContext extends LoaderContext {
-  type: string
-}
 
 interface ArtplayerWithHls extends Artplayer {
   hls?: Hls
 }
 
-class CustomHlsJsLoader extends Hls.DefaultConfig.loader {
-  constructor(config: HlsConfig) {
-    super(config)
-    const load = this.load.bind(this)
-    this.load = function (
-      context: LoaderContext,
-      config: LoaderConfiguration,
-      callbacks: LoaderCallbacks<LoaderContext>,
-    ) {
-      const ctx = context as ExtendedLoaderContext
-      if (ctx.type === 'manifest' || ctx.type === 'level') {
-        const onSuccess = callbacks.onSuccess
-        callbacks.onSuccess = function (
-          response: LoaderResponse,
-          stats: LoaderStats,
-          context: LoaderContext,
-          networkDetails: unknown,
-        ) {
-          if (response.data && typeof response.data === 'string') {
-            response.data = filterAdsFromM3U8(response.data)
-          }
-          return onSuccess(response, stats, context, networkDetails)
-        }
-      }
-      load(context, config, callbacks)
-    }
-  }
-}
+// 创建M3U8处理器和自定义HLS加载器
+const m3u8Processor = createM3u8Processor({ filterAds: true })
+const CustomHlsJsLoader = createHlsLoaderClass({ m3u8Processor, Hls })
 
 /**
  * RawPlayer - 直连模式播放器
@@ -96,6 +44,7 @@ class CustomHlsJsLoader extends Hls.DefaultConfig.loader {
 export default function RawPlayer() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
+  const cmsClient = useCmsClient()
 
   const vodId = searchParams.get('id') || ''
   const sourceCode = searchParams.get('source') || ''
@@ -116,7 +65,7 @@ export default function RawPlayer() {
     playbackRef.current = playback
   }, [viewingHistory, playback])
 
-  const [detail, setDetail] = useState<DetailResponse | null>(null)
+  const [detail, setDetail] = useState<DetailResult | null>(null)
   const [selectedEpisode, setSelectedEpisode] = useState(() => {
     const index = parseInt(episodeIndexParam)
     return isNaN(index) ? 0 : index
@@ -182,12 +131,12 @@ export default function RawPlayer() {
           throw new Error('未找到对应的API配置')
         }
 
-        const response = await apiService.getVideoDetail(vodId, api)
+        const response = await cmsClient.getDetail(vodId, api)
 
-        if (response.code === 200 && response.episodes && response.episodes.length > 0) {
+        if (response.success && response.episodes && response.episodes.length > 0) {
           setDetail(response)
         } else {
-          throw new Error(response.msg || '获取视频详情失败')
+          throw new Error(response.error || '获取视频详情失败')
         }
       } catch (err) {
         console.error('获取视频详情失败:', err)
@@ -198,7 +147,7 @@ export default function RawPlayer() {
     }
 
     fetchVideoDetail()
-  }, [sourceCode, vodId, videoAPIs])
+  }, [sourceCode, vodId, videoAPIs, cmsClient])
 
   useEffect(() => {
     const urlEpisodeIndex = parseInt(episodeIndexParam)

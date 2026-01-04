@@ -1,0 +1,54 @@
+{
+  "name": "@ouonnki/cms-core",
+  "version": "1.0.0",
+  "description": "CMS视频源核心逻辑库 - 无头、纯函数、事件驱动",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./m3u8": {
+      "types": "./dist/m3u8/index.d.ts",
+      "import": "./dist/m3u8/index.js"
+    },
+    "./source": {
+      "types": "./dist/source/index.d.ts",
+      "import": "./dist/source/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "cms",
+    "video",
+    "vod",
+    "search",
+    "headless"
+  ],
+  "author": "Ouonnki",
+  "license": "MIT",
+  "devDependencies": {
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  },
+  "peerDependencies": {
+    "hls.js": "^1.5.0"
+  },
+  "peerDependenciesMeta": {
+    "hls.js": {
+      "optional": true
+    }
+  }
+}
