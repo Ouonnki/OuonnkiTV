@@ -9,17 +9,7 @@ import { useCallback } from 'react'
  */
 export function useThemeControl() {
   const { theme, setTheme, resolvedTheme, systemTheme } = useTheme()
-  const {
-    mode,
-    accentColor,
-    radius,
-    transitionEnabled,
-    setMode,
-    setAccentColor,
-    setRadius,
-    setTransitionEnabled,
-    resetTheme,
-  } = useThemeStore()
+  const { mode, setMode } = useThemeStore()
 
   /**
    * 切换主题模式 (带动画)
@@ -38,15 +28,13 @@ export function useThemeControl() {
         (newMode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
       const direction = targetIsDark && currentResolved === 'light' ? 'expand' : 'contract'
 
-      if (transitionEnabled && event) {
+      if (event) {
         themeTransitionFromEvent(event, doChange, direction as 'expand' | 'contract')
-      } else if (transitionEnabled) {
-        themeTransition(doChange, { direction: direction as 'expand' | 'contract' })
       } else {
-        doChange()
+        themeTransition(doChange, { direction: direction as 'expand' | 'contract' })
       }
     },
-    [setMode, setTheme, transitionEnabled, resolvedTheme],
+    [setMode, setTheme, resolvedTheme],
   )
 
   /**
@@ -73,17 +61,11 @@ export function useThemeControl() {
     resolvedTheme,
     systemTheme,
     isDark,
-    accentColor,
-    radius,
-    transitionEnabled,
 
     // 方法
     changeMode,
     toggleDarkMode,
-    setAccentColor,
-    setRadius,
-    setTransitionEnabled,
-    resetTheme,
+    resetTheme: useThemeStore(state => state.resetTheme),
   }
 }
 

@@ -6,7 +6,6 @@
  */
 
 // Components
-export { ThemeInitializer } from './ThemeInitializer'
 export { ThemeToggle } from './ThemeToggle'
 
 // Hooks
@@ -16,15 +15,8 @@ export { useThemeControl as useTheme, useThemeState } from './hooks/useTheme'
 export { useThemeStore, type ThemeState } from './store'
 
 // Utils
-export {
-  hexToOklch,
-  parseOklch,
-  calculateDarkAccent,
-  calculateForeground,
-  getDefaultAccent,
-  applyThemeVariables,
-  clearThemeVariables,
-} from './utils'
+// Utils
+// No utilities exported currently
 
 // Transitions
 export { supportsViewTransitions, themeTransition, themeTransitionFromEvent } from './transitions'

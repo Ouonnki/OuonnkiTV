@@ -1,37 +1,20 @@
-import { Label } from '@/shared/components/ui/label'
-import { Switch } from '@/shared/components/ui/switch'
-import { Input } from '@/shared/components/ui/input'
 import { Button } from '@/shared/components/ui/button'
-import { useTheme, useThemeStore } from '@/shared/components/theme'
-import { useState, useRef } from 'react'
-import { Palette, RotateCcw, Sun, Moon, Monitor } from 'lucide-react'
-
-/** 预设颜色 */
-const PRESET_COLORS = [
-  { name: '默认', value: null },
-  { name: '紫罗兰', value: '#8B5CF6' },
-  { name: '蓝色', value: '#3B82F6' },
-  { name: '青色', value: '#06B6D4' },
-  { name: '绿色', value: '#10B981' },
-  { name: '黄色', value: '#F59E0B' },
-  { name: '橙色', value: '#F97316' },
-  { name: '红色', value: '#EF4444' },
-  { name: '粉色', value: '#EC4899' },
-]
+import { useTheme } from '@/shared/components/theme'
+import { useRef } from 'react'
+import { Palette, Sun, Moon, Monitor } from 'lucide-react'
 
 export default function ThemeSettings() {
-  const { isDark, changeMode, mode } = useTheme()
-  const { accentColor, transitionEnabled, setAccentColor, setTransitionEnabled, resetTheme } =
-    useThemeStore()
+  const { mode } = useTheme()
+  const { changeMode } = useTheme()
+  // Ensure we are using the store's mode if needed, but useTheme hook returns mode as well (from next-themes usually, but here our hook combines them).
+  // Actually, looking at useTheme hook: it returns mode from store.
+  // Wait, let's check useThemeControl return values again.
+  // It returns { mode, theme, resolvedTheme, systemTheme, isDark, changeMode, toggleDarkMode, resetTheme }
+  // The original code destructured { isDark, changeMode, mode } from useTheme().
+  // references: line 23: const { isDark, changeMode, mode } = useTheme()
+  // So I can keep that.
 
-  const [customColor, setCustomColor] = useState(accentColor || '')
   const lastClickEvent = useRef<MouseEvent | null>(null)
-
-  const handleCustomColorApply = () => {
-    if (/^#[0-9A-Fa-f]{6}$/.test(customColor)) {
-      setAccentColor(customColor)
-    }
-  }
 
   const handleModeChange = (newMode: 'light' | 'dark' | 'system') => {
     changeMode(newMode, lastClickEvent.current ?? undefined)
@@ -90,69 +73,6 @@ export default function ThemeSettings() {
           </Button>
         </div>
       </div>
-
-      {/* 强调色 */}
-      <div className="flex flex-col gap-4 rounded-xl border border-gray-200 bg-white/40 p-6 backdrop-blur-xl dark:border-gray-700 dark:bg-gray-800/40">
-        <h2 className="text-base font-semibold text-gray-700 dark:text-gray-200">强调色</h2>
-
-        {/* 预设颜色 */}
-        <div className="flex flex-wrap gap-2">
-          {PRESET_COLORS.map(color => (
-            <button
-              key={color.name}
-              onClick={() => setAccentColor(color.value)}
-              className={`flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all ${
-                accentColor === color.value
-                  ? 'border-primary ring-primary/30 scale-110 ring-2'
-                  : 'border-gray-300 hover:scale-105 dark:border-gray-600'
-              }`}
-              style={{
-                backgroundColor: color.value || (isDark ? '#ffffff' : '#000000'),
-              }}
-              title={color.name}
-            />
-          ))}
-        </div>
-
-        {/* 自定义颜色 */}
-        <div className="flex gap-2">
-          <Input
-            placeholder="#FF5733"
-            value={customColor}
-            onChange={e => setCustomColor(e.target.value)}
-            className="flex-1"
-          />
-          <Button onClick={handleCustomColorApply}>应用</Button>
-        </div>
-
-        {/* 当前颜色显示 */}
-        <div className="flex items-center gap-3 rounded-lg bg-gray-100 p-3 dark:bg-gray-700/50">
-          <div
-            className="h-8 w-8 rounded-full border border-gray-300 dark:border-gray-500"
-            style={{
-              backgroundColor: accentColor || (isDark ? '#ffffff' : '#000000'),
-            }}
-          />
-          <span className="text-sm text-gray-600 dark:text-gray-300">
-            当前强调色: {accentColor || '默认'}
-          </span>
-        </div>
-      </div>
-
-      {/* 过渡动画 */}
-      <div className="flex flex-row items-center justify-between rounded-xl border border-gray-200 bg-white/40 p-6 backdrop-blur-xl dark:border-gray-700 dark:bg-gray-800/40">
-        <div className="space-y-0.5">
-          <Label className="text-base text-gray-800 dark:text-gray-100">切换动画</Label>
-          <p className="text-sm text-gray-500">启用主题切换时的圆形扩散动画</p>
-        </div>
-        <Switch checked={transitionEnabled} onCheckedChange={setTransitionEnabled} />
-      </div>
-
-      {/* 重置 */}
-      <Button variant="outline" onClick={resetTheme} className="w-full text-destructive">
-        <RotateCcw size={16} className="mr-2" />
-        重置主题设置
-      </Button>
     </div>
   )
 }

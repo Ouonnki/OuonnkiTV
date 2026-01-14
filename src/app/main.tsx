@@ -8,7 +8,6 @@ import '@/app/styles/main.css'
 import { ThemeProvider } from 'next-themes'
 import AppRouter from './router'
 import { Toaster } from '@/shared/components/ui/sonner'
-import { ThemeInitializer } from '@/shared/components/theme'
 import { TooltipProvider } from '@/shared/components/ui/tooltip'
 
 import { Analytics } from '@vercel/analytics/react'
@@ -19,7 +18,6 @@ const root = document.getElementById('root')!
 const app = (
   <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
     <TooltipProvider>
-      <ThemeInitializer />
       <AppRouter />
       <Toaster richColors position="top-center" />
       {import.meta.env.VITE_DISABLE_ANALYTICS !== 'true' && (
