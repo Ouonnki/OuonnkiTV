@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router'
-import { motion } from 'framer-motion'
 import Navigation from '@/shared/components/Navigation'
+import { SidebarProvider, SidebarInset } from '@/shared/components/ui/sidebar'
+import SideBar from '@/shared/components/SideBar'
 import { ScrollArea } from '@/shared/components/ui/scroll-area'
 import { lazy, Suspense, useEffect } from 'react'
 import { useVersionStore } from '@/shared/store/versionStore'
@@ -34,21 +35,27 @@ export default function MainLayout() {
   }, [hasNewVersion, setShowUpdateModal, system.isUpdateLogEnabled])
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.3 }}
+    <SidebarProvider
+      defaultOpen={false}
+      style={
+        {
+          '--sidebar-top': '4rem',
+        } as React.CSSProperties
+      }
+      className="flex h-dvh flex-col overflow-hidden"
     >
-      <Suspense fallback={null}>
-        <UpdateModal />
-      </Suspense>
-      <ScrollArea className="h-dvh">
-        <Navigation />
-        <div className="mx-auto px-5">
-          <Outlet />
-        </div>
-      </ScrollArea>
-    </motion.div>
+      <Navigation />
+      <div className="flex flex-1 overflow-hidden">
+        <SideBar />
+        <SidebarInset className="h-full overflow-hidden">
+          <ScrollArea className="h-full">
+            <Outlet />
+            <Suspense fallback={null}>
+              <UpdateModal />
+            </Suspense>
+          </ScrollArea>
+        </SidebarInset>
+      </div>
+    </SidebarProvider>
   )
 }

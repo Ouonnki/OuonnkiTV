@@ -1,23 +1,25 @@
 import * as React from 'react'
 import { cn } from '@/shared/lib/index'
 
-interface NavbarProps extends React.HTMLAttributes<HTMLElement> {}
+type NavbarProps = React.HTMLAttributes<HTMLElement>
 
 function Navbar({ className, children, ...props }: NavbarProps) {
   return (
-    <nav
-      className={cn(
-        'border-border bg-background/80 flex h-16 w-full items-center justify-between border-b px-5 backdrop-blur-md',
-        className,
-      )}
-      {...props}
-    >
-      {children}
-    </nav>
+    <div className="h-16 w-full px-2 pt-2">
+      <nav
+        className={cn(
+          'border-border bg-sidebar flex h-full items-center justify-between rounded-lg border px-3 backdrop-blur-md',
+          className,
+        )}
+        {...props}
+      >
+        {children}
+      </nav>
+    </div>
   )
 }
 
-interface NavbarBrandProps extends React.HTMLAttributes<HTMLDivElement> {}
+type NavbarBrandProps = React.HTMLAttributes<HTMLDivElement>
 
 function NavbarBrand({ className, children, ...props }: NavbarBrandProps) {
   return (
