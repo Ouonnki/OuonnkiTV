@@ -1,6 +1,6 @@
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { useSettingStore } from '@/store/settingStore'
+import { Input } from '@/shared/components/ui/input'
+import { Label } from '@/shared/components/ui/label'
+import { useSettingStore } from '@/shared/store/settingStore'
 
 export default function NetworkSettings() {
   const { network, setNetworkSettings } = useSettingStore()

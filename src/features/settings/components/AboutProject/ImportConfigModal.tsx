@@ -6,17 +6,17 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
-import { Input } from '@/components/ui/input'
+} from '@/shared/components/ui/dialog'
+import { Button } from '@/shared/components/ui/button'
+import { Label } from '@/shared/components/ui/label'
+import { Input } from '@/shared/components/ui/input'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
 import { Loader2 } from 'lucide-react'
-import { Textarea } from '@/components/ui/textarea'
-import { usePersonalConfig } from '@/hooks/usePersonalConfig'
+import { Textarea } from '@/shared/components/ui/textarea'
+import { usePersonalConfig } from '@/shared/hooks/usePersonalConfig'
 
 export function URLConfigModal({
   open,

@@ -1,4 +1,4 @@
-import { type SettingModule } from '@/types'
+import { type SettingModule } from '@/shared/types'
 
 export default function ModuleContent({ module }: { module: SettingModule }) {
   return (

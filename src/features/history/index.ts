@@ -1,3 +1,3 @@
 // History feature exports
 export { default as HistoryView } from './views/HistoryView'
-export { useViewingHistoryStore } from '@/store/viewingHistoryStore'
+export { useViewingHistoryStore } from '@/shared/store/viewingHistoryStore'

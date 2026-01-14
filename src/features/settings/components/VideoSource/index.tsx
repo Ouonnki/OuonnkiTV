@@ -1,14 +1,14 @@
-import { Button } from '@/components/ui/button'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import { Button } from '@/shared/components/ui/button'
+import { ScrollArea } from '@/shared/components/ui/scroll-area'
 import { CircleX, CircleCheckBig, ChevronRight } from 'lucide-react'
-import { Switch } from '@/components/ui/switch'
-import { cn } from '@/utils'
+import { Switch } from '@/shared/components/ui/switch'
+import { cn } from '@/shared/lib'
 import { useRef, useState, useEffect } from 'react'
 import { toast } from 'sonner'
-import { useApiStore } from '@/store/apiStore'
-import { useSettingStore } from '@/store/settingStore'
+import { useApiStore } from '@/shared/store/apiStore'
+import { useSettingStore } from '@/shared/store/settingStore'
 import dayjs from 'dayjs'
-import ActionDropdown from '@/components/common/ActionDropdown'
+import ActionDropdown from '@/shared/components/common/ActionDropdown'
 import VideoSourceForm from './VideoSourceForm'
 import {
   Dialog,
@@ -16,7 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog'
+} from '@/shared/components/ui/dialog'
 import { v4 as uuidv4 } from 'uuid'
 import { URLSourceModal, TextSourceModal } from './ImportSourceModal'
 

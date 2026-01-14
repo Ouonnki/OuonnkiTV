@@ -1,14 +1,14 @@
-import { useSettingStore } from '@/store/settingStore'
-import { useApiStore } from '@/store/apiStore'
-import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
+import { useSettingStore } from '@/shared/store/settingStore'
+import { useApiStore } from '@/shared/store/apiStore'
+import { Label } from '@/shared/components/ui/label'
+import { Switch } from '@/shared/components/ui/switch'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from '@/shared/components/ui/select'
 
 export default function PlaybackSettings() {
   const { playback, setPlaybackSettings } = useSettingStore()

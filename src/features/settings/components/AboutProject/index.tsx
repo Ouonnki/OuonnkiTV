@@ -1,15 +1,15 @@
-import { OkiLogo } from '@/components/icons'
+import { OkiLogo } from '@/shared/components/icons'
 import { Github, History } from 'lucide-react'
-import { useVersionStore } from '@/store/versionStore'
+import { useVersionStore } from '@/shared/store/versionStore'
 
-import { Switch } from '@/components/ui/switch'
-import { Label } from '@/components/ui/label'
-import { useSettingStore } from '@/store/settingStore'
-import ActionDropdown from '@/components/common/ActionDropdown'
-import { usePersonalConfig } from '@/hooks/usePersonalConfig'
+import { Switch } from '@/shared/components/ui/switch'
+import { Label } from '@/shared/components/ui/label'
+import { useSettingStore } from '@/shared/store/settingStore'
+import ActionDropdown from '@/shared/components/common/ActionDropdown'
+import { usePersonalConfig } from '@/shared/hooks/usePersonalConfig'
 import { useRef, useState } from 'react'
 import { URLConfigModal, TextConfigModal } from './ImportConfigModal'
-import { ConfirmModal } from '@/components/common/ConfirmModal'
+import { ConfirmModal } from '@/shared/components/common/ConfirmModal'
 
 export default function AboutProject() {
   const currentYear = new Date().getFullYear()

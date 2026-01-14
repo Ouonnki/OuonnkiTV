@@ -4,28 +4,28 @@ import Artplayer from 'artplayer'
 import Hls, { type HlsConfig } from 'hls.js'
 import { type DetailResult } from '@ouonnki/cms-core'
 import { createM3u8Processor, createHlsLoaderClass } from '@ouonnki/cms-core/m3u8'
-import { Card, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Spinner } from '@/components/ui/spinner'
+import { Card, CardContent } from '@/shared/components/ui/card'
+import { Button } from '@/shared/components/ui/button'
+import { Badge } from '@/shared/components/ui/badge'
+import { Spinner } from '@/shared/components/ui/spinner'
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/components/ui/tooltip'
+} from '@/shared/components/ui/tooltip'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { useApiStore } from '@/store/apiStore'
-import { useViewingHistoryStore } from '@/store/viewingHistoryStore'
-import { useSettingStore } from '@/store/settingStore'
-import { useDocumentTitle, useCmsClient } from '@/hooks'
-import { ArrowUpIcon, ArrowDownIcon } from '@/components/icons'
+} from '@/shared/components/ui/select'
+import { useApiStore } from '@/shared/store/apiStore'
+import { useViewingHistoryStore } from '@/shared/store/viewingHistoryStore'
+import { useSettingStore } from '@/shared/store/settingStore'
+import { useDocumentTitle, useCmsClient } from '@/shared/hooks'
+import { ArrowUpIcon, ArrowDownIcon } from '@/shared/components/icons'
 import _ from 'lodash'
 import { toast } from 'sonner'
 

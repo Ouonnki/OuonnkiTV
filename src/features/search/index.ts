@@ -1,5 +1,6 @@
 // Search feature exports
 export { default as SearchHubView } from './views/SearchHubView'
-export { useSearchStore } from '@/store/searchStore'
-export { useSearch } from './hooks/useSearch'
-export { useSearchHistory } from './hooks/useSearchHistory'
+
+// Re-exports from global modules
+export { useSearchStore } from '@/shared/store/searchStore'
+export { useSearch, useSearchHistory } from '@/shared/hooks'

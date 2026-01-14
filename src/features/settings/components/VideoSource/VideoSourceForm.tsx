@@ -1,4 +1,4 @@
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/shared/components/ui/collapsible'
 import {
   Field,
   FieldDescription,
@@ -8,13 +8,13 @@ import {
   FieldLegend,
   FieldSeparator,
   FieldSet,
-} from '@/components/ui/field'
-import { Button } from '@/components/ui/button'
-import { Switch } from '@/components/ui/switch'
+} from '@/shared/components/ui/field'
+import { Button } from '@/shared/components/ui/button'
+import { Switch } from '@/shared/components/ui/switch'
 import { Info, ChevronsUpDown } from 'lucide-react'
-import { Input } from '@/components/ui/input'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Label } from '@/components/ui/label'
+import { Input } from '@/shared/components/ui/input'
+import { Checkbox } from '@/shared/components/ui/checkbox'
+import { Label } from '@/shared/components/ui/label'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
@@ -40,10 +40,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
+} from '@/shared/components/ui/alert-dialog'
 import { toast } from 'sonner'
-import { type VideoApi } from '@/types'
-import { useApiStore } from '@/store/apiStore'
+import { type VideoApi } from '@/shared/types'
+import { useApiStore } from '@/shared/store/apiStore'
 import { useState, useEffect } from 'react'
 
 // 表单-字符串输入通用组件

@@ -1,5 +1,5 @@
 import type { Plugin } from 'vite'
-import { handleProxyRequest, getTargetUrl } from '../utils/proxy'
+import { handleProxyRequest, getTargetUrl } from '../shared/lib/proxy'
 
 export function proxyMiddleware(): Plugin {
   return {

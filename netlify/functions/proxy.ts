@@ -1,5 +1,5 @@
 import type { Handler, HandlerEvent } from '@netlify/functions'
-import { handleProxyRequest } from '../../src/utils/proxy'
+import { handleProxyRequest } from '../../src/shared/lib/proxy'
 
 const handler: Handler = async (event: HandlerEvent) => {
   const headers = {

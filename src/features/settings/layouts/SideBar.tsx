@@ -1,6 +1,6 @@
-import { type SettingModuleList } from '@/types'
+import { type SettingModuleList } from '@/shared/types'
 import { motion } from 'framer-motion'
-import { cn } from '@/utils'
+import { cn } from '@/shared/lib'
 
 export default function SideBar({
   activeId,
