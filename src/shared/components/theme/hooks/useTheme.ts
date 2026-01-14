@@ -74,6 +74,6 @@ export function useThemeControl() {
  * 配合 ThemeToggle 使用以渲染对应的图标
  */
 export function useThemeState() {
-  const { isDark, resolvedTheme } = useThemeControl()
-  return { isDark, resolvedTheme }
+  const { isDark, resolvedTheme, mode } = useThemeControl()
+  return { isDark, resolvedTheme, mode }
 }

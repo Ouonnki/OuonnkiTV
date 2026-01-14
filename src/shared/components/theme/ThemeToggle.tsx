@@ -31,7 +31,7 @@ interface ThemeToggleProps {
  * ```
  */
 export function ThemeToggle({ children, asChild = true }: ThemeToggleProps) {
-  const { isDark, toggleDarkMode } = useThemeControl()
+  const { changeMode, mode } = useThemeControl()
   const lastClickEvent = useRef<MouseEvent | null>(null)
 
   const Comp = asChild ? Slot : 'button'
@@ -42,10 +42,13 @@ export function ThemeToggle({ children, asChild = true }: ThemeToggleProps) {
         lastClickEvent.current = e.nativeEvent as unknown as MouseEvent
       }}
       onClick={() => {
-        toggleDarkMode(lastClickEvent.current ?? undefined)
+        const nextMode = mode === 'light' ? 'dark' : mode === 'dark' ? 'system' : 'light'
+        changeMode(nextMode, lastClickEvent.current ?? undefined)
         lastClickEvent.current = null
       }}
-      aria-label={isDark ? '切换到亮色模式' : '切换到暗色模式'}
+      aria-label={
+        mode === 'light' ? '切换到暗色模式' : mode === 'dark' ? '切换到跟随系统' : '切换到亮色模式'
+      }
     >
       {children}
     </Comp>

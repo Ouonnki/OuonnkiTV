@@ -4,7 +4,7 @@ import { SidebarTrigger } from '@/shared/components/ui/sidebar'
 import { NavLink } from 'react-router'
 import { useSearch } from '@/shared/hooks'
 import { useEffect, useState } from 'react'
-import { Moon, Sun, Search } from 'lucide-react'
+import { Moon, Sun, Search, Laptop } from 'lucide-react'
 
 import { Input } from '@/shared/components/ui/input'
 import { Button } from '@/shared/components/ui/button'
@@ -12,7 +12,7 @@ import { ThemeToggle, useThemeState } from './theme'
 
 export default function Navigation() {
   const { search: searchQuery, searchMovie } = useSearch()
-  const { isDark } = useThemeState()
+  const { mode } = useThemeState()
 
   const [inputContent, setInputContent] = useState('')
   const handleKeyDown = (event: React.KeyboardEvent) => {
@@ -64,7 +64,9 @@ export default function Navigation() {
           <div className="flex flex-1 justify-end">
             <ThemeToggle>
               <Button size="icon" variant="ghost" className="size-7">
-                {isDark ? <Moon /> : <Sun />}
+                {mode === 'dark' && <Moon />}
+                {mode === 'light' && <Sun />}
+                {mode === 'system' && <Laptop />}
               </Button>
             </ThemeToggle>
           </div>

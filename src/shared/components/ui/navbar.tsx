@@ -8,7 +8,7 @@ function Navbar({ className, children, ...props }: NavbarProps) {
     <div className="h-16 w-full px-2 pt-2">
       <nav
         className={cn(
-          'border-border bg-sidebar flex h-full items-center justify-between rounded-lg border px-3 backdrop-blur-md',
+          'border-border bg-sidebar flex h-full items-center justify-between rounded-lg border px-3 shadow-sm backdrop-blur-md',
           className,
         )}
         {...props}
