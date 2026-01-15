@@ -211,6 +211,19 @@
   }
 }
 
+/* 进度条无限循环动画 */
+@keyframes progress-indeterminate {
+  0% {
+    transform: translateX(-100%) scaleX(0.2);
+  }
+  50% {
+    transform: translateX(0%) scaleX(0.4);
+  }
+  100% {
+    transform: translateX(100%) scaleX(0.2);
+  }
+}
+
 /* 收缩动画 - 从外向中心 */
 @keyframes theme-contract {
   from {

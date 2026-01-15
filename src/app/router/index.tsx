@@ -1,6 +1,6 @@
 import { lazy, Suspense } from 'react'
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router'
-import { Spinner } from '@/shared/components/ui/spinner'
+import { OkiLogo } from '@/shared/components/icons'
 
 // Layouts
 import MainLayout from '@/app/layouts/MainLayout'
@@ -27,11 +27,24 @@ const StandardPlayer = lazy(() => import('@/features/player/components/StandardP
 const RawPlayer = lazy(() => import('@/features/player/components/RawPlayer'))
 
 // Loading fallback
-const LoadingFallback = () => (
-  <div className="flex flex-col items-center py-40">
-    <Spinner size="lg" label="加载中..." />
-  </div>
-)
+const LoadingFallback = () => {
+  return (
+    <div className="flex h-dvh items-center justify-center">
+      <div className="flex -translate-y-1/2 flex-col items-center justify-center gap-3">
+        <OkiLogo size={80} />
+        <div className="text-xl font-bold tracking-widest">OUONNKI TV</div>
+        <div className="bg-primary/20 h-1 w-30 overflow-hidden rounded-full">
+          <div
+            className="bg-primary h-full w-full origin-left"
+            style={{
+              animation: 'progress-indeterminate 1.5s infinite ease-in-out',
+            }}
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
 
 // Suspense wrapper for lazy components
 const SuspenseWrapper = ({ children }: { children: React.ReactNode }) => (

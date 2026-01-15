@@ -18,9 +18,9 @@
     "docker:logs": "docker-compose logs -f"
   },
   "dependencies": {
-    "@ouonnki/cms-core": "workspace:*",
     "@fontsource/inter": "^5.1.1",
     "@hookform/resolvers": "^5.2.2",
+    "@ouonnki/cms-core": "workspace:*",
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-avatar": "^1.1.10",
     "@radix-ui/react-checkbox": "^1.3.3",
@@ -43,6 +43,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dayjs": "^1.11.13",
+    "embla-carousel-react": "^8.6.0",
     "framer-motion": "^12.16.0",
     "hls.js": "^1.6.15",
     "immer": "^10.1.1",
