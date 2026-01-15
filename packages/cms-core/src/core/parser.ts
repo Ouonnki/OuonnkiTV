@@ -1,5 +1,3 @@
-import type { DEFAULT_M3U8_PATTERN } from '../types'
-
 /**
  * 播放地址解析结果
  */
@@ -28,7 +26,7 @@ export function parsePlayUrl(vodPlayUrl: string, vodPlayFrom?: string): ParsedEp
   }
 
   // 优先选择包含 m3u8 的源
-  let sourceIndex = playFroms.findIndex((from) => from.toLowerCase().includes('m3u8'))
+  let sourceIndex = playFroms.findIndex(from => from.toLowerCase().includes('m3u8'))
 
   // 如果没找到，默认使用最后一个
   if (sourceIndex === -1) {
@@ -44,11 +42,11 @@ export function parsePlayUrl(vodPlayUrl: string, vodPlayFrom?: string): ParsedEp
   const episodeList = mainSource.split('#')
 
   const urls = episodeList
-    .map((ep) => {
+    .map(ep => {
       const parts = ep.split('$')
       return parts.length > 1 ? parts[1] : ''
     })
-    .filter((url) => url && (url.startsWith('http://') || url.startsWith('https://')))
+    .filter(url => url && (url.startsWith('http://') || url.startsWith('https://')))
 
   const names = episodeList.map((ep, index) => {
     const parts = ep.split('$')
@@ -65,12 +63,12 @@ export function parsePlayUrl(vodPlayUrl: string, vodPlayFrom?: string): ParsedEp
  */
 export function extractM3u8FromContent(
   vodContent: string,
-  pattern: RegExp = /\$https?:\/\/[^"'\s]+?\.m3u8/g
+  pattern: RegExp = /\$https?:\/\/[^"'\s]+?\.m3u8/g,
 ): string[] {
   if (!vodContent) {
     return []
   }
 
   const matches = vodContent.match(pattern) || []
-  return matches.map((link) => link.replace(/^\$/, ''))
+  return matches.map(link => link.replace(/^\$/, ''))
 }

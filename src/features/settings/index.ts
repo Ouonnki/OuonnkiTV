@@ -8,10 +8,4 @@ export { default as SystemSettings } from './views/SystemSettings'
 
 // Re-exports from global modules
 export { useSettingStore } from '@/shared/store/settingStore'
-export {
-  ThemeInitializer,
-  ThemeToggle,
-  useTheme,
-  useThemeStore,
-  useThemeState,
-} from '@/shared/components/theme'
+export { ThemeToggle, useTheme, useThemeStore, useThemeState } from '@/shared/components/theme'

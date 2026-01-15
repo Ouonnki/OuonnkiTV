@@ -1,5 +1,5 @@
 import type { VideoItem, VideoSource, SearchResult } from '../types'
-import { createConcurrencyLimiter, type ConcurrencyLimiter } from './concurrency'
+import { createConcurrencyLimiter } from './concurrency'
 
 /**
  * 聚合搜索选项
@@ -19,7 +19,7 @@ export interface AggregatorOptions {
 export type AggregatedSearchFn = (
   query: string,
   sources: VideoSource[],
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) => Promise<VideoItem[]>
 
 /**
@@ -29,14 +29,14 @@ export type AggregatedSearchFn = (
  */
 export function createAggregatedSearch(
   searchFn: (query: string, source: VideoSource) => Promise<SearchResult>,
-  options: AggregatorOptions
+  options: AggregatorOptions,
 ): AggregatedSearchFn {
   const { concurrencyLimit, onProgress, onResult } = options
 
   return async (
     query: string,
     sources: VideoSource[],
-    signal?: AbortSignal
+    signal?: AbortSignal,
   ): Promise<VideoItem[]> => {
     if (sources.length === 0) {
       console.warn('没有选中任何 API 源')
@@ -57,7 +57,7 @@ export function createAggregatedSearch(
     const limiter = createConcurrencyLimiter(concurrencyLimit)
     let completedCount = 0
 
-    const tasks = sources.map((source) =>
+    const tasks = sources.map(source =>
       limiter(async () => {
         if (aborted) return [] as VideoItem[]
 
@@ -82,7 +82,7 @@ export function createAggregatedSearch(
         }
 
         // 去重
-        const newUnique = result.items.filter((item) => {
+        const newUnique = result.items.filter(item => {
           const key = `${item.source_code}_${item.vod_id}`
           if (!seen.has(key)) {
             seen.add(key)
@@ -95,10 +95,10 @@ export function createAggregatedSearch(
 
         onResult?.(newUnique, source)
         return newUnique
-      })
+      }),
     )
 
-    const allPromise: Promise<VideoItem[]> = Promise.all(tasks).then((chunks) => chunks.flat())
+    const allPromise: Promise<VideoItem[]> = Promise.all(tasks).then(chunks => chunks.flat())
 
     if (signal) {
       const abortPromise = new Promise<VideoItem[]>((_, reject) => {

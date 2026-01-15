@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { M3u8Processor } from './processor'
 
 /**
@@ -42,21 +43,12 @@ export function createHlsLoaderClass(config: HlsLoaderConfig): any {
       const originalLoad = this.load.bind(this)
 
       // 重写load方法
-      this.load = (
-        context: any,
-        loadConfig: any,
-        callbacks: any
-      ) => {
+      this.load = (context: any, loadConfig: any, callbacks: any) => {
         // 检查是否是manifest或level类型
         if (context.type === 'manifest' || context.type === 'level') {
           const originalOnSuccess = callbacks.onSuccess
 
-          callbacks.onSuccess = (
-            response: any,
-            stats: any,
-            ctx: any,
-            networkDetails: unknown
-          ) => {
+          callbacks.onSuccess = (response: any, stats: any, ctx: any, networkDetails: unknown) => {
             // 处理M3U8内容
             if (response.data && typeof response.data === 'string') {
               response.data = m3u8Processor.process(response.data)
@@ -76,9 +68,9 @@ export function createHlsLoaderClass(config: HlsLoaderConfig): any {
  * 用于不使用类继承的场景
  */
 export function createM3u8LoaderCallback(
-  m3u8Processor: M3u8Processor
+  m3u8Processor: M3u8Processor,
 ): (response: { data?: string }) => void {
-  return (response) => {
+  return response => {
     if (response.data && typeof response.data === 'string') {
       response.data = m3u8Processor.process(response.data)
     }

@@ -6,7 +6,7 @@ import type {
   ProxyStrategy,
   ApiPathConfig,
 } from '../types'
-import { DEFAULT_API_CONFIG } from '../types'
+
 import { buildSearchUrl } from '../utils/url'
 
 /**
@@ -27,7 +27,7 @@ export interface SearchConfig {
 export async function searchVideos(
   query: string,
   source: VideoSource,
-  config: SearchConfig
+  config: SearchConfig,
 ): Promise<SearchResult> {
   const { requestAdapter, proxyStrategy, apiConfig } = config
 
@@ -49,9 +49,7 @@ export async function searchVideos(
     }
 
     const apiUrl = buildSearchUrl(source.url, query, apiConfig)
-    const finalUrl = proxyStrategy.shouldProxy(apiUrl)
-      ? proxyStrategy.applyProxy(apiUrl)
-      : apiUrl
+    const finalUrl = proxyStrategy.shouldProxy(apiUrl) ? proxyStrategy.applyProxy(apiUrl) : apiUrl
 
     const response = await requestAdapter.fetch(finalUrl, {
       headers: apiConfig.search.headers,

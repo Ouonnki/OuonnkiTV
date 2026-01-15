@@ -1,7 +1,6 @@
 import type { VideoSource, SourceStore } from '../types'
 import { addSource } from './store'
 import { validateSource } from './validator'
-import { v4 as uuidv4 } from 'uuid'
 
 /**
  * 导入结果
@@ -30,7 +29,7 @@ export function importSources(
     defaultRetry?: number
     /** 是否跳过验证失败的源 */
     skipInvalid?: boolean
-  }
+  },
 ): { store: SourceStore; result: ImportResult } {
   const { defaultTimeout = 3000, defaultRetry = 3, skipInvalid = true } = options || {}
 
@@ -67,7 +66,7 @@ export function importSources(
 
     // 检查是否已存在
     const exists = newStore.sources.some(
-      (s) => s.id === fullSource.id || (s.name === fullSource.name && s.url === fullSource.url)
+      s => s.id === fullSource.id || (s.name === fullSource.name && s.url === fullSource.url),
     )
 
     if (exists) {
@@ -96,7 +95,7 @@ export function importSources(
  * @returns 视频源数组
  */
 export function exportSources(store: SourceStore): VideoSource[] {
-  return store.sources.map((s) => ({ ...s }))
+  return store.sources.map(s => ({ ...s }))
 }
 
 /**
@@ -128,7 +127,7 @@ export function parseSourcesFromJson(json: string): Partial<VideoSource>[] {
  */
 export async function parseSourcesFromUrl(
   url: string,
-  fetchFn: typeof fetch = fetch
+  fetchFn: typeof fetch = fetch,
 ): Promise<Partial<VideoSource>[]> {
   try {
     const response = await fetchFn(url)

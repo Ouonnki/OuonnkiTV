@@ -102,10 +102,10 @@ export default function SideBar({ className }: { className?: string }) {
               <SidebarMenuButton asChild>
                 <NavLink to={item.url}>
                   <item.icon />
-                  <div className="flex w-full justify-between">
+                  <span className="flex w-full items-center justify-between">
                     <span>{item.title}</span>
-                    <span>v{currentVersion}</span>
-                  </div>
+                    <span className="text-muted-foreground text-xs">v{currentVersion}</span>
+                  </span>
                 </NavLink>
               </SidebarMenuButton>
             </SidebarMenuItem>

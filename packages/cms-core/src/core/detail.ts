@@ -6,7 +6,7 @@ import type {
   ProxyStrategy,
   ApiPathConfig,
 } from '../types'
-import { DEFAULT_API_CONFIG, DEFAULT_M3U8_PATTERN } from '../types'
+import { DEFAULT_M3U8_PATTERN } from '../types'
 import { buildDetailUrl } from '../utils/url'
 import { parsePlayUrl, extractM3u8FromContent } from './parser'
 
@@ -29,7 +29,7 @@ export interface DetailConfig {
 export async function getVideoDetail(
   id: string,
   source: VideoSource,
-  config: DetailConfig
+  config: DetailConfig,
 ): Promise<DetailResult> {
   const { requestAdapter, proxyStrategy, apiConfig, m3u8Pattern = DEFAULT_M3U8_PATTERN } = config
 

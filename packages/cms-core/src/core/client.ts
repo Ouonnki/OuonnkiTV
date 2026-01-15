@@ -8,11 +8,9 @@ import type {
   EventHandler,
   EventByType,
   ApiPathConfig,
-  RequestAdapter,
-  ProxyStrategy,
 } from '../types'
 import { DEFAULT_API_CONFIG, DEFAULT_CLIENT_CONFIG, DEFAULT_M3U8_PATTERN } from '../types'
-import { createEventEmitter, type CmsEventEmitter } from '../events'
+import { createEventEmitter } from '../events'
 import { createFetchAdapter } from '../adapters/fetch.adapter'
 import { createDirectStrategy } from '../adapters/proxy.adapter'
 import { searchVideos, type SearchConfig } from './search'
@@ -34,7 +32,7 @@ export interface CmsClient {
   aggregatedSearch(
     query: string,
     sources: VideoSource[],
-    signal?: AbortSignal
+    signal?: AbortSignal,
   ): Promise<VideoItem[]>
 
   // 详情
@@ -133,7 +131,7 @@ export function createCmsClient(config?: CmsClientConfig): CmsClient {
     async aggregatedSearch(
       query: string,
       sources: VideoSource[],
-      signal?: AbortSignal
+      signal?: AbortSignal,
     ): Promise<VideoItem[]> {
       const startTime = Date.now()
 
