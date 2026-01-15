@@ -47,11 +47,11 @@ export default function SideBar({ className }: { className?: string }) {
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="gap-2">
               {items.content.map(item => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild isActive={location.pathname === item.url}>
-                    <a href={item.url}>
+                    <a href={item.url} className="h-10">
                       <item.icon />
                       <span>{item.title}</span>
                     </a>
