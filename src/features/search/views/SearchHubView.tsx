@@ -1,6 +1,6 @@
 import { useSearchParams, useNavigate } from 'react-router'
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
-import { type VideoItem } from '@ouonnki/cms-core'
+import { type VideoItem, type SearchResultEvent } from '@ouonnki/cms-core'
 import { useApiStore } from '@/shared/store/apiStore'
 import { useSearchStore } from '@/shared/store/searchStore'
 import { useCmsClient } from '@/shared/hooks'
@@ -79,7 +79,7 @@ export default function SearchHubView() {
         let hasNewResults = false
 
         // 订阅增量结果事件
-        const unsubResult = cmsClient.on('search:result', event => {
+        const unsubResult = cmsClient.on('search:result', (event: SearchResultEvent) => {
           hasNewResults = true
           setSearchRes(prevResults => {
             const mergedRes = [...prevResults, ...event.items]
@@ -88,7 +88,11 @@ export default function SearchHubView() {
           })
 
           const newApiIds = Array.from(
-            new Set(event.items.map(r => r.source_code).filter((id): id is string => !!id)),
+            new Set(
+              event.items
+                .map((r: VideoItem) => r.source_code)
+                .filter((id: string | undefined): id is string => !!id),
+            ),
           )
           newApiIds.forEach(id => {
             if (!completedApiIds.includes(id)) {
@@ -101,7 +105,7 @@ export default function SearchHubView() {
 
         const searchPromise = cmsClient
           .aggregatedSearch(keyword, apisToSearch, controller.signal)
-          .then(allResults => {
+          .then((allResults: VideoItem[]) => {
             const allApiIds = apisToSearch.map(api => api.id)
             const finalApiIds = Array.from(new Set([...existingApiIds, ...allApiIds]))
 
@@ -230,15 +234,10 @@ export default function SearchHubView() {
               >
                 <CardHeader className="absolute top-1 z-10 flex-col items-start gap-0 p-3">
                   <div className="rounded-lg bg-black/20 px-2 py-1 backdrop-blur">
-                    <p className="text-xs font-bold uppercase text-white/80">
-                      {item.source_name}
-                    </p>
+                    <p className="text-xs font-bold text-white/80 uppercase">{item.source_name}</p>
                   </div>
                   {item.vod_remarks && (
-                    <Badge
-                      variant="warning"
-                      className="mt-2 bg-amber-500/80 backdrop-blur"
-                    >
+                    <Badge variant="warning" className="mt-2 bg-amber-500/80 backdrop-blur">
                       {item.vod_remarks}
                     </Badge>
                   )}
@@ -266,9 +265,7 @@ export default function SearchHubView() {
           <div className="sticky bottom-[2vh] z-50 flex justify-center transition-all">
             <div
               className={`rounded-full px-2 py-1 backdrop-blur-xl backdrop-saturate-150 ${
-                invertPagination
-                  ? 'bg-white/5'
-                  : 'bg-white/10 shadow-lg ring-1 ring-white/20'
+                invertPagination ? 'bg-white/5' : 'bg-white/10 shadow-lg ring-1 ring-white/20'
               }`}
             >
               <Pagination

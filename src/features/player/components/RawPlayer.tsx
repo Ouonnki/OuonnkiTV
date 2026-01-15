@@ -388,7 +388,7 @@ export default function RawPlayer() {
       }
       return selectedEpisodes
     } else {
-      return episodes.slice(start, end + 1).map((name, idx) => ({
+      return episodes.slice(start, end + 1).map((name, idx: number) => ({
         name,
         displayIndex: start + idx,
         actualIndex: start + idx,
@@ -519,28 +519,38 @@ export default function RawPlayer() {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3 rounded-lg bg-white/30 p-4 pt-0 shadow-lg/5 backdrop-blur-md sm:grid-cols-3 md:grid-cols-6 lg:grid-cols-8">
-              {currentPageEpisodes.map(({ name, displayIndex, actualIndex }) => {
-                return (
-                  <Tooltip key={`${name}-${displayIndex}`} delayDuration={1000}>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="secondary"
-                        className={
-                          selectedEpisode === actualIndex
-                            ? 'border border-gray-200 bg-gray-900 text-white drop-shadow-2xl'
-                            : 'border border-gray-200 bg-white/30 text-gray-800 drop-shadow-2xl backdrop-blur-md transition-all duration-300 hover:scale-105 hover:bg-black/80 hover:text-white'
-                        }
-                        onClick={() => handleEpisodeChange(displayIndex)}
-                      >
-                        <span className="overflow-hidden text-ellipsis whitespace-nowrap">
-                          {name}
-                        </span>
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>{name}</TooltipContent>
-                  </Tooltip>
-                )
-              })}
+              {currentPageEpisodes.map(
+                ({
+                  name,
+                  displayIndex,
+                  actualIndex,
+                }: {
+                  name: string
+                  displayIndex: number
+                  actualIndex: number
+                }) => {
+                  return (
+                    <Tooltip key={`${name}-${displayIndex}`} delayDuration={1000}>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="secondary"
+                          className={
+                            selectedEpisode === actualIndex
+                              ? 'border border-gray-200 bg-gray-900 text-white drop-shadow-2xl'
+                              : 'border border-gray-200 bg-white/30 text-gray-800 drop-shadow-2xl backdrop-blur-md transition-all duration-300 hover:scale-105 hover:bg-black/80 hover:text-white'
+                          }
+                          onClick={() => handleEpisodeChange(displayIndex)}
+                        >
+                          <span className="overflow-hidden text-ellipsis whitespace-nowrap">
+                            {name}
+                          </span>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>{name}</TooltipContent>
+                    </Tooltip>
+                  )
+                },
+              )}
             </div>
           </div>
         )}

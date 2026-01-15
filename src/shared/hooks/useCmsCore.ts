@@ -7,6 +7,9 @@ import {
   type VideoItem,
   type DetailResult,
   type CmsClientConfig,
+  type SearchResultEvent,
+  type SearchProgressEvent,
+  type SearchErrorEvent,
 } from '@ouonnki/cms-core'
 
 /**
@@ -86,22 +89,22 @@ export function useAggregatedSearch(config?: CmsClientConfig): UseAggregatedSear
 
   // 订阅事件
   useEffect(() => {
-    const unsubResult = client.on('search:result', (event) => {
-      setState((prev) => ({
+    const unsubResult = client.on('search:result', (event: SearchResultEvent) => {
+      setState(prev => ({
         ...prev,
         results: [...prev.results, ...event.items],
       }))
     })
 
-    const unsubProgress = client.on('search:progress', (event) => {
-      setState((prev) => ({
+    const unsubProgress = client.on('search:progress', (event: SearchProgressEvent) => {
+      setState(prev => ({
         ...prev,
         progress: { completed: event.completed, total: event.total },
       }))
     })
 
-    const unsubError = client.on('search:error', (event) => {
-      setState((prev) => ({
+    const unsubError = client.on('search:error', (event: SearchErrorEvent) => {
+      setState(prev => ({
         ...prev,
         error: event.error.message,
       }))
@@ -131,19 +134,19 @@ export function useAggregatedSearch(config?: CmsClientConfig): UseAggregatedSear
         await client.aggregatedSearch(query, sources, abortRef.current.signal)
       } catch (error) {
         if ((error as Error).name !== 'AbortError') {
-          setState((prev) => ({
+          setState(prev => ({
             ...prev,
             error: (error as Error).message,
           }))
         }
       } finally {
-        setState((prev) => ({
+        setState(prev => ({
           ...prev,
           loading: false,
         }))
       }
     },
-    [client]
+    [client],
   )
 
   const abort = useCallback(() => {
@@ -230,7 +233,7 @@ export function useVideoDetail(config?: CmsClientConfig): UseVideoDetailReturn {
         return null
       }
     },
-    [client]
+    [client],
   )
 
   const clear = useCallback(() => {
