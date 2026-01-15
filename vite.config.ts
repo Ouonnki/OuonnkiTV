@@ -1,14 +1,20 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
-import { fileURLToPath, URL } from 'node:url'
+import path from 'node:path'
 import { proxyMiddleware } from './src/middleware/proxy.dev'
 
 // https://vite.dev/config/
 export default defineConfig({
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
+      '@': path.resolve(process.cwd(), 'src'),
+      '@ouonnki/cms-core/m3u8': path.resolve(process.cwd(), 'packages/cms-core/src/m3u8/index.ts'),
+      '@ouonnki/cms-core/source': path.resolve(
+        process.cwd(),
+        'packages/cms-core/src/source/index.ts',
+      ),
+      '@ouonnki/cms-core': path.resolve(process.cwd(), 'packages/cms-core/src/index.ts'),
     },
   },
   plugins: [react(), tailwindcss(), proxyMiddleware()],
