@@ -33,28 +33,29 @@ export default function Navigation() {
               <div>
                 <OkiLogo />
               </div>
-              <p className="text-accent-foreground text-lg font-bold">OUONNKI TV</p>
+              <p className="text-accent-foreground hidden text-lg font-bold sm:block">OUONNKI TV</p>
             </div>
           </NavLink>
         </NavbarBrand>
-        <NavbarContent justify="center">
+        <NavbarContent justify="center" className="gap-2">
           <div className="flex-1" />
-          <div className="flex w-150 items-center">
-            <div className="relative w-full">
+          <div className="flex flex-auto items-center">
+            <div className="group relative w-full" data-has-content={inputContent.length > 0}>
               <Search
                 className="text-muted-foreground absolute top-1/2 left-3 -translate-y-1/2"
                 size={18}
               />
               <Input
                 placeholder="搜索"
-                className="h-10 rounded-full pr-16 pl-10"
+                className="h-9 rounded-full pr-17 pl-10 overflow-ellipsis"
                 value={inputContent}
                 onChange={e => setInputContent(e.target.value)}
                 onKeyDown={handleKeyDown}
               />
               <Button
                 size="sm"
-                className="absolute top-1/2 right-1 h-8 w-20 -translate-y-1/2 rounded-full"
+                disabled={inputContent.length === 0}
+                className="absolute top-1/2 right-1 h-0 w-0 -translate-y-1/2 overflow-hidden rounded-full px-0 opacity-0 group-data-[has-content=true]:h-7 group-data-[has-content=true]:w-16 group-data-[has-content=true]:px-3 group-data-[has-content=true]:opacity-100"
                 onClick={() => searchMovie(inputContent)}
               >
                 搜索

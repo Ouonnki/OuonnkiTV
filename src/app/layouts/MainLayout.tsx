@@ -48,7 +48,7 @@ export default function MainLayout() {
       <div className="flex flex-1 overflow-hidden">
         <SideBar />
         <SidebarInset className="h-full overflow-hidden">
-          <div className="h-full p-2 pl-1">
+          <div className="h-full p-2 md:pl-1">
             <div className="border-border bg-sidebar h-full rounded-lg border p-2 shadow-sm">
               <ScrollArea className="h-full rounded-lg">
                 <Outlet />

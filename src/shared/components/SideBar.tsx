@@ -8,9 +8,14 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
+  SidebarGroupLabel,
+  SidebarHeader,
 } from '@/shared/components/ui/sidebar'
-
+import { NavLink } from 'react-router'
+import { motion } from 'framer-motion'
 import { Home, Star, History, Settings } from 'lucide-react'
+import { OkiLogo } from '@/shared/components/icons'
+import { useVersionStore } from '../store'
 
 export default function SideBar({ className }: { className?: string }) {
   const location = useLocation()
@@ -42,19 +47,47 @@ export default function SideBar({ className }: { className?: string }) {
       },
     ],
   }
+  // 获取版本信息
+  const { currentVersion } = useVersionStore()
   return (
     <Sidebar className={className} variant="floating" collapsible="icon">
+      <SidebarHeader className="sm:hidden">
+        <NavLink to="/" className="flex items-center">
+          <div className="flex items-end">
+            <div>
+              <OkiLogo />
+            </div>
+            <p className="text-accent-foreground text-lg font-bold">OUONNKI TV</p>
+          </div>
+        </NavLink>
+      </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
+          <SidebarGroupLabel>主菜单</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className="gap-2">
               {items.content.map(item => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={location.pathname === item.url}>
-                    <a href={item.url} className="h-10">
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </a>
+                  <SidebarMenuButton asChild>
+                    <NavLink
+                      to={item.url}
+                      className="group data-[mactive=true]:text-sidebar-primary-foreground relative h-10 overflow-visible"
+                      data-mactive={location.pathname === item.url}
+                    >
+                      {location.pathname === item.url && (
+                        <motion.div
+                          layoutId="sidebar-selected-item"
+                          className="bg-sidebar-primary absolute top-0 left-0 h-full w-full rounded-md"
+                          transition={{
+                            type: 'spring',
+                            stiffness: 300,
+                            damping: 30,
+                          }}
+                        />
+                      )}
+                      <item.icon className="z-1" />
+                      <span className="z-1">{item.title}</span>
+                    </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -67,10 +100,13 @@ export default function SideBar({ className }: { className?: string }) {
           {items.footer.map(item => (
             <SidebarMenuItem key={item.title}>
               <SidebarMenuButton asChild>
-                <a href={item.url}>
+                <NavLink to={item.url}>
                   <item.icon />
-                  <span>{item.title}</span>
-                </a>
+                  <div className="flex w-full justify-between">
+                    <span>{item.title}</span>
+                    <span>v{currentVersion}</span>
+                  </div>
+                </NavLink>
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
