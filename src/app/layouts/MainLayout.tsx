@@ -1,8 +1,8 @@
-import { Outlet } from 'react-router'
 import Navigation from '@/shared/components/Navigation'
 import { SidebarProvider, SidebarInset } from '@/shared/components/ui/sidebar'
 import SideBar from '@/shared/components/SideBar'
 import { ScrollArea } from '@/shared/components/ui/scroll-area'
+import AnimatedOutlet from '@/shared/components/AnimatedOutlet'
 import { lazy, Suspense, useEffect } from 'react'
 import { useVersionStore } from '@/shared/store/versionStore'
 import { useSettingStore } from '@/shared/store/settingStore'
@@ -51,7 +51,7 @@ export default function MainLayout() {
           <div className="h-full p-2 md:pl-1">
             <div className="border-border bg-sidebar h-full rounded-lg border p-2 shadow-sm">
               <ScrollArea className="h-full rounded-lg">
-                <Outlet />
+                <AnimatedOutlet />
                 <Suspense fallback={null}>
                   <UpdateModal />
                 </Suspense>

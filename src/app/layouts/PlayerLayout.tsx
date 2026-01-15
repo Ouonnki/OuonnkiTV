@@ -1,5 +1,5 @@
-import { Outlet } from 'react-router'
 import { motion } from 'framer-motion'
+import AnimatedOutlet from '@/shared/components/AnimatedOutlet'
 
 /**
  * PlayerLayout - 播放器独立布局
@@ -14,7 +14,7 @@ export default function PlayerLayout() {
       transition={{ duration: 0.3 }}
       className="h-dvh w-full"
     >
-      <Outlet />
+      <AnimatedOutlet />
     </motion.div>
   )
 }

@@ -1,8 +1,10 @@
-import { Outlet, NavLink, useNavigate } from 'react-router'
+import { NavLink, useNavigate } from 'react-router'
 import { useState } from 'react'
 import { cn } from '@/shared/lib'
 import { Button } from '@/shared/components/ui/button'
 import { ArrowLeft, Menu, ListVideo, Play, Settings, Info } from 'lucide-react'
+import { CustomAnimatedOutlet } from '@/shared/components/AnimatedOutlet'
+import { animationPresets } from '@/shared/lib/animationVariants'
 
 const settingsModules = [
   { id: 'source', name: '视频源管理', icon: ListVideo, path: '/settings/source' },
@@ -79,7 +81,7 @@ export default function SettingsLayout() {
 
         {/* 内容区域 */}
         <div className="flex-1 px-4 md:px-0">
-          <Outlet />
+          <CustomAnimatedOutlet variants={animationPresets.slideX} />
         </div>
       </div>
     </div>
