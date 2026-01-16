@@ -1,5 +1,4 @@
 export * from './useSearch'
 export * from './useSearchHistory'
 export * from './useDocumentTitle'
-export * from './useViewport'
 export * from './useCmsCore'

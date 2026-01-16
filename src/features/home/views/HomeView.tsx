@@ -16,15 +16,16 @@ import {
 } from '@/shared/components/ui/carousel'
 import { AspectRatio } from '@/shared/components/ui/aspect-ratio'
 import { Skeleton } from '@/shared/components/ui/skeleton'
+import { useIsMobile } from '@/shared/hooks/use-mobile'
 
 /**
  * HomeView - 首页视图
- * 使用 Embla Carousel 实现轮播图，带有遮罩层显示剧名和立即观看按钮
  */
 export default function HomeView() {
   const { trending, loading } = useTmdbNowPlaying()
   const [api, setApi] = useState<CarouselApi>()
   const [activeIndex, setActiveIndex] = useState(0)
+  const isMobile = useIsMobile()
 
   // 监听 carousel 选择变化
   useEffect(() => {
@@ -47,7 +48,10 @@ export default function HomeView() {
   if (loading.trending || trending.length === 0) {
     return (
       <div>
-        <AspectRatio ratio={3 / 1} className="bg-muted overflow-hidden rounded-lg">
+        <AspectRatio
+          ratio={isMobile ? 3 / 2 : 3 / 1}
+          className="bg-muted overflow-hidden rounded-lg"
+        >
           <Skeleton className="h-full w-full rounded-lg" />
           {/* 骨架屏遮罩层 */}
           <div className="absolute inset-0 flex flex-col justify-end rounded-lg bg-gradient-to-t from-black/80 via-black/50 via-40% to-transparent pt-8 pr-8 pb-12 pl-8 md:pb-16">
@@ -84,7 +88,10 @@ export default function HomeView() {
 
             return (
               <CarouselItem key={item.id} className="h-fit rounded-lg">
-                <AspectRatio ratio={3 / 1} className="bg-muted overflow-hidden rounded-lg">
+                <AspectRatio
+                  ratio={isMobile ? 4 / 3 : 3 / 1}
+                  className="bg-muted overflow-hidden rounded-lg"
+                >
                   {/* 背景图片 */}
                   <img
                     className="h-full w-full rounded-lg object-cover object-top-right"
@@ -94,18 +101,18 @@ export default function HomeView() {
 
                   {/* 遮罩层 */}
                   <div
-                    className={`absolute inset-0 flex flex-col justify-end rounded-lg bg-gradient-to-t from-black/80 via-black/50 via-40% to-transparent pt-8 pr-8 pb-12 pl-8 transition-opacity duration-500 ease-out md:pb-16 ${isActive ? 'opacity-100' : 'opacity-0'} `}
+                    className={`absolute inset-0 flex flex-col justify-end rounded-lg bg-gradient-to-t from-black/80 via-black/50 via-40% to-transparent pt-8 pr-8 pb-5 pl-5 transition-opacity duration-500 ease-out md:pb-16 md:pl-8 ${isActive ? 'opacity-100' : 'opacity-0'} `}
                   >
                     {/* 剧名 */}
                     <h2
-                      className={`mb-2 text-3xl font-bold text-white transition-all delay-100 duration-500 ease-out md:text-4xl lg:text-5xl ${isActive ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'} `}
+                      className={`mb-2 text-2xl font-bold text-white transition-all delay-100 duration-500 ease-out md:text-4xl lg:text-5xl ${isActive ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'} `}
                     >
                       {item.title}
                     </h2>
 
                     {/* 介绍 */}
                     <p
-                      className={`mb-4 line-clamp-2 max-w-2xl text-sm text-white/80 transition-all delay-150 duration-500 ease-out md:text-base ${isActive ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'} `}
+                      className={`mb-2 line-clamp-2 max-w-2xl text-[0.7rem] text-white/80 transition-all delay-150 duration-500 ease-out md:mb-4 md:text-base ${isActive ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'} `}
                     >
                       {item.overview}
                     </p>
