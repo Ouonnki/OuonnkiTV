@@ -233,3 +233,11 @@
     clip-path: circle(0% at var(--vt-x, 50%) var(--vt-y, 50%));
   }
 }
+
+/* ===== Carousel 导航按钮图标大小 ===== */
+/* 使用 CSS 变量设置图标尺寸，默认 50% 容器大小 */
+[data-slot='carousel-previous'] svg,
+[data-slot='carousel-next'] svg {
+  width: 50% !important;
+  height: 50% !important;
+}

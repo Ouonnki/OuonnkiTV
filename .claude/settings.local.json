@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(pnpm remove:*)",
-      "Bash(pnpm add:*)",
-      "Bash(pnpm build)"
-    ]
-  }
-}
