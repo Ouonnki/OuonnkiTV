@@ -49,15 +49,15 @@ export default function HomeView() {
     return (
       <div>
         <AspectRatio
-          ratio={isMobile ? 3 / 2 : 3 / 1}
+          ratio={isMobile ? 4 / 3 : 3 / 1}
           className="bg-muted overflow-hidden rounded-lg"
         >
           <Skeleton className="h-full w-full rounded-lg" />
           {/* 骨架屏遮罩层 */}
-          <div className="absolute inset-0 flex flex-col justify-end rounded-lg bg-gradient-to-t from-black/80 via-black/50 via-40% to-transparent pt-8 pr-8 pb-12 pl-8 md:pb-16">
-            <Skeleton className="mb-2 h-10 w-1/3 md:h-12" />
-            <Skeleton className="mb-4 h-4 w-2/3 max-w-2xl" />
-            <Skeleton className="mb-2 h-4 w-1/2 max-w-xl" />
+          <div className="absolute inset-0 flex flex-col justify-end rounded-lg bg-gradient-to-t from-black/80 via-black/50 via-40% to-transparent pt-8 pr-8 pb-5 pl-5 md:pb-16 md:pl-8">
+            <Skeleton className="mb-2 h-8 w-1/3 md:h-12" />
+            <Skeleton className="mb-2 h-3 w-2/3 max-w-2xl md:mb-4 md:h-4" />
+            <Skeleton className="mb-2 h-3 w-1/2 max-w-xl md:h-4" />
             <Skeleton className="mt-2 h-10 w-32" />
           </div>
         </AspectRatio>
