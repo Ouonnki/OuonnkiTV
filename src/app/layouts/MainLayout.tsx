@@ -49,8 +49,8 @@ export default function MainLayout() {
         <SideBar />
         <SidebarInset className="h-full overflow-hidden">
           <div className="h-full p-2 md:pl-1">
-            <div className="border-border bg-sidebar h-full rounded-lg border p-2 shadow-sm">
-              <ScrollArea className="h-full rounded-lg">
+            <div className="border-border bg-sidebar h-full rounded-lg border py-2 shadow-sm">
+              <ScrollArea className="h-full rounded-lg px-2">
                 <AnimatedOutlet />
                 <Suspense fallback={null}>
                   <UpdateModal />
