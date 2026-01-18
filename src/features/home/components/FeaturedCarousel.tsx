@@ -102,7 +102,7 @@ export function FeaturedCarousel({
                 >
                   {/* 背景图片 */}
                   <img
-                    className="h-full w-full rounded-lg object-cover object-top-right"
+                    className="h-full w-full rounded-lg object-cover object-center md:object-top-right"
                     src={getBackdropUrl(item.backdropPath)}
                     alt={item.title}
                   />
@@ -120,7 +120,7 @@ export function FeaturedCarousel({
 
                     {/* 介绍 */}
                     <p
-                      className={`mb-2 line-clamp-2 max-w-2xl text-[0.7rem] text-white/80 transition-all delay-150 duration-500 ease-out md:mb-4 md:text-base ${isActive ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'} `}
+                      className={`mb-2 line-clamp-2 max-w-2xl text-[0.7rem] text-white/80 transition-all delay-150 duration-500 ease-out md:text-base ${isActive ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'} `}
                     >
                       {item.overview}
                     </p>
