@@ -8,8 +8,6 @@ import {
   Carousel,
   CarouselContent,
   CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
   type CarouselApi,
 } from '@/shared/components/ui/carousel'
 import { AspectRatio } from '@/shared/components/ui/aspect-ratio'
