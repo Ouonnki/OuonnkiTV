@@ -218,14 +218,47 @@ export const useTmdbStore = create<TmdbState & TmdbActions>()(
             language: 'zh-CN',
           })
 
-          const results = res.results
+          const baseResults = res.results
             .filter(item => item.media_type === 'movie' || item.media_type === 'tv')
             .map(item =>
               normalizeToMediaItem(item as unknown as Record<string, unknown>, item.media_type),
             )
 
+          // 并行获取每个项目的 logo
+          const resultsWithLogos = await Promise.all(
+            baseResults.map(async item => {
+              try {
+                // 根据媒体类型调用对应的 images 接口
+                const images =
+                  item.mediaType === 'movie'
+                    ? await client.movies.images(item.id, {
+                        include_image_language: ['zh', 'en', 'null'],
+                      })
+                    : await client.tvShows.images(item.id, {
+                        include_image_language: ['zh', 'en', 'null'],
+                      })
+
+                // 选择最佳 logo: 优先中文 > 英文 > 无语言标记
+                const logos = images.logos || []
+                const bestLogo =
+                  logos.find(l => l.iso_639_1 === 'zh') ||
+                  logos.find(l => l.iso_639_1 === 'en') ||
+                  logos.find(l => !l.iso_639_1) ||
+                  logos[0]
+
+                return {
+                  ...item,
+                  logoPath: bestLogo?.file_path ?? null,
+                }
+              } catch {
+                // 获取 logo 失败不影响整体，保持 logoPath 为 null
+                return item
+              }
+            }),
+          )
+
           set(state => {
-            state.trending = results
+            state.trending = resultsWithLogos
             state.loading.trending = false
           })
         } catch (err: unknown) {

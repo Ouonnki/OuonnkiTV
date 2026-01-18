@@ -9,6 +9,7 @@ export interface TmdbMediaItem {
   overview: string
   posterPath: string | null
   backdropPath: string | null
+  logoPath: string | null // 标题 logo 图片路径
   releaseDate: string // movie: release_date, tv: first_air_date
   voteAverage: number
   voteCount: number

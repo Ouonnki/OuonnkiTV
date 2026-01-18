@@ -25,6 +25,10 @@ export function getBackdropUrl(path: string | null, size = 'original'): string {
   return path ? `${TMDB_IMAGE_BASE}${size}${path}` : ''
 }
 
+export function getLogoUrl(path: string | null, size = 'w500'): string {
+  return path ? `${TMDB_IMAGE_BASE}${size}${path}` : ''
+}
+
 // 数据转换器
 export function normalizeToMediaItem(
   raw: Record<string, unknown>,
@@ -50,6 +54,7 @@ export function normalizeToMediaItem(
     overview: (raw.overview as string) || '',
     posterPath: raw.poster_path as string | null,
     backdropPath: raw.backdrop_path as string | null,
+    logoPath: (raw.logo_path as string | null) ?? null, // 初始为 null，后续可单独获取
     releaseDate: releaseDate || '',
     voteAverage: (raw.vote_average as number) || 0,
     voteCount: (raw.vote_count as number) || 0,
