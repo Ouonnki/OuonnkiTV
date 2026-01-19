@@ -27,6 +27,10 @@ interface TmdbState {
   airingTodayTv: TmdbMediaItem[]
   trending: TmdbMediaItem[]
 
+  // 推荐
+  recommendations: TmdbMediaItem[]
+  recommendationSourceId: number | null // 推荐来源的 TMDB ID
+
   // 筛选条件 (内部维护)
   filterOptions: TmdbFilterOptions
 
@@ -48,6 +52,7 @@ interface TmdbState {
     topRatedTv: boolean
     airingTodayTv: boolean
     trending: boolean
+    recommendations: boolean
     genres: boolean
   }
   error: string | null
@@ -66,6 +71,7 @@ interface TmdbActions {
   fetchTopRatedTv: () => Promise<void>
   fetchAiringTodayTv: () => Promise<void>
   fetchTrending: (timeWindow?: 'day' | 'week') => Promise<void>
+  fetchRecommendations: (id: number, mediaType: 'movie' | 'tv') => Promise<void>
 
   // 筛选
   setFilter: (options: Partial<TmdbFilterOptions>) => void
@@ -103,6 +109,9 @@ export const useTmdbStore = create<TmdbState & TmdbActions>()(
       airingTodayTv: [],
       trending: [],
 
+      recommendations: [],
+      recommendationSourceId: null,
+
       filterOptions: { ...INITIAL_FILTER },
 
       availableFilterOptions: {
@@ -125,6 +134,7 @@ export const useTmdbStore = create<TmdbState & TmdbActions>()(
         topRatedTv: false,
         airingTodayTv: false,
         trending: false,
+        recommendations: false,
         genres: false,
       },
       error: null,
@@ -431,6 +441,39 @@ export const useTmdbStore = create<TmdbState & TmdbActions>()(
           set(state => {
             state.loading.trending = false
             state.error = (err as Error).message
+          })
+        }
+      },
+
+      // 推荐：根据指定的 movie/tv 获取推荐列表
+      fetchRecommendations: async (id: number, mediaType: 'movie' | 'tv') => {
+        const client = getTmdbClient()
+        const { recommendationSourceId } = get()
+
+        // 如果推荐来源 ID 没有变化，不重新获取
+        if (recommendationSourceId === id) return
+
+        set(state => {
+          state.loading.recommendations = true
+        })
+
+        try {
+          const res =
+            mediaType === 'movie'
+              ? await client.movies.recommendations(id, { language: 'zh-CN' })
+              : await client.tvShows.recommendations(id, { language: 'zh-CN' })
+
+          set(state => {
+            state.recommendations = res.results.map(i =>
+              normalizeToMediaItem(i as unknown as Record<string, unknown>, mediaType),
+            )
+            state.recommendationSourceId = id
+            state.loading.recommendations = false
+          })
+        } catch (err: unknown) {
+          set(state => {
+            state.error = (err as Error).message
+            state.loading.recommendations = false
           })
         }
       },

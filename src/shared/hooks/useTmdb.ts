@@ -143,6 +143,39 @@ export function useTmdbTvLists() {
 }
 
 /**
+ * 猜你喜欢 Hook
+ * 按优先级顺序获取推荐来源：收藏夹第一个 -> 观看记录第一个 -> 待看清单第一个 -> trending 第一个
+ * 目前收藏夹和待看清单未实现，预留位置
+ */
+export function useTmdbRecommendations() {
+  const recommendations = useTmdbStore(s => s.recommendations)
+  const loading = useTmdbStore(s => s.loading.recommendations)
+  const trending = useTmdbStore(s => s.trending)
+
+  const fetchRecommendations = useTmdbStore(s => s.fetchRecommendations)
+
+  useEffect(() => {
+    // TODO: 未来实现优先级：
+    // 1. 收藏夹第一个 (未实现)
+    // 2. 观看记录第一个 - 目前观看记录使用的是非 TMDB ID，暂时无法使用
+    // 3. 待看清单第一个 (未实现)
+    // 4. trending 第一个 (当前使用)
+
+    // 当前逻辑：使用 trending 第一个作为推荐来源
+    if (trending.length > 0 && recommendations.length === 0) {
+      const firstItem = trending[0]
+      fetchRecommendations(firstItem.id, firstItem.mediaType)
+    }
+  }, [trending, recommendations.length, fetchRecommendations])
+
+  return {
+    recommendations,
+    loading,
+    refreshRecommendations: fetchRecommendations,
+  }
+}
+
+/**
  * 详情 Hook (独立状态，不存入 Global Store)
  */
 export function useTmdbDetail<T extends TmdbMovieDetail | TmdbTvDetail>(
