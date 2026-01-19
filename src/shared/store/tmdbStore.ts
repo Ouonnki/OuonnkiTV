@@ -19,7 +19,12 @@ interface TmdbState {
 
   // 热映/热门
   nowPlayingMovies: TmdbMediaItem[]
+  popularMovies: TmdbMediaItem[]
+  topRatedMovies: TmdbMediaItem[]
+  upcomingMovies: TmdbMediaItem[]
   popularTv: TmdbMediaItem[]
+  topRatedTv: TmdbMediaItem[]
+  airingTodayTv: TmdbMediaItem[]
   trending: TmdbMediaItem[]
 
   // 筛选条件 (内部维护)
@@ -36,6 +41,12 @@ interface TmdbState {
   loading: {
     search: boolean
     nowPlaying: boolean
+    popularMovies: boolean
+    topRatedMovies: boolean
+    upcomingMovies: boolean
+    popularTv: boolean
+    topRatedTv: boolean
+    airingTodayTv: boolean
     trending: boolean
     genres: boolean
   }
@@ -48,6 +59,12 @@ interface TmdbActions {
 
   // 热映/热门
   fetchNowPlaying: () => Promise<void>
+  fetchPopularMovies: () => Promise<void>
+  fetchTopRatedMovies: () => Promise<void>
+  fetchUpcomingMovies: () => Promise<void>
+  fetchPopularTv: () => Promise<void>
+  fetchTopRatedTv: () => Promise<void>
+  fetchAiringTodayTv: () => Promise<void>
   fetchTrending: (timeWindow?: 'day' | 'week') => Promise<void>
 
   // 筛选
@@ -78,7 +95,12 @@ export const useTmdbStore = create<TmdbState & TmdbActions>()(
       searchPagination: { page: 1, totalPages: 0, totalResults: 0 },
 
       nowPlayingMovies: [],
+      popularMovies: [],
+      topRatedMovies: [],
+      upcomingMovies: [],
       popularTv: [],
+      topRatedTv: [],
+      airingTodayTv: [],
       trending: [],
 
       filterOptions: { ...INITIAL_FILTER },
@@ -96,6 +118,12 @@ export const useTmdbStore = create<TmdbState & TmdbActions>()(
       loading: {
         search: false,
         nowPlaying: false,
+        popularMovies: false,
+        topRatedMovies: false,
+        upcomingMovies: false,
+        popularTv: false,
+        topRatedTv: false,
+        airingTodayTv: false,
         trending: false,
         genres: false,
       },
@@ -203,6 +231,144 @@ export const useTmdbStore = create<TmdbState & TmdbActions>()(
           set(state => {
             state.error = (err as Error).message
             state.loading.nowPlaying = false
+          })
+        }
+      },
+
+      // 电影：最受欢迎
+      fetchPopularMovies: async () => {
+        const client = getTmdbClient()
+        set(state => {
+          state.loading.popularMovies = true
+        })
+
+        try {
+          const res = await client.movies.popular({ language: 'zh-CN' })
+          set(state => {
+            state.popularMovies = res.results.map(i =>
+              normalizeToMediaItem(i as unknown as Record<string, unknown>, 'movie'),
+            )
+            state.loading.popularMovies = false
+          })
+        } catch (err: unknown) {
+          set(state => {
+            state.error = (err as Error).message
+            state.loading.popularMovies = false
+          })
+        }
+      },
+
+      // 电影：口碑最佳
+      fetchTopRatedMovies: async () => {
+        const client = getTmdbClient()
+        set(state => {
+          state.loading.topRatedMovies = true
+        })
+
+        try {
+          const res = await client.movies.topRated({ language: 'zh-CN' })
+          set(state => {
+            state.topRatedMovies = res.results.map(i =>
+              normalizeToMediaItem(i as unknown as Record<string, unknown>, 'movie'),
+            )
+            state.loading.topRatedMovies = false
+          })
+        } catch (err: unknown) {
+          set(state => {
+            state.error = (err as Error).message
+            state.loading.topRatedMovies = false
+          })
+        }
+      },
+
+      // 电影：即将上映
+      fetchUpcomingMovies: async () => {
+        const client = getTmdbClient()
+        set(state => {
+          state.loading.upcomingMovies = true
+        })
+
+        try {
+          const res = await client.movies.upcoming({ language: 'zh-CN' })
+          set(state => {
+            state.upcomingMovies = res.results.map(i =>
+              normalizeToMediaItem(i as unknown as Record<string, unknown>, 'movie'),
+            )
+            state.loading.upcomingMovies = false
+          })
+        } catch (err: unknown) {
+          set(state => {
+            state.error = (err as Error).message
+            state.loading.upcomingMovies = false
+          })
+        }
+      },
+
+      // 剧集：最受欢迎
+      fetchPopularTv: async () => {
+        const client = getTmdbClient()
+        set(state => {
+          state.loading.popularTv = true
+        })
+
+        try {
+          const res = await client.tvShows.popular({ language: 'zh-CN' })
+          set(state => {
+            state.popularTv = res.results.map(i =>
+              normalizeToMediaItem(i as unknown as Record<string, unknown>, 'tv'),
+            )
+            state.loading.popularTv = false
+          })
+        } catch (err: unknown) {
+          set(state => {
+            state.error = (err as Error).message
+            state.loading.popularTv = false
+          })
+        }
+      },
+
+      // 剧集：口碑最佳
+      fetchTopRatedTv: async () => {
+        const client = getTmdbClient()
+        set(state => {
+          state.loading.topRatedTv = true
+        })
+
+        try {
+          const res = await client.tvShows.topRated({ language: 'zh-CN' })
+          set(state => {
+            state.topRatedTv = res.results.map(i =>
+              normalizeToMediaItem(i as unknown as Record<string, unknown>, 'tv'),
+            )
+            state.loading.topRatedTv = false
+          })
+        } catch (err: unknown) {
+          set(state => {
+            state.error = (err as Error).message
+            state.loading.topRatedTv = false
+          })
+        }
+      },
+
+      // 剧集：今日播出
+      fetchAiringTodayTv: async () => {
+        const client = getTmdbClient()
+        set(state => {
+          state.loading.airingTodayTv = true
+        })
+
+        try {
+          const res = await client.tvShows.airingToday({ language: 'zh-CN' })
+          set(state => {
+            state.airingTodayTv = res.results.map(i =>
+              normalizeToMediaItem(i as unknown as Record<string, unknown>, 'tv'),
+            )
+            state.loading.airingTodayTv = false
+          })
+        } catch (err: unknown) {
+          set(state => {
+            state.error = (err as Error).message
+            state.loading.airingTodayTv = false
           })
         }
       },

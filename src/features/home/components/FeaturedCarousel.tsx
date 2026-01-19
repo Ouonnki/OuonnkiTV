@@ -27,7 +27,7 @@ interface FeaturedCarouselProps {
 export function FeaturedCarousel({
   items,
   loading = false,
-  autoplayDelay = 7000,
+  autoplayDelay = 5000,
 }: FeaturedCarouselProps) {
   const [api, setApi] = useState<CarouselApi>()
   const [activeIndex, setActiveIndex] = useState(0)

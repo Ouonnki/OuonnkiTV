@@ -62,6 +62,87 @@ export function useTmdbNowPlaying() {
 }
 
 /**
+ * 电影榜单 Hook (正在热映/最受欢迎/口碑最佳/即将上映)
+ */
+export function useTmdbMovieLists() {
+  const nowPlaying = useTmdbStore(s => s.nowPlayingMovies)
+  const popular = useTmdbStore(s => s.popularMovies)
+  const topRated = useTmdbStore(s => s.topRatedMovies)
+  const upcoming = useTmdbStore(s => s.upcomingMovies)
+  const loading = useTmdbStore(s => s.loading)
+
+  const fetchNowPlaying = useTmdbStore(s => s.fetchNowPlaying)
+  const fetchPopular = useTmdbStore(s => s.fetchPopularMovies)
+  const fetchTopRated = useTmdbStore(s => s.fetchTopRatedMovies)
+  const fetchUpcoming = useTmdbStore(s => s.fetchUpcomingMovies)
+
+  useEffect(() => {
+    if (nowPlaying.length === 0) fetchNowPlaying()
+    if (popular.length === 0) fetchPopular()
+    if (topRated.length === 0) fetchTopRated()
+    if (upcoming.length === 0) fetchUpcoming()
+  }, [
+    nowPlaying.length,
+    popular.length,
+    topRated.length,
+    upcoming.length,
+    fetchNowPlaying,
+    fetchPopular,
+    fetchTopRated,
+    fetchUpcoming,
+  ])
+
+  return {
+    nowPlaying,
+    popular,
+    topRated,
+    upcoming,
+    loading,
+    refreshNowPlaying: fetchNowPlaying,
+    refreshPopular: fetchPopular,
+    refreshTopRated: fetchTopRated,
+    refreshUpcoming: fetchUpcoming,
+  }
+}
+
+/**
+ * 剧集榜单 Hook (今日播出/最受欢迎/口碑最佳)
+ */
+export function useTmdbTvLists() {
+  const airingToday = useTmdbStore(s => s.airingTodayTv)
+  const popular = useTmdbStore(s => s.popularTv)
+  const topRated = useTmdbStore(s => s.topRatedTv)
+  const loading = useTmdbStore(s => s.loading)
+
+  const fetchAiringToday = useTmdbStore(s => s.fetchAiringTodayTv)
+  const fetchPopular = useTmdbStore(s => s.fetchPopularTv)
+  const fetchTopRated = useTmdbStore(s => s.fetchTopRatedTv)
+
+  useEffect(() => {
+    if (airingToday.length === 0) fetchAiringToday()
+    if (popular.length === 0) fetchPopular()
+    if (topRated.length === 0) fetchTopRated()
+  }, [
+    airingToday.length,
+    popular.length,
+    topRated.length,
+    fetchAiringToday,
+    fetchPopular,
+    fetchTopRated,
+  ])
+
+  return {
+    airingToday,
+    popular,
+    topRated,
+    loading,
+    refreshAiringToday: fetchAiringToday,
+    refreshPopular: fetchPopular,
+    refreshTopRated: fetchTopRated,
+  }
+}
+
+/**
  * 详情 Hook (独立状态，不存入 Global Store)
  */
 export function useTmdbDetail<T extends TmdbMovieDetail | TmdbTvDetail>(
