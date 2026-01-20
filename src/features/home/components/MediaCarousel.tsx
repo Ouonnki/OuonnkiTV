@@ -1,4 +1,5 @@
-import { ChevronLeft, ChevronRight, Play } from 'lucide-react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { MediaPosterCard } from '@/shared/components/common'
 import {
   type CarouselApi,
   Carousel,
@@ -122,48 +123,15 @@ export function MediaCarousel({ title, items, loading = false, linkTo }: MediaCa
       <div className="pt-2">
         <Carousel opts={{ watchDrag: canDrag, slidesToScroll }} setApi={setCarouselApi}>
           <CarouselContent>
-            {items.map(item => {
-              const detailPath = item.mediaType === 'movie' ? `/movie/${item.id}` : `/tv/${item.id}`
-              const posterUrl = getPosterUrl(item.posterPath, 'w342')
-
-              return (
-                <CarouselItem key={item.id} className="h-fit basis-1/3 md:basis-1/4 lg:basis-1/6">
-                  <NavLink to={detailPath}>
-                    <div className="group cursor-pointer">
-                      {/* 海报卡片 */}
-                      <div className="relative overflow-hidden rounded-lg">
-                        <AspectRatio ratio={2 / 3}>
-                          {posterUrl ? (
-                            <img
-                              className="h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-110"
-                              src={posterUrl}
-                              alt={item.title}
-                              loading="lazy"
-                            />
-                          ) : (
-                            <div className="bg-muted flex h-full w-full items-center justify-center">
-                              <span className="text-muted-foreground text-sm">No Image</span>
-                            </div>
-                          )}
-                        </AspectRatio>
-                        {/* Hover 全卡片遮罩 + 播放按钮 */}
-                        <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                          <div className="flex size-12 items-center justify-center rounded-full bg-white/90 text-black shadow-lg">
-                            <Play className="size-6 fill-current" />
-                          </div>
-                        </div>
-                      </div>
-                      {/* 标题 - 卡片下方 */}
-                      <div className="mt-2 px-0.5">
-                        <p className="text-primary line-clamp-1 text-sm font-medium">
-                          {item.title}
-                        </p>
-                      </div>
-                    </div>
-                  </NavLink>
-                </CarouselItem>
-              )
-            })}
+            {items.map(item => (
+              <CarouselItem key={item.id} className="h-fit basis-1/3 md:basis-1/4 lg:basis-1/6">
+                <MediaPosterCard
+                  to={item.mediaType === 'movie' ? `/movie/${item.id}` : `/tv/${item.id}`}
+                  posterUrl={getPosterUrl(item.posterPath, 'w342')}
+                  title={item.title}
+                />
+              </CarouselItem>
+            ))}
           </CarouselContent>
           {/* 导航按钮 - 移动端/平板常显，PC 端 hover 显示 */}
           {canDrag && canScrollPrev && (
