@@ -132,7 +132,7 @@ export default function SearchBox({ onMobileSearchChange }: SearchBoxProps) {
   // 下拉框内容组件
   const DropdownContent = ({ isMobile = false }: { isMobile?: boolean }) => (
     <div className="p-1">
-      <ScrollArea className="max-h-100 pr-3">
+      <ScrollArea className="max-h-100 px-3">
         {!hasContent ? (
           // 最近搜索
           <div>
