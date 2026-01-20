@@ -3,9 +3,9 @@ import { getTmdbClient, normalizeToMediaItem } from '@/shared/lib/tmdb'
 import type { TmdbMediaItem } from '@/shared/types/tmdb'
 
 // 搜索建议最大数量
-const MAX_SUGGESTIONS = 8
+const MAX_SUGGESTIONS = 9
 // 防抖延迟时间 (毫秒)
-const DEBOUNCE_DELAY = 300
+const DEBOUNCE_DELAY = 100
 
 interface UseSearchSuggestionsReturn {
   suggestions: TmdbMediaItem[]
