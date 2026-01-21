@@ -34,6 +34,30 @@ export function useTmdbSearch() {
 }
 
 /**
+ * 发现/浏览功能 Hook（无搜索词时使用）
+ */
+export function useTmdbDiscover() {
+  const results = useTmdbStore(s => s.discoverResults)
+  const pagination = useTmdbStore(s => s.discoverPagination)
+  const loading = useTmdbStore(s => s.loading.discover)
+  const filterOptions = useTmdbStore(s => s.filterOptions)
+
+  const fetchDiscover = useTmdbStore(s => s.fetchDiscover)
+  const setFilter = useTmdbStore(s => s.setFilter)
+  const clearFilter = useTmdbStore(s => s.clearFilter)
+
+  return {
+    results,
+    pagination,
+    loading,
+    filterOptions,
+    fetchDiscover,
+    setFilter,
+    clearFilter,
+  }
+}
+
+/**
  * 热映/热门 Hook
  */
 export function useTmdbNowPlaying() {

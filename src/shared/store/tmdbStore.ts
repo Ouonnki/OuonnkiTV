@@ -17,6 +17,10 @@ interface TmdbState {
   filteredResults: TmdbMediaItem[] // 筛选后的结果
   searchPagination: TmdbPagination
 
+  // 发现/浏览模式（无搜索词时使用）
+  discoverResults: TmdbMediaItem[]
+  discoverPagination: TmdbPagination
+
   // 热映/热门
   nowPlayingMovies: TmdbMediaItem[]
   popularMovies: TmdbMediaItem[]
@@ -44,6 +48,7 @@ interface TmdbState {
   // 加载状态
   loading: {
     search: boolean
+    discover: boolean
     nowPlaying: boolean
     popularMovies: boolean
     topRatedMovies: boolean
@@ -61,6 +66,9 @@ interface TmdbState {
 interface TmdbActions {
   // 搜索
   search: (query: string, page?: number) => Promise<void>
+
+  // 发现/浏览（无搜索词时使用 Discover API）
+  fetchDiscover: (page?: number) => Promise<void>
 
   // 热映/热门
   fetchNowPlaying: () => Promise<void>
@@ -100,6 +108,9 @@ export const useTmdbStore = create<TmdbState & TmdbActions>()(
       filteredResults: [],
       searchPagination: { page: 1, totalPages: 0, totalResults: 0 },
 
+      discoverResults: [],
+      discoverPagination: { page: 1, totalPages: 0, totalResults: 0 },
+
       nowPlayingMovies: [],
       popularMovies: [],
       topRatedMovies: [],
@@ -126,6 +137,7 @@ export const useTmdbStore = create<TmdbState & TmdbActions>()(
 
       loading: {
         search: false,
+        discover: false,
         nowPlaying: false,
         popularMovies: false,
         topRatedMovies: false,
@@ -211,6 +223,121 @@ export const useTmdbStore = create<TmdbState & TmdbActions>()(
           set(state => {
             state.error = (err as Error).message || 'Search failed'
             state.loading.search = false
+          })
+        }
+      },
+
+      fetchDiscover: async (page = 1) => {
+        const client = getTmdbClient()
+        const { filterOptions } = get()
+
+        set(state => {
+          state.loading.discover = true
+          state.error = null
+        })
+
+        try {
+          // 根据 mediaType 决定调用哪个 discover 接口
+          const mediaType = filterOptions.mediaType === 'tv' ? 'tv' : 'movie'
+
+          // 构建 discover 请求参数
+          const sortByMap: Record<string, string> = {
+            popularity: 'popularity.desc',
+            vote_average: 'vote_average.desc',
+            release_date: mediaType === 'movie' ? 'primary_release_date.desc' : 'first_air_date.desc',
+          }
+          const sortOrder = filterOptions.sortOrder === 'asc' ? 'asc' : 'desc'
+          const sortByValue = filterOptions.sortBy
+            ? sortByMap[filterOptions.sortBy]?.replace('.desc', `.${sortOrder}`) || 'popularity.desc'
+            : 'popularity.desc'
+
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const discoverParams: any = {
+            page,
+            language: 'zh-CN',
+            sort_by: sortByValue,
+          }
+
+          // 添加分类筛选
+          if (filterOptions.genreIds && filterOptions.genreIds.length > 0) {
+            discoverParams.with_genres = filterOptions.genreIds.join(',')
+          }
+
+          // 添加国家筛选
+          if (filterOptions.originCountry) {
+            discoverParams.with_origin_country = filterOptions.originCountry
+          }
+
+          // 添加年份筛选
+          if (filterOptions.releaseYear) {
+            if (mediaType === 'movie') {
+              discoverParams.primary_release_year = filterOptions.releaseYear
+            } else {
+              discoverParams.first_air_date_year = filterOptions.releaseYear
+            }
+          }
+
+          // 添加评分筛选
+          if (filterOptions.minVoteAverage && filterOptions.minVoteAverage > 0) {
+            discoverParams['vote_average.gte'] = filterOptions.minVoteAverage
+            discoverParams['vote_count.gte'] = 50 // 确保有足够的投票数
+          }
+
+          let allResults: TmdbMediaItem[] = []
+          let totalPages = 0
+          let totalResults = 0
+
+          // 如果是 'all' 类型，同时获取电影和剧集
+          if (filterOptions.mediaType === 'all' || !filterOptions.mediaType) {
+            const [movieRes, tvRes] = await Promise.all([
+              client.discover.movie(discoverParams),
+              client.discover.tvShow({
+                ...discoverParams,
+                // TV 的年份参数不同
+                first_air_date_year: filterOptions.releaseYear,
+                primary_release_year: undefined,
+              }),
+            ])
+
+            const movieResults = movieRes.results.map((i: unknown) =>
+              normalizeToMediaItem(i as Record<string, unknown>, 'movie'),
+            )
+            const tvResults = tvRes.results.map((i: unknown) =>
+              normalizeToMediaItem(i as Record<string, unknown>, 'tv'),
+            )
+
+            // 合并并按热度排序
+            allResults = [...movieResults, ...tvResults].sort((a, b) => b.popularity - a.popularity)
+            totalPages = Math.max(movieRes.total_pages, tvRes.total_pages)
+            totalResults = movieRes.total_results + tvRes.total_results
+          } else {
+            // 单一类型
+            const res =
+              mediaType === 'movie'
+                ? await client.discover.movie(discoverParams)
+                : await client.discover.tvShow(discoverParams)
+
+            allResults = res.results.map((i: unknown) =>
+              normalizeToMediaItem(i as Record<string, unknown>, mediaType),
+            )
+            totalPages = res.total_pages
+            totalResults = res.total_results
+          }
+
+          set(state => {
+            state.discoverResults = allResults
+            state.discoverPagination = {
+              page,
+              totalPages,
+              totalResults,
+            }
+            state.loading.discover = false
+          })
+        } catch (err: unknown) {
+          console.error('Discover failed:', err)
+          set(state => {
+            state.error = (err as Error).message || 'Discover failed'
+            state.loading.discover = false
           })
         }
       },

@@ -13,7 +13,7 @@ import {
 } from '@/shared/components/ui/sidebar'
 import { NavLink } from 'react-router'
 import { motion } from 'framer-motion'
-import { Home, Star, History, Settings } from 'lucide-react'
+import { Home, Search, Star, History, Settings } from 'lucide-react'
 import { OkiLogo } from '@/shared/components/icons'
 import { useVersionStore } from '../store'
 
@@ -27,6 +27,11 @@ export default function SideBar({ className }: { className?: string }) {
         title: '主页',
         url: '/',
         icon: Home,
+      },
+      {
+        title: '搜索中心',
+        url: '/search',
+        icon: Search,
       },
       {
         title: '收藏夹',

@@ -1,9 +1,10 @@
 import { Navbar, NavbarBrand, NavbarContent } from '@/shared/components/ui/navbar'
 import { OkiLogo } from '@/shared/components/icons'
 import { SidebarTrigger } from '@/shared/components/ui/sidebar'
-import { NavLink } from 'react-router'
+import { NavLink, useLocation } from 'react-router'
 import { useState } from 'react'
 import { Moon, Sun, Laptop } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 
 import { Button } from '@/shared/components/ui/button'
 import { ThemeToggle, useThemeState } from './theme'
@@ -12,6 +13,10 @@ import SearchBox from './SearchBox'
 export default function Navigation() {
   const { mode } = useThemeState()
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false)
+  const location = useLocation()
+
+  // 在搜索页面隐藏导航栏搜索框
+  const isSearchPage = location.pathname === '/search'
 
   return (
     <div className="sticky top-0 z-50 flex w-full justify-center">
@@ -38,8 +43,22 @@ export default function Navigation() {
         <NavbarContent justify="center" className="gap-2">
           <div className="flex-1" />
 
-          {/* 搜索框组件 */}
-          <SearchBox onMobileSearchChange={setIsMobileSearchOpen} />
+          {/* 搜索框组件 - 搜索页面时隐藏 */}
+          <AnimatePresence mode="wait">
+            {!isSearchPage && (
+              <motion.div
+                key="navbar-search"
+                layoutId="main-search-box"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
+                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                className="flex flex-auto items-center"
+              >
+                <SearchBox onMobileSearchChange={setIsMobileSearchOpen} />
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <div
             className={`flex flex-1 justify-end gap-2 transition-all duration-300 ease-out sm:gap-0 ${
