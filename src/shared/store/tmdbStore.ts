@@ -207,7 +207,7 @@ export const useTmdbStore = create<TmdbState & TmdbActions>()(
             )
 
           set(state => {
-            state.searchResults = results
+            state.searchResults = page > 1 ? [...state.searchResults, ...results] : results
             state.searchPagination = {
               page: res.page,
               totalPages: res.total_pages,
@@ -325,7 +325,7 @@ export const useTmdbStore = create<TmdbState & TmdbActions>()(
           }
 
           set(state => {
-            state.discoverResults = allResults
+            state.discoverResults = page > 1 ? [...state.discoverResults, ...allResults] : allResults
             state.discoverPagination = {
               page,
               totalPages,
