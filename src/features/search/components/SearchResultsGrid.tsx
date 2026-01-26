@@ -1,4 +1,3 @@
-import { motion, AnimatePresence } from 'framer-motion'
 import type { TmdbMediaItem } from '@/shared/types/tmdb'
 import type { VideoItem } from '@ouonnki/cms-core'
 import { MediaPosterCard } from '@/shared/components/common/MediaPosterCard'
@@ -59,17 +58,12 @@ function ResultSkeleton() {
  */
 function EmptyState({ mode }: { mode: SearchMode }) {
   return (
-    <motion.div
-      className="flex flex-col items-center justify-center py-16"
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-    >
+    <div className="flex flex-col items-center justify-center py-16">
       <NoResultIcon size={128} className="text-muted-foreground/30" />
       <p className="text-muted-foreground mt-4 text-sm">
         {mode === 'tmdb' ? '未找到相关内容，试试其他关键词' : '换个关键词试试吧'}
       </p>
-    </motion.div>
+    </div>
   )
 }
 
@@ -82,11 +76,9 @@ function SearchProgress({ completed, total }: { completed: number; total: number
   return (
     <div className="mb-4 flex items-center gap-3">
       <div className="bg-muted h-2 flex-1 overflow-hidden rounded-full">
-        <motion.div
-          className="bg-primary h-full rounded-full"
-          initial={{ width: 0 }}
-          animate={{ width: `${percentage}%` }}
-          transition={{ duration: 0.3 }}
+        <div
+          className="bg-primary h-full rounded-full transition-all duration-300"
+          style={{ width: `${percentage}%` }}
         />
       </div>
       <span className="text-muted-foreground text-sm">
@@ -132,85 +124,63 @@ export function SearchResultsGrid({
         </div>
       )}
 
-      {/* 内容区域 - 使用 AnimatePresence 实现平滑过渡 */}
-      <AnimatePresence mode="wait">
+      {/* 内容区域 */}
+      <div>
         {/* 加载骨架屏 - TMDB 模式加载时始终显示骨架屏 */}
         {loading && mode === 'tmdb' && (
-          <motion.div
+          <div
             key="tmdb-skeleton"
             className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
           >
             {Array.from({ length: SKELETON_COUNT }).map((_, index) => (
               <ResultSkeleton key={index} />
             ))}
-          </motion.div>
+          </div>
         )}
 
         {/* 直连模式加载骨架屏 - 仅无结果时显示 */}
         {loading && mode === 'direct' && !hasResults && (
-          <motion.div
+          <div
             key="direct-skeleton"
             className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
           >
             {Array.from({ length: SKELETON_COUNT }).map((_, index) => (
               <ResultSkeleton key={index} />
             ))}
-          </motion.div>
+          </div>
         )}
 
         {/* 搜索结果网格 - TMDB 模式非加载时显示，直连模式有结果时显示 */}
         {((mode === 'tmdb' && !loading && hasResults) || (mode === 'direct' && hasResults)) && (
-          <motion.div
+          <div
             key={`results-${mode}`}
             className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
           >
             {mode === 'tmdb'
               ? tmdbResults.map((item) => (
-                  <motion.div
-                    key={`${item.mediaType}-${item.id}`}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
+                  <div key={`${item.mediaType}-${item.id}`}>
                     <MediaPosterCard
                       to={`/media/${item.mediaType}/${item.id}`}
                       posterUrl={item.posterPath ? `${TMDB_IMAGE_BASE}${item.posterPath}` : null}
                       title={item.title}
                     />
-                  </motion.div>
+                  </div>
                 ))
               : paginatedDirectResults.map((item, index) => (
-                  <motion.div
-                    key={`${item.source_code}-${item.vod_id}-${index}`}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.2, delay: index * 0.02 }}
-                  >
+                  <div key={`${item.source_code}-${item.vod_id}-${index}`}>
                     <MediaPosterCard
                       to={`/play/raw?id=${item.vod_id}&source=${item.source_code}`}
                       posterUrl={item.vod_pic || null}
                       title={item.vod_name}
                     />
-                  </motion.div>
+                  </div>
                 ))}
-          </motion.div>
+          </div>
         )}
 
         {/* 空状态 */}
         {!loading && !hasResults && <EmptyState mode={mode} />}
-      </AnimatePresence>
+      </div>
 
       {/* 分页 */}
       {hasResults && totalPages > 1 && (
