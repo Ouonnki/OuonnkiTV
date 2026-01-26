@@ -163,6 +163,8 @@ export function SearchResultsGrid({
                       to={`/media/${item.mediaType}/${item.id}`}
                       posterUrl={item.posterPath ? `${TMDB_IMAGE_BASE}${item.posterPath}` : null}
                       title={item.title}
+                      year={item.releaseDate ? item.releaseDate.split('-')[0] : undefined}
+                      rating={item.voteAverage}
                     />
                   </div>
                 ))
@@ -172,6 +174,7 @@ export function SearchResultsGrid({
                       to={`/play/raw?id=${item.vod_id}&source=${item.source_code}`}
                       posterUrl={item.vod_pic || null}
                       title={item.vod_name}
+                      year={item.vod_year}
                     />
                   </div>
                 ))}

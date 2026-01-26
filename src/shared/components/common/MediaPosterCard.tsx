@@ -13,6 +13,10 @@ interface MediaPosterCardProps {
   aspectRatio?: number
   /** 是否显示标题，默认 true */
   showTitle?: boolean
+  /** 年份 - 显示在左上角 */
+  year?: string | number
+  /** 评分 (0-10) - 显示在右下角 */
+  rating?: number
 }
 
 /**
@@ -25,6 +29,8 @@ export function MediaPosterCard({
   title,
   aspectRatio = 2 / 3,
   showTitle = true,
+  year,
+  rating,
 }: MediaPosterCardProps) {
   return (
     <NavLink to={to}>
@@ -42,6 +48,24 @@ export function MediaPosterCard({
             ) : (
               <div className="bg-muted flex h-full w-full items-center justify-center">
                 <span className="text-muted-foreground text-sm">No Image</span>
+              </div>
+            )}
+            
+            {/* 上下遮罩 - 增强文字可读性 */}
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-black/60 to-transparent transition-opacity duration-300 group-hover:opacity-0" />
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/60 to-transparent transition-opacity duration-300 group-hover:opacity-0" />
+
+            {/* 信息徽标 */}
+            {year && (
+              <div className="absolute left-1 top-1 rounded px-1.5 py-0.5 text-[10px] items-center font-medium text-white/90 transition-opacity duration-300 group-hover:opacity-0">
+                {year}
+              </div>
+            )}
+            
+            {rating !== undefined && rating > 0 && (
+              <div className="absolute bottom-1 right-1 flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-bold text-yellow-400 transition-opacity duration-300 group-hover:opacity-0">
+                <span>★</span>
+                <span>{rating.toFixed(1)}</span>
               </div>
             )}
           </AspectRatio>
