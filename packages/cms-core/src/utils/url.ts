@@ -36,9 +36,11 @@ export function buildApiUrl(baseUrl: string, configPath: string, queryValue: str
 export function buildSearchUrl(
   baseUrl: string,
   query: string,
+  page: number = 1,
   apiConfig: ApiPathConfig = DEFAULT_API_CONFIG
 ): string {
-  return buildApiUrl(baseUrl, apiConfig.search.path, encodeURIComponent(query))
+  const pageParam = page > 1 ? `&pg=${page}` : ''
+  return buildApiUrl(baseUrl, apiConfig.search.path, encodeURIComponent(query) + pageParam)
 }
 
 /**

@@ -32,6 +32,7 @@ export interface CmsClient {
   aggregatedSearch(
     query: string,
     sources: VideoSource[],
+    page: number,
     signal?: AbortSignal,
   ): Promise<VideoItem[]>
 
@@ -85,14 +86,14 @@ export function createCmsClient(config?: CmsClientConfig): CmsClient {
   }
 
   // 单源搜索（带事件）
-  const searchWithEvents = async (query: string, source: VideoSource): Promise<SearchResult> => {
+  const searchWithEvents = async (query: string, source: VideoSource, page: number = 1): Promise<SearchResult> => {
     const sourceWithDefaults: VideoSource = {
       ...source,
       timeout: source.timeout ?? defaultTimeout,
       retry: source.retry ?? defaultRetry,
     }
 
-    return searchVideos(query, sourceWithDefaults, searchConfig)
+    return searchVideos(query, sourceWithDefaults, searchConfig, page)
   }
 
   // 创建聚合搜索
@@ -131,6 +132,7 @@ export function createCmsClient(config?: CmsClientConfig): CmsClient {
     async aggregatedSearch(
       query: string,
       sources: VideoSource[],
+      page: number = 1,
       signal?: AbortSignal,
     ): Promise<VideoItem[]> {
       const startTime = Date.now()
@@ -143,7 +145,7 @@ export function createCmsClient(config?: CmsClientConfig): CmsClient {
       })
 
       try {
-        const results = await aggregatedSearchFn(query, sources, signal)
+        const results = await aggregatedSearchFn(query, sources, page, signal)
 
         emitter.emit({
           type: 'search:complete',
