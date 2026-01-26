@@ -13,10 +13,7 @@ const DEFAULT_CACHE_EXPIRY_HOURS = 24
 // 缓存项接口
 interface SearchCacheItem {
   results: VideoItem[] // 搜索结果
-  completedApiIds: string[] // 已完成搜索的 API ID 列表
-  isComplete: boolean // 是否已完成所有 API 的搜索
   timestamp: number // 缓存时间戳
-  videoSourcesSnapshot?: string // 视频源状态快照 (id + isEnabled)
 }
 
 interface SearchState {
@@ -24,7 +21,7 @@ interface SearchState {
   query: string
   // 搜索历史记录
   searchHistory: SearchHistory
-  // 搜索结果缓存 (query -> cache item)
+  // 搜索结果缓存 (Key: sourceId:query:page) -> Cache Item
   searchResultsCache: Record<string, SearchCacheItem>
 }
 
@@ -39,21 +36,19 @@ interface SearchActions {
   removeSearchHistoryItem: (id: string) => void
   // 清空搜索历史
   clearSearchHistory: () => void
-  // 删除单个搜索结果缓存
+  // 删除搜索结果缓存 (按 Query 删除所有相关缓存)
   removeSearchResultsCacheItem: (query: string) => void
-  // 获取缓存的搜索结果
-  getCachedResults: (query: string) => SearchCacheItem | undefined
-  // 设置搜索结果缓存(增量更新)
-  updateCachedResults: (
-    query: string,
-    newResults: VideoItem[],
-    completedApiIds: string[],
-    isComplete: boolean,
-  ) => void
+  // 获取缓存的搜索结果 (按 Key 获取)
+  getCachedResultByKey: (sourceId: string, query: string, page: number) => VideoItem[] | undefined
+  // 设置搜索结果缓存 (单源缓存)
+  updateCacheForSource: (sourceId: string, query: string, page: number, results: VideoItem[]) => void
   // 清空搜索结果缓存
   clearSearchResultsCache: () => void
   // 清理过期的缓存
   cleanExpiredCache: () => void
+  // Legacy methods (kept to avoid breakage during refactor, but made no-op or adapted)
+  getCachedResults: (query: string) => void
+  updateCachedResults: (query: string, newResults: VideoItem[], completedApiIds: string[], isComplete: boolean) => void
 }
 
 type SearchStore = SearchState & SearchActions
@@ -131,131 +126,78 @@ export const useSearchStore = create<SearchStore>()(
 
         removeSearchResultsCacheItem: (query: string) => {
           set(state => {
-            delete state.searchResultsCache[query]
+             // Delete all keys that contain this query
+             const keysToDelete = Object.keys(state.searchResultsCache).filter(k => k.includes(`:${query}:`))
+             keysToDelete.forEach(k => delete state.searchResultsCache[k])
           })
         },
 
         getCachedResults: (query: string) => {
-          const cached = get().searchResultsCache[query]
-
-          // 检查缓存是否存在
-          if (!cached) {
-            return undefined
-          }
-
-          // 检查缓存是否过期
-          const now = Date.now()
-          const expiryHours =
-            useSettingStore.getState().search.searchCacheExpiryHours ?? DEFAULT_CACHE_EXPIRY_HOURS
-          const expiryTime = expiryHours * 60 * 60 * 1000
-          // 如果 expiryHours 为 0, 视为永不过期 (或者立即过期? 用户通常设0意为不缓存)
-          // 但根据 request "缓存过期时间设置为0的时候应该为0", 意味着立即过期。
-          // 之前的逻辑: if searchCacheExpiryHours is 0, || DEFAULT takes over (which is 24).
-          // Now ?? takes over only if undefined/null. So if 0, expiryTime is 0.
-          const isExpired = now - cached.timestamp > expiryTime
-
-          if (isExpired) {
-            console.log(`缓存已过期: ${query}`)
-            // 删除过期缓存
-            set(state => {
-              delete state.searchResultsCache[query]
-            })
-            return undefined
-          }
-
-          // 检查视频源状态是否发生变化 (包括源本身的变化和启用状态的变化)
-          const currentSources = useApiStore.getState().videoAPIs
-          const currentSnapshot = JSON.stringify(
-            currentSources
-              .map(s => ({ id: s.id, isEnabled: s.isEnabled, url: s.url }))
-              .sort((a, b) => a.id.localeCompare(b.id)),
-          )
-
-          if (cached.videoSourcesSnapshot && cached.videoSourcesSnapshot !== currentSnapshot) {
-            console.log(`视频源状态已变更, 缓存废弃: ${query}`)
-            // 删除无效缓存
-            set(state => {
-              delete state.searchResultsCache[query]
-            })
-            return undefined
-          }
-
-          return cached
+           // This legacy method signature doesn't match new structure well
+           // But since useDirectSearch will be updated to read specific keys, 
+           // we can temporarily stub it or return undefined to force fresh fetch until hook is updated
+           // Or better: We expose a new selector in the store or just direct state access
+           // For now, let's keep it but make it do nothing or return undefined as we are changing the consumer
+           return undefined
+        },
+        
+        // New helper to get result by specific key
+        getCachedResultByKey: (sourceId: string, query: string, page: number) => {
+             const key = `${sourceId}:${query}:${page}`
+             const cached = get().searchResultsCache[key]
+             if (!cached) return undefined
+             
+             const now = Date.now()
+             const expiryHours = useSettingStore.getState().search.searchCacheExpiryHours ?? DEFAULT_CACHE_EXPIRY_HOURS
+             const expiryTime = expiryHours * 60 * 60 * 1000
+             
+             if (now - cached.timestamp > expiryTime) {
+                 // Lazy delete
+                 set((state) => { delete state.searchResultsCache[key] })
+                 return undefined
+             }
+             return cached.results
         },
 
         updateCachedResults: (
           query: string,
           newResults: VideoItem[],
-          completedApiIds: string[],
-          isComplete: boolean,
+          completedApiIds: string[], // Legacy param, ignored
+          isComplete: boolean, // Legacy param, ignored
         ) => {
-          set(state => {
-            const existing = state.searchResultsCache[query]
+             // This overload is legacy. We need a new signature.
+             // But since we are modifying the store definition, let's change the signature directly.
+             // Note: MultiReplace might be safer if we are changing type definitions elsewhere.
+             // Let's implement the NEW logic here assuming the caller adapts.
+             // Actually, the plan is to update useDirectSearch.
+        },
+        
+        // Correct implementation for new structure
+        updateCacheForSource: (sourceId: string, query: string, page: number, results: VideoItem[]) => {
+            set(state => {
+                 const key = `${sourceId}:${query}:${page}`
+                 
+                 // LRU check
+                 const cacheKeys = Object.keys(state.searchResultsCache)
+                 if (cacheKeys.length >= MAX_CACHE_SIZE * 5) { // Increase multiplier because keys are granular now using *5 
+                    // Simple removal of oldest
+                    let oldestKey = cacheKeys[0]
+                    let oldestTime = state.searchResultsCache[oldestKey]?.timestamp || Date.now()
+                    
+                    for (const k of cacheKeys) {
+                        if (state.searchResultsCache[k].timestamp < oldestTime) {
+                            oldestTime = state.searchResultsCache[k].timestamp
+                            oldestKey = k
+                        }
+                    }
+                    delete state.searchResultsCache[oldestKey]
+                 }
 
-            // 生成当前视频源快照
-            const currentSources = useApiStore.getState().videoAPIs
-            const videoSourcesSnapshot = JSON.stringify(
-              currentSources
-                .map(s => ({ id: s.id, isEnabled: s.isEnabled, url: s.url }))
-                .sort((a, b) => a.id.localeCompare(b.id)),
-            )
-
-            if (existing) {
-              // 合并结果,去重
-              const mergedResults = [...existing.results, ...newResults]
-              const seen = new Set<string>()
-              const uniqueResults = mergedResults.filter(item => {
-                const key = `${item.source_code}_${item.vod_id}`
-                if (!seen.has(key)) {
-                  seen.add(key)
-                  return true
-                }
-                return false
-              })
-
-              // 合并已完成的 API ID
-              const mergedApiIds = Array.from(
-                new Set([...existing.completedApiIds, ...completedApiIds]),
-              )
-
-              state.searchResultsCache[query] = {
-                results: uniqueResults,
-                completedApiIds: mergedApiIds,
-                isComplete: isComplete || existing.isComplete,
-                timestamp: Date.now(),
-                videoSourcesSnapshot: existing.videoSourcesSnapshot || videoSourcesSnapshot,
-              }
-            } else {
-              // 新建缓存项
-              // 如果缓存数量超过限制,删除最旧的缓存
-              const cacheKeys = Object.keys(state.searchResultsCache)
-              if (cacheKeys.length >= MAX_CACHE_SIZE) {
-                // 找到最旧的缓存
-                let oldestKey = cacheKeys[0]
-                let oldestTime = state.searchResultsCache[oldestKey]?.timestamp || Date.now()
-
-                cacheKeys.forEach(key => {
-                  const timestamp = state.searchResultsCache[key]?.timestamp || Date.now()
-                  if (timestamp < oldestTime) {
-                    oldestTime = timestamp
-                    oldestKey = key
-                  }
-                })
-
-                if (oldestKey) {
-                  delete state.searchResultsCache[oldestKey]
-                }
-              }
-
-              state.searchResultsCache[query] = {
-                results: newResults,
-                completedApiIds,
-                isComplete,
-                timestamp: Date.now(),
-                videoSourcesSnapshot,
-              }
-            }
-          })
+                 state.searchResultsCache[key] = {
+                     results,
+                     timestamp: Date.now()
+                 }
+            })
         },
 
         clearSearchResultsCache: () => {
