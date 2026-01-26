@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useDocumentTitle } from '@/shared/hooks'
 import { useTmdbNowPlaying } from '@/shared/hooks/useTmdb'
+import { useSearchStore } from '@/shared/store/searchStore'
 
 import {
   SearchModeToggle,
@@ -37,6 +38,14 @@ export default function SearchHubView() {
       setIsDirectCentered(false) // 立即移除类名
     }
   }, [mode, query])
+
+  // Sync query to search history
+  const { addSearchHistoryItem } = useSearchStore()
+  useEffect(() => {
+    if (query.trim()) {
+       addSearchHistoryItem(query.trim())
+    }
+  }, [query, addSearchHistoryItem])
 
   // Trending Hook（只用于热搜词展示，仍然保留在顶层）
   const { trending, refreshTrending } = useTmdbNowPlaying()
