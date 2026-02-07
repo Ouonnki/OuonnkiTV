@@ -5,8 +5,6 @@ import { useApiStore } from '@/shared/store/apiStore'
 import { useCmsClient } from '@/shared/hooks'
 import { PaginationConfig } from '@/shared/config/video.config'
 
-const PAGE_SIZE = 20
-
 // 源分页信息缓存结构
 interface SourcePaginationInfo {
   totalPages: number
@@ -47,6 +45,12 @@ export function useDirectSearch() {
     setDirectLoading(true)
     setSearchProgress({ completed: 0, total: selectedAPIs.length })
 
+    // 第1页时清空现有结果
+    if (page === 1) {
+      setDirectResults([])
+      sourcePaginationCacheRef.current.clear()
+    }
+
     if (timeOutTimer.current) {
       clearTimeout(timeOutTimer.current)
       timeOutTimer.current = null
@@ -55,11 +59,6 @@ export function useDirectSearch() {
       setDirectLoading(false)
       timeOutTimer.current = null
     }, PaginationConfig.maxRequestTimeout)
-
-    // 第1页时清空分页缓存
-    if (page === 1) {
-      sourcePaginationCacheRef.current.clear()
-    }
 
     // 根据缓存判断哪些源需要跳过
     const cachedSources = sourcePaginationCacheRef.current
@@ -100,11 +99,8 @@ export function useDirectSearch() {
       }
 
       setDirectResults(prev => {
-        // 累积加载：第1页替换，第2页及以后追加
-        const mergedRes =
-          event.pagination?.page === 1 ? event.items : [...prev, ...event.items]
-        if (mergedRes.length >= PAGE_SIZE * page) setDirectLoading(false)
-        return mergedRes
+        // 累积所有源的结果
+        return [...prev, ...event.items]
       })
 
       // 收集分页信息
