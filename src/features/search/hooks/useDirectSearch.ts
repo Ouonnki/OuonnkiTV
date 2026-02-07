@@ -1,5 +1,4 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from 'react'
-import { toast } from 'sonner'
 import { type VideoItem, type SearchResultEvent, type Pagination } from '@ouonnki/cms-core'
 import { useApiStore } from '@/shared/store/apiStore'
 import { useCmsClient } from '@/shared/hooks'
@@ -166,15 +165,7 @@ export function useDirectSearch() {
         }
       })
 
-    if (page === 1) {
-      toast.promise(searchPromise, {
-        loading: '持续搜索内容中......',
-        success: '搜索完成',
-        error: '部分搜索失败',
-      })
-    } else {
-      searchPromise
-    }
+    // 移除toast提示
   }, [selectedAPIs, cmsClient])
 
   // Cleanup on unmount
