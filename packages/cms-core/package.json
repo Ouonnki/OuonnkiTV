@@ -8,14 +8,26 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
+      "development": {
+        "types": "./src/index.ts",
+        "import": "./src/index.ts"
+      },
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
     "./m3u8": {
+      "development": {
+        "types": "./src/m3u8/index.ts",
+        "import": "./src/m3u8/index.ts"
+      },
       "types": "./dist/m3u8/index.d.ts",
       "import": "./dist/m3u8/index.js"
     },
     "./source": {
+      "development": {
+        "types": "./src/source/index.ts",
+        "import": "./src/source/index.ts"
+      },
       "types": "./dist/source/index.d.ts",
       "import": "./dist/source/index.js"
     }
