@@ -131,7 +131,7 @@ export function useAggregatedSearch(config?: CmsClientConfig): UseAggregatedSear
       })
 
       try {
-        await client.aggregatedSearch(query, sources, abortRef.current.signal)
+        await client.aggregatedSearch(query, sources, 1, abortRef.current.signal)
       } catch (error) {
         if ((error as Error).name !== 'AbortError') {
           setState(prev => ({

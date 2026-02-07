@@ -11,7 +11,6 @@ interface NetworkSettings {
 interface SearchSettings {
   isSearchHistoryEnabled: boolean
   isSearchHistoryVisible: boolean
-  searchCacheExpiryHours: number
 }
 
 interface PlaybackSettings {

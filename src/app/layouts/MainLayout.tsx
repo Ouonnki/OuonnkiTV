@@ -7,7 +7,6 @@ import { lazy, Suspense, useEffect } from 'react'
 import { useVersionStore } from '@/shared/store/versionStore'
 import { useSettingStore } from '@/shared/store/settingStore'
 import { useApiStore } from '@/shared/store/apiStore'
-import { useSearchStore } from '@/shared/store/searchStore'
 
 const UpdateModal = lazy(() => import('@/shared/components/UpdateModal'))
 
@@ -15,17 +14,15 @@ export default function MainLayout() {
   const { hasNewVersion, setShowUpdateModal } = useVersionStore()
   const { system } = useSettingStore()
   const { initializeEnvSources } = useApiStore()
-  const { cleanExpiredCache } = useSearchStore()
 
   // 初始化逻辑 (从 MyRouter 迁移)
   useEffect(() => {
-    cleanExpiredCache()
     const needsInitialization = localStorage.getItem('envSourcesInitialized') !== 'true'
     if (needsInitialization) {
       initializeEnvSources()
       localStorage.setItem('envSourcesInitialized', 'true')
     }
-  }, [initializeEnvSources, cleanExpiredCache])
+  }, [initializeEnvSources])
 
   // 版本更新检查
   useEffect(() => {

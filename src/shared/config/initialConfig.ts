@@ -6,7 +6,6 @@ interface SettingsConfig {
   search?: {
     isSearchHistoryEnabled?: boolean
     isSearchHistoryVisible?: boolean
-    searchCacheExpiryHours?: number
   }
   playback?: {
     isViewingHistoryEnabled?: boolean

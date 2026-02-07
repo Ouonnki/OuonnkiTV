@@ -15,7 +15,6 @@ export const DEFAULT_SETTINGS = {
       envSettings?.search?.isSearchHistoryEnabled ??
       import.meta.env.VITE_SEARCH_HISTORY_ENABLED !== 'false',
     isSearchHistoryVisible: envSettings?.search?.isSearchHistoryVisible ?? true,
-    searchCacheExpiryHours: envSettings?.search?.searchCacheExpiryHours ?? 24,
   },
   playback: {
     isViewingHistoryEnabled:
