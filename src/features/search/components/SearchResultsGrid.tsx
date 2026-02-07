@@ -25,7 +25,7 @@ interface SearchResultsGridProps {
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w342'
 
 // 骨架屏数量
-const SKELETON_COUNT = 12
+const SKELETON_COUNT = 20
 
 /**
  * ResultSkeleton - 结果骨架屏
@@ -106,14 +106,14 @@ export function SearchResultsGrid({
         {/* 内容区域 */}
         <div>
           {loading ? (
-            <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8">
               {Array.from({ length: SKELETON_COUNT }).map((_, index) => (
                 <ResultSkeleton key={index} />
               ))}
             </div>
           ) : hasResults ? (
-            <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8">
-              {results.map((item) => (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8">
+              {results.map(item => (
                 <div key={`${item.mediaType}-${item.id}`}>
                   <MediaPosterCard
                     to={`/media/${item.mediaType}/${item.id}`}
