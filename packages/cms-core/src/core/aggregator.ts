@@ -1,4 +1,4 @@
-import type { VideoItem, VideoSource, SearchResult } from '../types'
+import type { VideoItem, VideoSource, SearchResult, Pagination } from '../types'
 import { createConcurrencyLimiter } from './concurrency'
 
 /**
@@ -10,7 +10,7 @@ export interface AggregatorOptions {
   /** 进度回调 */
   onProgress?: (completed: number, total: number, source: VideoSource) => void
   /** 结果回调（增量） */
-  onResult?: (items: VideoItem[], source: VideoSource) => void
+  onResult?: (items: VideoItem[], source: VideoSource, pagination?: Pagination) => void
 }
 
 /**
@@ -93,9 +93,13 @@ export function createAggregatedSearch(
           return false
         })
 
-        if (aborted || newUnique.length === 0) return [] as VideoItem[]
+        if (aborted) return [] as VideoItem[]
 
-        onResult?.(newUnique, source)
+        // 即使结果为空，也要记录分页信息（用于判断是否还有更多页）
+        onResult?.(newUnique, source, result.pagination)
+
+        if (newUnique.length === 0) return [] as VideoItem[]
+
         return newUnique
       }),
     )

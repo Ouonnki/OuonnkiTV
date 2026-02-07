@@ -1,4 +1,4 @@
-import type { VideoItem, VideoDetail } from './video'
+import type { VideoItem, VideoDetail, Pagination } from './video'
 import type { VideoSource } from './source'
 
 /**
@@ -43,6 +43,8 @@ export interface SearchResultEvent {
   source: VideoSource
   items: VideoItem[]
   isIncremental: boolean
+  /** 分页信息 */
+  pagination?: Pagination
 }
 
 /**

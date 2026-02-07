@@ -107,12 +107,13 @@ export function createCmsClient(config?: CmsClientConfig): CmsClient {
         total,
       })
     },
-    onResult: (items, source) => {
+    onResult: (items, source, pagination) => {
       emitter.emit({
         type: 'search:result',
         source,
         items,
         isIncremental: true,
+        pagination,
       })
     },
   })

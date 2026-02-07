@@ -1,5 +1,5 @@
 // 视频相关类型
-export type { VideoItem, VideoDetail, SearchResult, DetailResult } from './video'
+export type { VideoItem, VideoDetail, SearchResult, DetailResult, Pagination } from './video'
 
 // 视频源相关类型
 export type { VideoSource, SourceStore } from './source'

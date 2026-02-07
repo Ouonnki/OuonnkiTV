@@ -2,6 +2,7 @@ import type {
   VideoItem,
   VideoSource,
   SearchResult,
+  Pagination,
   RequestAdapter,
   ProxyStrategy,
   ApiPathConfig,
@@ -84,9 +85,17 @@ export async function searchVideos(
       api_url: source.url,
     }))
 
+    // 解析分页信息
+    const pagination: Pagination = {
+      page: Number(data.page) || page,
+      totalPages: Number(data.pagecount) || 0,
+      totalResults: Number(data.total) || 0,
+    }
+
     return {
       success: true,
       items,
+      pagination,
     }
   } catch (error) {
     console.error('搜索错误:', error)

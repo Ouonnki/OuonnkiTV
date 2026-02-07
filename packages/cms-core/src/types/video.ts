@@ -40,12 +40,26 @@ export interface VideoDetail {
 }
 
 /**
+ * 分页信息
+ */
+export interface Pagination {
+  /** 当前页码 */
+  page: number
+  /** 总页数 */
+  totalPages: number
+  /** 总结果数 */
+  totalResults: number
+}
+
+/**
  * 搜索结果
  */
 export interface SearchResult {
   success: boolean
   items: VideoItem[]
   error?: string
+  /** 分页信息 */
+  pagination?: Pagination
 }
 
 /**

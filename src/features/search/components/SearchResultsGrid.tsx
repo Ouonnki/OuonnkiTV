@@ -21,6 +21,8 @@ interface SearchResultsGridProps {
   currentPage: number
   /** 总页数 */
   totalPages: number
+  /** 总结果数（用于显示统计） */
+  totalResults?: number
   /** 页码变更回调 */
   onPageChange: (page: number) => void
   /** 直连搜索进度（已完成的源数量/总源数量） */
@@ -30,9 +32,6 @@ interface SearchResultsGridProps {
 
 // TMDB 图片基础 URL
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w342'
-
-// 每页显示数量
-const PAGE_SIZE = 20
 
 // 骨架屏数量
 const SKELETON_COUNT = 12
@@ -98,6 +97,7 @@ export function SearchResultsGrid({
   loading,
   currentPage,
   totalPages,
+  totalResults,
   onPageChange,
   searchProgress,
   className,
@@ -105,10 +105,8 @@ export function SearchResultsGrid({
   const results = mode === 'tmdb' ? tmdbResults : directResults
   const hasResults = results.length > 0
 
-  // 计算当前页的结果（用于直连模式的本地分页）
-  const startIndex = (currentPage - 1) * PAGE_SIZE
-  const endIndex = startIndex + PAGE_SIZE
-  const paginatedDirectResults = directResults.slice(startIndex, endIndex)
+  // 显示的总结果数：优先使用传入的 totalResults，否则使用本地结果长度
+  const displayTotalResults = totalResults ?? results.length
 
   return (
     <div className={cn('space-y-6', className)}>
@@ -120,7 +118,7 @@ export function SearchResultsGrid({
       {/* 结果统计 - 加载时也保留 */}
       {hasResults && (
         <div className="text-muted-foreground text-sm">
-          共找到 <span className="text-primary font-medium">{results.length}</span> 个结果
+          共找到 <span className="text-primary font-medium">{displayTotalResults}</span> 个结果
         </div>
       )}
 
@@ -168,7 +166,7 @@ export function SearchResultsGrid({
                     />
                   </div>
                 ))
-              : paginatedDirectResults.map((item, index) => (
+              : directResults.map((item, index) => (
                   <div key={`${item.source_code}-${item.vod_id}-${index}`}>
                     <MediaPosterCard
                       to={`/play/raw?id=${item.vod_id}&source=${item.source_code}`}

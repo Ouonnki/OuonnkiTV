@@ -5,6 +5,7 @@ export type {
   VideoDetail,
   SearchResult,
   DetailResult,
+  Pagination,
   // 视频源相关
   VideoSource,
   SourceStore,
