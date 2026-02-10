@@ -11,10 +11,12 @@ interface SearchHubInputProps {
   initialQuery: string
   /** Callback when search is triggered */
   onSearch: (query: string) => void
+  /** Callback when clear button is clicked */
+  onClear?: () => void
   className?: string
 }
 
-export function SearchHubInput({ initialQuery, onSearch, className }: SearchHubInputProps) {
+export function SearchHubInput({ initialQuery, onSearch, onClear, className }: SearchHubInputProps) {
   const [inputValue, setInputValue] = useState(initialQuery)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   
@@ -88,6 +90,7 @@ export function SearchHubInput({ initialQuery, onSearch, className }: SearchHubI
   const handleClear = () => {
     setInputValue('')
     clearSuggestions()
+    onClear?.()
     inputRef.current?.focus()
   }
 

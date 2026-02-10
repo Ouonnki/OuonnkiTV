@@ -80,6 +80,15 @@ export default function SearchHubView() {
     })
   }, [mode, setSearchParams])
 
+  // 处理清除搜索
+  const handleClear = useCallback(() => {
+    setSearchParams(prev => {
+      const params = new URLSearchParams(prev)
+      params.delete('q')
+      return params
+    })
+  }, [setSearchParams])
+
   return (
     <div className={`flex flex-col gap-6 p-4 pb-8 transition-all duration-300 ${isDirectCentered ? 'min-h-[60vh] justify-center' : ''}`}>
       {/* 搜索区域 */}
@@ -95,9 +104,10 @@ export default function SearchHubView() {
 
         {/* 搜索框 */}
         <motion.div layout className="w-full flex justify-center">
-            <SearchHubInput 
+            <SearchHubInput
               initialQuery={query}
               onSearch={handleSearch}
+              onClear={handleClear}
             />
         </motion.div>
 
