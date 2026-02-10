@@ -152,10 +152,10 @@ export function SearchResultsGrid({
           )}
         </div>
 
-        {/* 加载更多状态 */}
-        {hasResults && (
-          <div ref={sentinelRef} className="py-8 flex justify-center">
-            {loading ? (
+        {/* 加载更多状态 - 哨兵元素始终渲染，但只在有结果时显示内容 */}
+        <div ref={sentinelRef} className="py-8 flex justify-center min-h-[60px]">
+          {hasResults ? (
+            loading ? (
               <div className="text-muted-foreground text-sm flex items-center gap-2">
                 <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full" />
                 加载下一页...
@@ -168,9 +168,9 @@ export function SearchResultsGrid({
               <div className="text-muted-foreground text-sm">
                 已加载全部内容
               </div>
-            )}
-          </div>
-        )}
+            )
+          ) : null}
+        </div>
       </div>
     )
   }
