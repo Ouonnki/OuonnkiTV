@@ -393,7 +393,6 @@ export function CategoryFilterSection({
   years,
   filterOptions,
   onFilterChange,
-  onClear,
   isLoading = false,
   className,
 }: CategoryFilterSectionProps) {

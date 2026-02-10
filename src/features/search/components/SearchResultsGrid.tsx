@@ -210,6 +210,13 @@ export function SearchResultsGrid({
                   posterUrl={item.vod_pic || null}
                   title={item.vod_name}
                   year={item.vod_year}
+                  rating={
+                    item.vod_douban_score !== undefined
+                      ? typeof item.vod_douban_score === 'number'
+                        ? item.vod_douban_score
+                        : parseFloat(item.vod_douban_score)
+                      : undefined
+                  }
                 />
               </div>
             ))}

@@ -13,6 +13,8 @@ export interface VideoItem {
   vod_actor?: string
   vod_content?: string
   vod_play_url?: string
+  /** 豆瓣评分 */
+  vod_douban_score?: number | string
   /** 归属源名称 */
   source_name?: string
   /** 归属源ID */
