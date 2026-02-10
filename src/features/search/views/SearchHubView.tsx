@@ -114,9 +114,10 @@ export default function SearchHubView() {
         {/* 大家都在搜 */}
         <AnimatePresence mode="popLayout">
           {mode === 'direct' && !query && (
-            <SearchTrending 
+            <SearchTrending
               trending={trending}
               onSearch={handleSearch}
+              isLoading={trending.length === 0}
             />
           )}
         </AnimatePresence>
