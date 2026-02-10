@@ -105,21 +105,24 @@ export function SearchResultsGrid({
   if (mode === 'tmdb') {
     const results = tmdbResults
     const hasResults = results.length > 0
-    // 区分首次加载和加载更多
-    const isInitialLoading = loading && !hasResults
+    // 只要有数据就显示结果，加载中状态交给骨架屏处理
+    const showSkeleton = loading
 
     return (
       <div className={cn('space-y-6', className)}>
-        {/* 结果统计 - 仅在 totalResults 存在时显示（搜索模式） */}
-        {hasResults && totalResults !== undefined && (
+        {/* 结果统计 - 仅在非加载状态且有 totalResults 时显示 */}
+        {!loading && hasResults && totalResults !== undefined && (
           <div className="text-muted-foreground text-sm">
             共找到 <span className="text-primary font-medium">{totalResults}</span> 个结果
+            {results.length !== totalResults && (
+              <>，已显示 <span className="text-primary font-medium">{results.length}</span> 个</>
+            )}
           </div>
         )}
 
         {/* 内容区域 */}
         <div>
-          {isInitialLoading ? (
+          {showSkeleton ? (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8">
               {Array.from({ length: SKELETON_COUNT }).map((_, index) => (
                 <ResultSkeleton key={index} />
