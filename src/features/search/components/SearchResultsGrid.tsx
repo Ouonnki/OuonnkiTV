@@ -110,10 +110,10 @@ export function SearchResultsGrid({
 
     return (
       <div className={cn('space-y-6', className)}>
-        {/* 结果统计 */}
-        {hasResults && (
+        {/* 结果统计 - 仅在 totalResults 存在时显示（搜索模式） */}
+        {hasResults && totalResults !== undefined && (
           <div className="text-muted-foreground text-sm">
-            共找到 <span className="text-primary font-medium">{totalResults ?? results.length}</span> 个结果
+            共找到 <span className="text-primary font-medium">{totalResults}</span> 个结果
           </div>
         )}
 

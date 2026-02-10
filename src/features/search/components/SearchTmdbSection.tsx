@@ -42,10 +42,14 @@ export function SearchTmdbSection({ query }: SearchTmdbSectionProps) {
     fetchGenresAndCountries()
   }, [fetchGenresAndCountries])
 
-  // 筛选条件变化时重置分页
+  // 筛选条件变化时重置分页并重新获取数据（Discover 模式）
   useEffect(() => {
     setCurrentPage(1)
-  }, [filterOptions])
+    // 如果没有搜索词，重新获取 Discover 数据
+    if (!query) {
+      fetchDiscover(1)
+    }
+  }, [filterOptions, query, fetchDiscover])
 
   // 无搜索词时加载 discover 数据
   useEffect(() => {
@@ -127,7 +131,6 @@ export function SearchTmdbSection({ query }: SearchTmdbSectionProps) {
             mode="tmdb"
             tmdbResults={discoverResults}
             loading={discoverLoading}
-            totalResults={discoverPagination.totalResults}
             hasMore={hasMore}
             sentinelRef={sentinelRef}
           />
