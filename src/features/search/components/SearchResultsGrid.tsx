@@ -188,13 +188,13 @@ export function SearchResultsGrid({
       {/* 内容区域 */}
       <div>
         {loading && !hasResults ? (
-          <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8">
             {Array.from({ length: SKELETON_COUNT }).map((_, index) => (
               <ResultSkeleton key={index} />
             ))}
           </div>
         ) : hasResults ? (
-          <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8">
             {results.map((item, index) => (
               <div key={`${item.source_code}-${item.vod_id}-${index}`}>
                 <MediaPosterCard
