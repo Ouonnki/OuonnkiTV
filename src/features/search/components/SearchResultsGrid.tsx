@@ -20,6 +20,8 @@ interface SearchResultsGridProps {
   searchProgress?: { completed: number; total: number }
   /** 总结果数量（来自 API 分页信息） */
   totalResults?: number
+  /** 是否正在搜索新查询（用于显示骨架屏） */
+  isSearchingNewQuery?: boolean
   /** 是否还有更多内容 */
   hasMore?: boolean
   /** 当前页是否已完成（仅 Direct 模式） */
@@ -96,6 +98,7 @@ export function SearchResultsGrid({
   loading,
   searchProgress,
   totalResults,
+  isSearchingNewQuery,
   hasMore = false,
   isCurrentPageComplete = true,
   sentinelRef,
@@ -105,8 +108,10 @@ export function SearchResultsGrid({
   if (mode === 'tmdb') {
     const results = tmdbResults
     const hasResults = results.length > 0
-    // 只要有数据就显示结果，加载中状态交给骨架屏处理
-    const showSkeleton = loading
+    // 判断骨架屏显示：
+    // 1. 正在加载且没有已有结果（首次加载）
+    // 2. 正在搜索新查询（更换关键词或切换筛选）
+    const showSkeleton = loading && (!hasResults || isSearchingNewQuery)
 
     return (
       <div className={cn('space-y-6', className)}>

@@ -37,6 +37,11 @@ export function SearchTmdbSection({ query }: SearchTmdbSectionProps) {
   const years = useTmdbStore(s => s.availableFilterOptions.years)
   const fetchGenresAndCountries = useTmdbStore(s => s.fetchGenresAndCountries)
 
+  // 搜索模式下加载新查询时，需要清空旧结果避免显示旧数据
+  const [isSearchingNewQuery, setIsSearchingNewQuery] = useState(false)
+  // Discover 模式下筛选条件变化时显示骨架屏
+  const [isDiscoverFiltering, setIsDiscoverFiltering] = useState(false)
+
   // 初始化时获取分类和国家列表
   useEffect(() => {
     fetchGenresAndCountries()
@@ -47,7 +52,10 @@ export function SearchTmdbSection({ query }: SearchTmdbSectionProps) {
     setCurrentPage(1)
     // 如果没有搜索词，重新获取 Discover 数据
     if (!query) {
-      fetchDiscover(1)
+      setIsDiscoverFiltering(true)
+      fetchDiscover(1).then(() => {
+        setIsDiscoverFiltering(false)
+      })
     }
   }, [filterOptions, query, fetchDiscover])
 
@@ -59,11 +67,14 @@ export function SearchTmdbSection({ query }: SearchTmdbSectionProps) {
     }
   }, [query, fetchDiscover])
 
-  // 执行搜索
+  // 执行搜索 - 检测新查询
   useEffect(() => {
     if (query) {
+      setIsSearchingNewQuery(true)
       setCurrentPage(1)
-      tmdbSearch(query, 1)
+      tmdbSearch(query, 1).then(() => {
+        setIsSearchingNewQuery(false)
+      })
     }
   }, [query, tmdbSearch])
 
@@ -122,6 +133,7 @@ export function SearchTmdbSection({ query }: SearchTmdbSectionProps) {
             tmdbResults={tmdbFilteredResults}
             loading={tmdbLoading}
             totalResults={tmdbPagination.totalResults}
+            isSearchingNewQuery={isSearchingNewQuery}
             hasMore={hasMore}
             sentinelRef={sentinelRef}
           />
@@ -131,6 +143,7 @@ export function SearchTmdbSection({ query }: SearchTmdbSectionProps) {
             mode="tmdb"
             tmdbResults={discoverResults}
             loading={discoverLoading}
+            isSearchingNewQuery={isDiscoverFiltering}
             hasMore={hasMore}
             sentinelRef={sentinelRef}
           />
