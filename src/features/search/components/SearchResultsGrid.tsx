@@ -3,6 +3,7 @@ import type { VideoItem } from '@ouonnki/cms-core'
 import { MediaPosterCard } from '@/shared/components/common/MediaPosterCard'
 import { NoResultIcon } from '@/shared/components/icons'
 import { Skeleton } from '@/shared/components/ui/skeleton'
+import { Badge } from '@/shared/components/ui/badge'
 import { cn } from '@/shared/lib/utils'
 import { AspectRatio } from '@/shared/components/ui/aspect-ratio'
 import type { SearchMode } from './SearchModeToggle'
@@ -19,6 +20,8 @@ interface SearchResultsGridProps {
   loading: boolean
   /** 直连搜索进度（已完成的源数量/总源数量） */
   searchProgress?: { completed: number; total: number }
+  /** 成功返回结果的源 ID 集合 */
+  successfulSources?: Set<string>
   /** 总结果数量（来自 API 分页信息） */
   totalResults?: number
   /** 是否正在搜索新查询（用于显示骨架屏） */
@@ -69,27 +72,6 @@ function EmptyState({ mode }: { mode: SearchMode }) {
 }
 
 /**
- * SearchProgress - 搜索进度组件
- */
-function SearchProgress({ completed, total }: { completed: number; total: number }) {
-  const percentage = total > 0 ? (completed / total) * 100 : 0
-
-  return (
-    <div className="mb-4 flex items-center gap-3">
-      <div className="bg-muted h-2 flex-1 overflow-hidden rounded-full">
-        <div
-          className="bg-primary h-full rounded-full transition-all duration-300"
-          style={{ width: `${percentage}%` }}
-        />
-      </div>
-      <span className="text-muted-foreground text-sm">
-        {completed}/{total} 源
-      </span>
-    </div>
-  )
-}
-
-/**
  * SearchResultsGrid - 搜索结果网格组件
  */
 export function SearchResultsGrid({
@@ -98,6 +80,7 @@ export function SearchResultsGrid({
   directResults = [],
   loading,
   searchProgress,
+  successfulSources,
   totalResults,
   isSearchingNewQuery,
   hasMore = false,
@@ -180,19 +163,64 @@ export function SearchResultsGrid({
   const results = directResults
   const hasResults = results.length > 0
 
+  // 计算源完成状态指示器颜色
+  const getIndicatorColor = () => {
+    if (!searchProgress) return 'bg-current'
+    const { completed, total } = searchProgress
+    if (total === 0) return 'bg-current'
+
+    // 搜索进行中：原本的颜色（current）
+    if (completed < total) {
+      return 'bg-current'
+    }
+
+    // 搜索完成：根据成功率显示颜色
+    const successfulCount = successfulSources?.size || 0
+
+    // 红色：没有任何源成功
+    if (successfulCount === 0) {
+      return 'bg-red-500'
+    }
+    // 绿色：全部源成功
+    if (successfulCount >= total) {
+      return 'bg-green-500'
+    }
+    // 黄色：有源成功，但也有源失败
+    return 'bg-amber-500'
+  }
+
   return (
     <div className={cn('space-y-6', className)}>
-      {/* 直连模式搜索进度 */}
-      {searchProgress && loading && (
-        <SearchProgress completed={searchProgress.completed} total={searchProgress.total} />
-      )}
-
-      {/* 结果统计 */}
-      {hasResults && (
-        <div className="text-muted-foreground text-sm">
-          共找到 <span className="text-primary font-medium">{results.length}</span> 个结果
-        </div>
-      )}
+      {/* 结果统计 + 源状态 */}
+      <div className="flex items-center justify-between gap-4">
+        {/* 左侧：结果统计 */}
+        {hasResults && (
+          <div className="text-muted-foreground text-sm">
+            共找到 <span className="text-primary font-medium">{results.length}</span> 个结果
+          </div>
+        )}
+        {/* 右侧：源状态徽章（始终显示在右侧） */}
+        {searchProgress && (
+          <Badge
+            variant="outline"
+            className={cn(
+              'gap-1.5 transition-colors ml-auto',
+              loading && searchProgress.completed < searchProgress.total && 'animate-pulse'
+            )}
+            title={`已请求 ${searchProgress.completed}/${searchProgress.total} 个源`}
+          >
+            {/* 状态指示器 - 根据完成状态显示不同颜色 */}
+            {searchProgress.completed < searchProgress.total ? (
+              // 搜索中：原本颜色 + ping 动画
+              <span className="h-1.5 w-1.5 rounded-full bg-current animate-ping" />
+            ) : (
+              // 搜索完成：根据结果显示颜色（无动画）
+              <span className={cn('h-1.5 w-1.5 rounded-full', getIndicatorColor())} />
+            )}
+            {searchProgress.completed}/{searchProgress.total} 源
+          </Badge>
+        )}
+      </div>
 
       {/* 内容区域 */}
       <div>

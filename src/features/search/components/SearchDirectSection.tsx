@@ -18,6 +18,7 @@ export function SearchDirectSection({ query }: SearchDirectSectionProps) {
     isCurrentPageComplete,
     canLoadMore,
     cmsPagination,
+    successfulSourcesInCurrentPage,
     startDirectSearch
   } = useDirectSearch()
 
@@ -56,6 +57,7 @@ export function SearchDirectSection({ query }: SearchDirectSectionProps) {
           directResults={directResults}
           loading={directLoading}
           searchProgress={searchProgress}
+          successfulSources={successfulSourcesInCurrentPage}
           totalResults={cmsPagination.totalResults}
           hasMore={hasMore}
           isCurrentPageComplete={isCurrentPageComplete}

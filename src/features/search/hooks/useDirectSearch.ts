@@ -29,6 +29,8 @@ export function useDirectSearch() {
   const sourcesToFetchRef = useRef<VideoSource[]>([])
   // 新增：记录当前页已返回结果的源 ID 集合
   const [completedSourcesInCurrentPage, setCompletedSourcesInCurrentPage] = useState<Set<string>>(new Set())
+  // 新增：记录当前页成功返回结果的源 ID 集合（有内容的源）
+  const [successfulSourcesInCurrentPage, setSuccessfulSourcesInCurrentPage] = useState<Set<string>>(new Set())
   // 新增：请求版本号，用于处理竞态条件
   const requestVersionRef = useRef(0)
 
@@ -58,9 +60,11 @@ export function useDirectSearch() {
       setDirectResults([])
       sourcePaginationCacheRef.current.clear()
       setCompletedSourcesInCurrentPage(new Set())
+      setSuccessfulSourcesInCurrentPage(new Set())
     } else {
       // 翻页时清空当前页的已完成记录
       setCompletedSourcesInCurrentPage(new Set())
+      setSuccessfulSourcesInCurrentPage(new Set())
     }
 
     if (timeOutTimer.current) {
@@ -107,8 +111,8 @@ export function useDirectSearch() {
     // 用于累积分页信息
     const paginationMap = new Map<string, Pagination>()
 
-    // Subscribe to search errors to prevent getting stuck when a source fails
-    const unsubError = cmsClient.on('search:error', (event) => {
+    // Subscribe to search progress - 这是每个源完成（成功或失败）的可靠信号
+    const unsubProgress = cmsClient.on('search:progress', (event) => {
       // Only process if this is the current request (handle race conditions)
       if (currentVersion !== requestVersionRef.current) return
 
@@ -116,7 +120,17 @@ export function useDirectSearch() {
         const sourceId = event.source.id
         const isInCurrentFetch = sourcesToFetchRef.current.some(s => s.id === sourceId)
         if (isInCurrentFetch) {
-          setCompletedSourcesInCurrentPage(prev => new Set([...prev, sourceId]))
+          setCompletedSourcesInCurrentPage(prev => {
+            // 避免重复添加
+            if (prev.has(sourceId)) return prev
+            const newSet = new Set([...prev, sourceId])
+            // 实时更新搜索进度
+            setSearchProgress({
+              completed: newSet.size,
+              total: selectedAPIs.length,
+            })
+            return newSet
+          })
         }
       }
     })
@@ -144,14 +158,20 @@ export function useDirectSearch() {
         return [...prev, ...event.items]
       })
 
-      // 记录当前页已完成的源
-      if (event.source?.id) {
+      // 记录成功返回结果的源（有结果的源才算成功）
+      if (event.source?.id && event.items.length > 0) {
         const sourceId = event.source.id
         const isInCurrentFetch = sourcesToFetchRef.current.some(s => s.id === sourceId)
         if (isInCurrentFetch) {
-          setCompletedSourcesInCurrentPage(prev => new Set([...prev, sourceId]))
+          setSuccessfulSourcesInCurrentPage(prev => {
+            if (prev.has(sourceId)) return prev
+            return new Set([...prev, sourceId])
+          })
         }
       }
+
+      // 注意：不在这里更新完成状态，由 search:progress 事件统一处理
+      // 这样可以确保无论成功或失败（包括重试后），都只在一个地方标记完成
 
       // 收集分页信息
       if (event.pagination && event.source) {
@@ -223,7 +243,7 @@ export function useDirectSearch() {
         })
 
         unsubResult()
-        unsubError?.()
+        unsubProgress()
         setDirectLoading(false)
 
         if (timeOutTimer.current) {
@@ -268,6 +288,7 @@ export function useDirectSearch() {
     cmsPagination,
     isCurrentPageComplete,
     canLoadMore,
+    successfulSourcesInCurrentPage,
     startDirectSearch: fetchDirectSearch,
     setDirectResults,
   }
