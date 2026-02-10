@@ -1,6 +1,7 @@
 export * from './SearchModeToggle'
 export * from './CategoryFilterSection'
 export * from './SearchResultsGrid'
+export * from './SourceStatusBadge'
 export * from './SearchHubInput'
 export * from './SearchTrending'
 export * from './SearchTmdbSection'
