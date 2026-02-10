@@ -43,7 +43,7 @@ export default function SearchHubView() {
   const { addSearchHistoryItem } = useSearchStore()
   useEffect(() => {
     if (query.trim()) {
-       addSearchHistoryItem(query.trim())
+      addSearchHistoryItem(query.trim())
     }
   }, [query, addSearchHistoryItem])
 
@@ -59,26 +59,32 @@ export default function SearchHubView() {
   useDocumentTitle(query ? `${query} - 搜索` : '搜索中心')
 
   // 处理模式切换
-  const handleModeChange = useCallback((newMode: SearchMode) => {
-    setSearchParams(prev => {
-      const params = new URLSearchParams(prev)
-      params.set('mode', newMode)
-      return params
-    })
-  }, [setSearchParams])
+  const handleModeChange = useCallback(
+    (newMode: SearchMode) => {
+      setSearchParams(prev => {
+        const params = new URLSearchParams(prev)
+        params.set('mode', newMode)
+        return params
+      })
+    },
+    [setSearchParams],
+  )
 
   // 处理搜索
-  const handleSearch = useCallback((searchQuery: string) => {
-    if (!searchQuery.trim()) return
+  const handleSearch = useCallback(
+    (searchQuery: string) => {
+      if (!searchQuery.trim()) return
 
-    // 更新 URL
-    setSearchParams(prev => {
-      const params = new URLSearchParams(prev)
-      params.set('q', searchQuery)
-      params.set('mode', mode)
-      return params
-    })
-  }, [mode, setSearchParams])
+      // 更新 URL
+      setSearchParams(prev => {
+        const params = new URLSearchParams(prev)
+        params.set('q', searchQuery)
+        params.set('mode', mode)
+        return params
+      })
+    },
+    [mode, setSearchParams],
+  )
 
   // 处理清除搜索
   const handleClear = useCallback(() => {
@@ -90,12 +96,14 @@ export default function SearchHubView() {
   }, [setSearchParams])
 
   return (
-    <div className={`flex flex-col gap-6 p-4 pb-8 transition-all duration-300 ${isDirectCentered ? 'min-h-[60vh] justify-center' : ''}`}>
+    <div
+      className={`flex flex-col gap-6 p-4 pb-8 transition-all duration-300 ${isDirectCentered ? 'min-h-[60vh] justify-center' : ''}`}
+    >
       {/* 搜索区域 */}
-      <motion.div 
-        layout 
-        className="flex flex-col items-center gap-4 w-full"
-        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      <motion.div
+        layout
+        className="flex w-full flex-col items-center gap-4"
+        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
       >
         {/* 模式切换 */}
         <motion.div layout>
@@ -103,12 +111,8 @@ export default function SearchHubView() {
         </motion.div>
 
         {/* 搜索框 */}
-        <motion.div layout className="w-full flex justify-center">
-            <SearchHubInput
-              initialQuery={query}
-              onSearch={handleSearch}
-              onClear={handleClear}
-            />
+        <motion.div layout className="flex w-full justify-center">
+          <SearchHubInput initialQuery={query} onSearch={handleSearch} onClear={handleClear} />
         </motion.div>
 
         {/* 大家都在搜 */}
@@ -124,12 +128,12 @@ export default function SearchHubView() {
       </motion.div>
 
       {/* 结果区域 - 根据模式渲染不同组件 */}
-      <div className="flex flex-col gap-6 w-full">
+      <div className="flex w-full flex-col gap-6">
         <AnimatePresence mode="wait">
           {mode === 'tmdb' ? (
-             <SearchTmdbSection key="tmdb" query={query} />
+            <SearchTmdbSection key="tmdb" query={query} />
           ) : (
-             <SearchDirectSection key="direct" query={query} />
+            <SearchDirectSection key="direct" query={query} />
           )}
         </AnimatePresence>
       </div>

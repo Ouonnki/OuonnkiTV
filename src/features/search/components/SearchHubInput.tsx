@@ -16,15 +16,25 @@ interface SearchHubInputProps {
   className?: string
 }
 
-export function SearchHubInput({ initialQuery, onSearch, onClear, className }: SearchHubInputProps) {
+export function SearchHubInput({
+  initialQuery,
+  onSearch,
+  onClear,
+  className,
+}: SearchHubInputProps) {
   const [inputValue, setInputValue] = useState(initialQuery)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
-  
+
   const inputRef = useRef<HTMLInputElement>(null)
   const blurTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const { searchHistory, removeSearchHistoryItem } = useSearchHistory()
-  const { suggestions, isLoading: suggestionsLoading, fetchSuggestions, clearSuggestions } = useSearchSuggestions()
+  const {
+    suggestions,
+    isLoading: suggestionsLoading,
+    fetchSuggestions,
+    clearSuggestions,
+  } = useSearchSuggestions()
 
   // Sync with initialQuery prop (e.g. when URL changes)
   useEffect(() => {
@@ -44,16 +54,20 @@ export function SearchHubInput({ initialQuery, onSearch, onClear, className }: S
   const hasContent = inputValue.trim().length > 0
   const hasHistory = searchHistory.length > 0
   const hasSuggestions = suggestions.length > 0
-  const shouldShowDropdown = isDropdownOpen && (hasContent ? hasSuggestions || suggestionsLoading : hasHistory)
+  const shouldShowDropdown =
+    isDropdownOpen && (hasContent ? hasSuggestions || suggestionsLoading : hasHistory)
 
-  const handleSearch = useCallback((searchQuery: string) => {
-    if (!searchQuery.trim()) return
-    
-    setInputValue(searchQuery)
-    setIsDropdownOpen(false)
-    clearSuggestions()
-    onSearch(searchQuery)
-  }, [clearSuggestions, onSearch])
+  const handleSearch = useCallback(
+    (searchQuery: string) => {
+      if (!searchQuery.trim()) return
+
+      setInputValue(searchQuery)
+      setIsDropdownOpen(false)
+      clearSuggestions()
+      onSearch(searchQuery)
+    },
+    [clearSuggestions, onSearch],
+  )
 
   const handleInputChange = (value: string) => {
     setInputValue(value)
@@ -95,7 +109,7 @@ export function SearchHubInput({ initialQuery, onSearch, onClear, className }: S
   }
 
   return (
-    <div className={`w-full max-w-3xl px-4 sm:px-0 ${className}`}>
+    <div className={`w-full max-w-3xl ${className}`}>
       <Popover open={shouldShowDropdown}>
         <PopoverAnchor asChild>
           <div className="relative flex w-full">
@@ -142,7 +156,9 @@ export function SearchHubInput({ initialQuery, onSearch, onClear, className }: S
               {!hasContent ? (
                 // History
                 <div>
-                  <div className="text-muted-foreground px-3 py-2 text-xs font-medium">最近搜索</div>
+                  <div className="text-muted-foreground px-3 py-2 text-xs font-medium">
+                    最近搜索
+                  </div>
                   {searchHistory.map(item => (
                     <div
                       key={item.id}
@@ -169,7 +185,9 @@ export function SearchHubInput({ initialQuery, onSearch, onClear, className }: S
                 // Suggestions
                 <div>
                   {suggestionsLoading ? (
-                    <div className="text-muted-foreground px-3 py-4 text-center text-sm">搜索中...</div>
+                    <div className="text-muted-foreground px-3 py-4 text-center text-sm">
+                      搜索中...
+                    </div>
                   ) : (
                     suggestions.map(item => (
                       <div
