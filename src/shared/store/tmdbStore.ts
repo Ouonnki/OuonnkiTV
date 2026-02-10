@@ -96,7 +96,7 @@ interface TmdbActions {
 const INITIAL_FILTER: TmdbFilterOptions = {
   mediaType: 'all',
   sortOrder: 'desc',
-  sortBy: 'popularity',
+  // sortBy 默认为 undefined，表示按 TMDB 返回顺序不做排序
 }
 
 export const useTmdbStore = create<TmdbState & TmdbActions>()(

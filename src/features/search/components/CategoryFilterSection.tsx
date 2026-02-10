@@ -78,6 +78,7 @@ const RATING_OPTIONS = [
 
 // 排序选项
 const SORT_OPTIONS = [
+  { value: 'default', label: '默认' },
   { value: 'popularity', label: '热度' },
   { value: 'vote_average', label: '评分' },
   { value: 'release_date', label: '上映日期' },
@@ -285,9 +286,9 @@ export function CategoryFilterSection({
                 <div className="flex items-center gap-2">
                   <span className="text-muted-foreground text-sm">排序</span>
                   <Select
-                    value={filterOptions.sortBy || 'popularity'}
+                    value={filterOptions.sortBy || 'default'}
                     onValueChange={value =>
-                      onFilterChange({ sortBy: value as TmdbFilterOptions['sortBy'] })
+                      onFilterChange({ sortBy: value === 'default' ? undefined : value as TmdbFilterOptions['sortBy'] })
                     }
                   >
                     <SelectTrigger className="h-8 w-[90px]">

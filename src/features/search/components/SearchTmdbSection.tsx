@@ -1,35 +1,38 @@
-import { useEffect } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { useTmdbSearch, useTmdbGenres, useTmdbDiscover } from '@/shared/hooks/useTmdb'
 import { useTmdbStore } from '@/shared/store/tmdbStore'
 import { CategoryFilterSection } from './CategoryFilterSection'
 import { SearchResultsGrid } from './SearchResultsGrid'
+import { useInfiniteScroll } from '@/shared/hooks/useInfiniteScroll'
 
 interface SearchTmdbSectionProps {
   query: string
 }
 
 export function SearchTmdbSection({ query }: SearchTmdbSectionProps) {
-  // TMDB Hooks
+  // 新增：分页状态
+  const [currentPage, setCurrentPage] = useState(1)
+
   const {
     search: tmdbSearch,
     filteredResults: tmdbFilteredResults,
     filterOptions,
     loading: tmdbLoading,
+    pagination: tmdbPagination,
     setFilter,
     clearFilter,
   } = useTmdbSearch()
 
   const { movieGenres, tvGenres } = useTmdbGenres()
 
-  // Discover Hook（无搜索词时使用）
   const {
     results: discoverResults,
     loading: discoverLoading,
+    pagination: discoverPagination,
     fetchDiscover,
   } = useTmdbDiscover()
 
-  // 获取国家列表
   const countries = useTmdbStore(s => s.availableFilterOptions.countries)
   const years = useTmdbStore(s => s.availableFilterOptions.years)
   const fetchGenresAndCountries = useTmdbStore(s => s.fetchGenresAndCountries)
@@ -39,26 +42,52 @@ export function SearchTmdbSection({ query }: SearchTmdbSectionProps) {
     fetchGenresAndCountries()
   }, [fetchGenresAndCountries])
 
+  // 筛选条件变化时重置分页
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [filterOptions])
+
   // 无搜索词时加载 discover 数据
   useEffect(() => {
     if (!query) {
+      setCurrentPage(1)
       fetchDiscover(1)
     }
   }, [query, fetchDiscover])
 
-  // 筛选条件变化时重新加载 discover 数据
-  useEffect(() => {
-    if (!query) {
-      fetchDiscover(1)
-    }
-  }, [filterOptions, query, fetchDiscover])
-
   // 执行搜索
   useEffect(() => {
     if (query) {
-      tmdbSearch(query)
+      setCurrentPage(1)
+      tmdbSearch(query, 1)
     }
   }, [query, tmdbSearch])
+
+  // 判断当前是否有更多
+  const pagination = query ? tmdbPagination : discoverPagination
+  const hasMore = pagination.page < pagination.totalPages
+
+  // 加载下一页
+  const handleLoadMore = useCallback(async () => {
+    const nextPage = currentPage + 1
+
+    // 先加载数据，完成后再更新 currentPage，避免不必要的重新渲染
+    if (query) {
+      await tmdbSearch(query, nextPage)
+    } else {
+      await fetchDiscover(nextPage)
+    }
+
+    // 数据加载完成后再更新 currentPage
+    setCurrentPage(nextPage)
+  }, [currentPage, query, tmdbSearch, fetchDiscover])
+
+  // 滚动加载
+  const { sentinelRef } = useInfiniteScroll({
+    hasMore,
+    isLoading: tmdbLoading || discoverLoading,
+    onLoadMore: handleLoadMore,
+  })
 
   return (
     <motion.div
@@ -88,6 +117,9 @@ export function SearchTmdbSection({ query }: SearchTmdbSectionProps) {
             mode="tmdb"
             tmdbResults={tmdbFilteredResults}
             loading={tmdbLoading}
+            totalResults={tmdbPagination.totalResults}
+            hasMore={hasMore}
+            sentinelRef={sentinelRef}
           />
         ) : (
           // 无搜索词时显示 discover 结果
@@ -95,6 +127,9 @@ export function SearchTmdbSection({ query }: SearchTmdbSectionProps) {
             mode="tmdb"
             tmdbResults={discoverResults}
             loading={discoverLoading}
+            totalResults={discoverPagination.totalResults}
+            hasMore={hasMore}
+            sentinelRef={sentinelRef}
           />
         )}
       </section>

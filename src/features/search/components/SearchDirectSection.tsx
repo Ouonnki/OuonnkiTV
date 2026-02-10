@@ -1,23 +1,51 @@
-import { useEffect } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useDirectSearch } from '../hooks/useDirectSearch'
 import { SearchResultsGrid } from './SearchResultsGrid'
+import { useInfiniteScroll } from '@/shared/hooks/useInfiniteScroll'
 
 interface SearchDirectSectionProps {
   query: string
 }
 
 export function SearchDirectSection({ query }: SearchDirectSectionProps) {
-  const { directResults, directLoading, searchProgress, startDirectSearch } =
-    useDirectSearch()
+  const [currentPage, setCurrentPage] = useState(1)
+
+  const {
+    directResults,
+    directLoading,
+    searchProgress,
+    hasMore,
+    isCurrentPageComplete,
+    canLoadMore,
+    cmsPagination,
+    startDirectSearch
+  } = useDirectSearch()
 
   // 监听 query 变化触发搜索
   useEffect(() => {
     if (query) {
+      setCurrentPage(1)
       startDirectSearch(query, 1)
     }
   }, [query, startDirectSearch])
 
-  // 如果没有 query，不渲染内容（或者可以渲染一些空状态/提示）
+  // 加载下一页
+  const handleLoadMore = useCallback(async () => {
+    if (!canLoadMore) return
+    const nextPage = currentPage + 1
+    setCurrentPage(nextPage)
+    startDirectSearch(query, nextPage)
+  }, [canLoadMore, currentPage, query, startDirectSearch])
+
+  // 滚动加载 - 使用 canLoadMore 来控制是否允许触发
+  const { sentinelRef } = useInfiniteScroll({
+    hasMore,
+    isLoading: directLoading,
+    canLoadMore: isCurrentPageComplete && canLoadMore,
+    onLoadMore: handleLoadMore,
+  })
+
+  // 如果没有 query，不渲染内容
   if (!query) return null
 
   return (
@@ -28,6 +56,10 @@ export function SearchDirectSection({ query }: SearchDirectSectionProps) {
           directResults={directResults}
           loading={directLoading}
           searchProgress={searchProgress}
+          totalResults={cmsPagination.totalResults}
+          hasMore={hasMore}
+          isCurrentPageComplete={isCurrentPageComplete}
+          sentinelRef={sentinelRef}
         />
       </section>
     </div>

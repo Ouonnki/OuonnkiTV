@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from 'react'
-import { type VideoItem, type SearchResultEvent, type Pagination } from '@ouonnki/cms-core'
+import { type VideoItem, type SearchResultEvent, type Pagination, type VideoSource } from '@ouonnki/cms-core'
 import { useApiStore } from '@/shared/store/apiStore'
 import { useCmsClient } from '@/shared/hooks'
 import { PaginationConfig } from '@/shared/config/video.config'
@@ -25,6 +25,12 @@ export function useDirectSearch() {
   const abortCtrlRef = useRef<AbortController | null>(null)
   const timeOutTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const currentPageRef = useRef(1)
+  // 新增：记录当前页需要请求的源列表
+  const sourcesToFetchRef = useRef<VideoSource[]>([])
+  // 新增：记录当前页已返回结果的源 ID 集合
+  const [completedSourcesInCurrentPage, setCompletedSourcesInCurrentPage] = useState<Set<string>>(new Set())
+  // 新增：请求版本号，用于处理竞态条件
+  const requestVersionRef = useRef(0)
 
   const { videoAPIs } = useApiStore()
   const cmsClient = useCmsClient()
@@ -35,6 +41,9 @@ export function useDirectSearch() {
 
   const fetchDirectSearch = useCallback(async (keyword: string, page: number = 1) => {
     if (!keyword || selectedAPIs.length === 0) return
+
+    // 增加版本号，用于处理竞态条件
+    const currentVersion = ++requestVersionRef.current
 
     abortCtrlRef.current?.abort()
     const controller = new AbortController()
@@ -48,6 +57,10 @@ export function useDirectSearch() {
     if (page === 1) {
       setDirectResults([])
       sourcePaginationCacheRef.current.clear()
+      setCompletedSourcesInCurrentPage(new Set())
+    } else {
+      // 翻页时清空当前页的已完成记录
+      setCompletedSourcesInCurrentPage(new Set())
     }
 
     if (timeOutTimer.current) {
@@ -56,6 +69,17 @@ export function useDirectSearch() {
     }
     timeOutTimer.current = setTimeout(() => {
       setDirectLoading(false)
+      // 超时时，将所有需要请求的源标记为已完成
+      // 这样可以避免因为某些源无响应而卡住
+      if (sourcesToFetchRef.current.length > 0) {
+        setCompletedSourcesInCurrentPage(prev => {
+          const newSet = new Set(prev)
+          sourcesToFetchRef.current.forEach(source => {
+            newSet.add(source.id)
+          })
+          return newSet
+        })
+      }
       timeOutTimer.current = null
     }, PaginationConfig.maxRequestTimeout)
 
@@ -67,7 +91,8 @@ export function useDirectSearch() {
       return page <= cached.totalPages // 有缓存但页码未超出，需要请求
     })
 
-    // 如果所有源都已超出页码，直接设置完成状态
+    // 保存当前页需要请求的源列表
+    sourcesToFetchRef.current = sourcesToFetch
     if (sourcesToFetch.length === 0) {
       setDirectLoading(false)
       setSearchProgress({ completed: selectedAPIs.length, total: selectedAPIs.length })
@@ -82,8 +107,25 @@ export function useDirectSearch() {
     // 用于累积分页信息
     const paginationMap = new Map<string, Pagination>()
 
+    // Subscribe to search errors to prevent getting stuck when a source fails
+    const unsubError = cmsClient.on('search:error', (event) => {
+      // Only process if this is the current request (handle race conditions)
+      if (currentVersion !== requestVersionRef.current) return
+
+      if (event.source?.id) {
+        const sourceId = event.source.id
+        const isInCurrentFetch = sourcesToFetchRef.current.some(s => s.id === sourceId)
+        if (isInCurrentFetch) {
+          setCompletedSourcesInCurrentPage(prev => new Set([...prev, sourceId]))
+        }
+      }
+    })
+
     // Subscribe to incremental results
     const unsubResult = cmsClient.on('search:result', (event: SearchResultEvent) => {
+      // If not the latest request, ignore results (handle race conditions)
+      if (currentVersion !== requestVersionRef.current) return
+
       // 更新分页缓存
       if (event.pagination && event.source) {
         const cached = cachedSources.get(event.source.id)
@@ -101,6 +143,15 @@ export function useDirectSearch() {
         // 累积所有源的结果
         return [...prev, ...event.items]
       })
+
+      // 记录当前页已完成的源
+      if (event.source?.id) {
+        const sourceId = event.source.id
+        const isInCurrentFetch = sourcesToFetchRef.current.some(s => s.id === sourceId)
+        if (isInCurrentFetch) {
+          setCompletedSourcesInCurrentPage(prev => new Set([...prev, sourceId]))
+        }
+      }
 
       // 收集分页信息
       if (event.pagination && event.source) {
@@ -137,9 +188,15 @@ export function useDirectSearch() {
       }
     })
 
-    const searchPromise = cmsClient
+    cmsClient
       .aggregatedSearch(keyword, sourcesToFetch, page, controller.signal)
       .then((allResults: VideoItem[]) => {
+        // If no results returned and not on first page, there might be no more data
+        // This handles the case where totalPages info is inconsistent with actual data
+        if (allResults.length === 0 && page > 1) {
+          setHasMore(false)
+        }
+
         // Progress update
         setSearchProgress({
           completed: selectedAPIs.length - (selectedAPIs.length - sourcesToFetch.length),
@@ -157,6 +214,7 @@ export function useDirectSearch() {
       })
       .finally(() => {
         unsubResult()
+        unsubError?.()
         setDirectLoading(false)
 
         if (timeOutTimer.current) {
@@ -174,9 +232,24 @@ export function useDirectSearch() {
       abortCtrlRef.current?.abort()
       if (timeOutTimer.current) {
         clearTimeout(timeOutTimer.current)
+        timeOutTimer.current = null
       }
+      // Reset state to prevent memory leaks
+      setCompletedSourcesInCurrentPage(new Set())
+      sourcesToFetchRef.current = []
+      requestVersionRef.current = 0
     }
   }, [])
+
+  // 计算当前页是否已完成（所有源都已返回）
+  const isCurrentPageComplete = useMemo(() => {
+    return completedSourcesInCurrentPage.size >= sourcesToFetchRef.current.length
+  }, [completedSourcesInCurrentPage])
+
+  // 计算是否允许加载下一页
+  const canLoadMore = useMemo(() => {
+    return isCurrentPageComplete && cmsPagination.page < cmsPagination.totalPages
+  }, [isCurrentPageComplete, cmsPagination])
 
   return {
     directResults,
@@ -184,6 +257,8 @@ export function useDirectSearch() {
     hasMore,
     searchProgress,
     cmsPagination,
+    isCurrentPageComplete,
+    canLoadMore,
     startDirectSearch: fetchDirectSearch,
     setDirectResults,
   }
