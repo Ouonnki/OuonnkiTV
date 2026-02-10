@@ -14,6 +14,9 @@ export function SearchTmdbSection({ query }: SearchTmdbSectionProps) {
   // 新增：分页状态
   const [currentPage, setCurrentPage] = useState(1)
 
+  // 筛选数据加载状态
+  const [isFiltersLoading, setIsFiltersLoading] = useState(true)
+
   const {
     search: tmdbSearch,
     filteredResults: tmdbFilteredResults,
@@ -44,7 +47,9 @@ export function SearchTmdbSection({ query }: SearchTmdbSectionProps) {
 
   // 初始化时获取分类和国家列表
   useEffect(() => {
-    fetchGenresAndCountries()
+    fetchGenresAndCountries().then(() => {
+      setIsFiltersLoading(false)
+    })
   }, [fetchGenresAndCountries])
 
   // 筛选条件变化时重置分页并重新获取数据（Discover 模式）
@@ -122,6 +127,7 @@ export function SearchTmdbSection({ query }: SearchTmdbSectionProps) {
           filterOptions={filterOptions}
           onFilterChange={setFilter}
           onClear={clearFilter}
+          isLoading={isFiltersLoading}
         />
       </section>
 
