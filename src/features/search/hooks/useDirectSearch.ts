@@ -213,6 +213,15 @@ export function useDirectSearch() {
         }
       })
       .finally(() => {
+        // 强制将所有本次请求的源标记为完成，防止因某些源无响应或错误信息不完整而卡住
+        setCompletedSourcesInCurrentPage(prev => {
+          const newSet = new Set(prev)
+          sourcesToFetchRef.current.forEach(source => {
+            newSet.add(source.id)
+          })
+          return newSet
+        })
+
         unsubResult()
         unsubError?.()
         setDirectLoading(false)
