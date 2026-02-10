@@ -1,6 +1,7 @@
 import { Play } from 'lucide-react'
 import { NavLink } from 'react-router'
 import { AspectRatio } from '@/shared/components/ui/aspect-ratio'
+import type { SourceColorScheme } from '@/shared/lib/source-colors'
 
 interface MediaPosterCardProps {
   /** 链接地址 */
@@ -15,6 +16,10 @@ interface MediaPosterCardProps {
   showTitle?: boolean
   /** 年份 - 显示在左上角 */
   year?: string | number
+  /** 右上角标签 */
+  topRightLabel?: string
+  /** 右上角标签配色方案（不传则使用默认黄色） */
+  topRightLabelColorScheme?: SourceColorScheme
   /** 评分 (0-10) - 显示在右下角 */
   rating?: number
 }
@@ -30,8 +35,18 @@ export function MediaPosterCard({
   aspectRatio = 2 / 3,
   showTitle = true,
   year,
+  topRightLabel,
+  topRightLabelColorScheme,
   rating,
 }: MediaPosterCardProps) {
+  // 使用自定义配色或默认配色
+  const labelColor = topRightLabelColorScheme || { bg: '250, 204, 21', text: '120, 53, 15' } // yellow-400 和 amber-950 的 RGB 值
+
+  // 计算样式
+  const labelStyle = {
+    backgroundColor: `rgb(${labelColor.bg})`,
+    color: `rgb(${labelColor.text})`,
+  }
   return (
     <NavLink to={to}>
       <div className="group cursor-pointer">
@@ -61,7 +76,16 @@ export function MediaPosterCard({
                 {year}
               </div>
             )}
-            
+
+            {topRightLabel && (
+              <div
+                className="absolute right-0 top-0 rounded-bl-md rounded-tr-lg px-2 py-0.5 text-[10px] font-medium shadow-sm transition-opacity duration-300 group-hover:opacity-0"
+                style={labelStyle}
+              >
+                {topRightLabel}
+              </div>
+            )}
+
             {rating !== undefined && rating > 0 && (
               <div className="absolute bottom-1 right-1 flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-bold text-yellow-400 transition-opacity duration-300 group-hover:opacity-0">
                 <span>★</span>

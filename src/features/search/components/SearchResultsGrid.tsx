@@ -6,6 +6,7 @@ import { Skeleton } from '@/shared/components/ui/skeleton'
 import { cn } from '@/shared/lib/utils'
 import { AspectRatio } from '@/shared/components/ui/aspect-ratio'
 import type { SearchMode } from './SearchModeToggle'
+import { getSourceColorScheme } from '@/shared/lib/source-colors'
 
 interface SearchResultsGridProps {
   /** 搜索模式 */
@@ -203,23 +204,32 @@ export function SearchResultsGrid({
           </div>
         ) : hasResults ? (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8">
-            {results.map((item, index) => (
-              <div key={`${item.source_code}-${item.vod_id}-${index}`}>
-                <MediaPosterCard
-                  to={`/play/raw?id=${item.vod_id}&source=${item.source_code}`}
-                  posterUrl={item.vod_pic || null}
-                  title={item.vod_name}
-                  year={item.vod_year}
-                  rating={
-                    item.vod_douban_score !== undefined
-                      ? typeof item.vod_douban_score === 'number'
-                        ? item.vod_douban_score
-                        : parseFloat(item.vod_douban_score)
-                      : undefined
-                  }
-                />
-              </div>
-            ))}
+            {results.map((item, index) => {
+              // 根据源代码生成配色方案
+              const colorScheme = item.source_code
+                ? getSourceColorScheme(item.source_code)
+                : undefined
+
+              return (
+                <div key={`${item.source_code}-${item.vod_id}-${index}`}>
+                  <MediaPosterCard
+                    to={`/play/raw?id=${item.vod_id}&source=${item.source_code}`}
+                    posterUrl={item.vod_pic || null}
+                    title={item.vod_name}
+                    year={item.vod_year}
+                    topRightLabel={item.source_name}
+                    topRightLabelColorScheme={colorScheme}
+                    rating={
+                      item.vod_douban_score !== undefined
+                        ? typeof item.vod_douban_score === 'number'
+                          ? item.vod_douban_score
+                          : parseFloat(item.vod_douban_score)
+                        : undefined
+                    }
+                  />
+                </div>
+              )
+            })}
           </div>
         ) : (
           <EmptyState mode="direct" />
