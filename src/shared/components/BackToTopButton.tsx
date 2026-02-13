@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ChevronUp } from 'lucide-react'
+import { useLocation } from 'react-router'
 import { Button } from '@/shared/components/ui/button'
 import { cn } from '@/shared/lib'
 
@@ -33,6 +34,7 @@ export default function BackToTopButton({
   scrollRootSelector,
   className,
 }: BackToTopButtonProps) {
+  const location = useLocation()
   const [scrollTarget, setScrollTarget] = useState<HTMLElement | Window | null>(null)
   const [visible, setVisible] = useState(false)
 
@@ -56,6 +58,18 @@ export default function BackToTopButton({
       scrollTarget.removeEventListener('scroll', handleScroll)
     }
   }, [scrollTarget, threshold])
+
+  useEffect(() => {
+    if (!scrollTarget) return
+
+    if (scrollTarget instanceof Window) {
+      scrollTarget.scrollTo({ top: 0 })
+    } else {
+      scrollTarget.scrollTop = 0
+    }
+
+    setVisible(false)
+  }, [location.pathname, scrollTarget])
 
   return (
     <div
