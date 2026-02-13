@@ -19,16 +19,16 @@ export function DetailSeasonsTab({ tmdbType, seasons }: DetailSeasonsTabProps) {
         <div className="grid gap-3 md:grid-cols-2">
           {seasons.map(season => (
             <article key={season.id} className="border-border/40 flex gap-3 rounded-lg border p-3">
-              <div className="border-border/35 w-20 shrink-0 overflow-hidden rounded-lg border">
+              <div className="border-border/35 aspect-[2/3] w-20 shrink-0 overflow-hidden rounded-lg border bg-zinc-200/40 dark:bg-zinc-800/40">
                 {season.poster_path ? (
                   <img
                     src={getPosterUrl(season.poster_path, 'w185')}
                     alt={season.name}
-                    className="aspect-[2/3] w-full object-cover"
+                    className="block h-full w-full object-cover object-top"
                     loading="lazy"
                   />
                 ) : (
-                  <div className="text-muted-foreground flex aspect-[2/3] items-center justify-center text-[10px]">无海报</div>
+                  <div className="text-muted-foreground flex h-full w-full items-center justify-center text-[10px]">无海报</div>
                 )}
               </div>
               <div className="min-w-0 flex-1 space-y-1 text-sm">
