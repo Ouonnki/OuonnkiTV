@@ -40,6 +40,11 @@ export const useFavorites = () => {
   const addTag = useFavoritesStore(state => state.addTag)
   const removeTag = useFavoritesStore(state => state.removeTag)
 
+  // 批量操作方法
+  const selectAllFiltered = useFavoritesStore(state => state.selectAllFiltered)
+  const deselectAll = useFavoritesStore(state => state.deselectAll)
+  const setSelectedIds = useFavoritesStore(state => state.setSelectedIds)
+
   // 查询方法
   const isTmdbFavorited = useFavoritesStore(state => state.isTmdbFavorited)
   const isCmsFavorited = useFavoritesStore(state => state.isCmsFavorited)
@@ -158,6 +163,11 @@ export const useFavorites = () => {
     // 筛选
     setFilter,
     clearFilter,
+
+    // 批量操作
+    selectAllFiltered,
+    deselectAll,
+    setSelectedIds,
 
     // 分组
     groupByStatus,

@@ -8,6 +8,7 @@ import { AspectRatio } from '@/shared/components/ui/aspect-ratio'
 import type { SearchMode } from './SearchModeToggle'
 import { getSourceColorScheme } from '@/shared/lib/source-colors'
 import { SourceStatusBadge } from './SourceStatusBadge'
+import { getPosterUrl } from '@/shared/lib/tmdb'
 
 interface SearchResultsGridProps {
   /** 搜索模式 */
@@ -34,9 +35,6 @@ interface SearchResultsGridProps {
   sentinelRef?: React.RefObject<HTMLDivElement | null>
   className?: string
 }
-
-// TMDB 图片基础 URL
-const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w342'
 
 // 骨架屏数量
 const SKELETON_COUNT = 20
@@ -123,7 +121,7 @@ export function SearchResultsGrid({
                 <div key={`${item.mediaType}-${item.id}`}>
                   <MediaPosterCard
                     to={`/media/${item.mediaType}/${item.id}`}
-                    posterUrl={item.posterPath ? `${TMDB_IMAGE_BASE}${item.posterPath}` : null}
+                    posterUrl={getPosterUrl(item.posterPath, 'w342') || null}
                     title={item.title}
                     year={item.releaseDate ? item.releaseDate.split('-')[0] : undefined}
                     rating={item.voteAverage}

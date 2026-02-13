@@ -14,6 +14,8 @@ interface FavoritesState {
   filterOptions: FavoriteFilterOptions
   /** 筛选后的列表 */
   filteredFavorites: FavoriteList
+  /** 已选中的收藏项 ID 集合 */
+  selectedIds: Set<string>
 }
 
 interface FavoritesActions {
@@ -88,6 +90,17 @@ interface FavoritesActions {
   /** 应用筛选 (内部方法) */
   _applyFilters: () => void
 
+  // === 批量操作 ===
+
+  /** 全选当前筛选后的收藏项 */
+  selectAllFiltered: () => void
+
+  /** 取消全选 */
+  deselectAll: () => void
+
+  /** 设置选中 ID 集合 */
+  setSelectedIds: (ids: Set<string>) => void
+
   // === 统计 ===
 
   /** 获取统计信息 */
@@ -159,6 +172,7 @@ export const useFavoritesStore = create<FavoritesStore>()(
           sortOrder: 'desc',
         },
         filteredFavorites: [],
+        selectedIds: new Set<string>(),
 
         // === 基础 CRUD 实现 ===
 
@@ -189,9 +203,9 @@ export const useFavoritesStore = create<FavoritesStore>()(
               // 添加到列表开头
               state.favorites.unshift(newFavorite)
             }
-
-            get()._applyFilters()
           })
+          // 在 set 外部调用 _applyFilters
+          get()._applyFilters()
         },
 
         addCmsFavorite: (video: VideoItem, watchStatus?: FavoriteWatchStatus) => {
@@ -221,9 +235,9 @@ export const useFavoritesStore = create<FavoritesStore>()(
             } else {
               state.favorites.unshift(newFavorite)
             }
-
-            get()._applyFilters()
           })
+          // 在 set 外部调用 _applyFilters
+          get()._applyFilters()
         },
 
         addFavorites: (items: (TmdbMediaItem | VideoItem)[]) => {
@@ -265,30 +279,31 @@ export const useFavoritesStore = create<FavoritesStore>()(
 
             // 按 addedAt 降序排序
             state.favorites.sort((a, b) => b.addedAt - a.addedAt)
-            get()._applyFilters()
           })
+          // 在 set 外部调用 _applyFilters
+          get()._applyFilters()
         },
 
         removeFavorite: (id: string) => {
           set(state => {
             state.favorites = state.favorites.filter(f => f.id !== id)
-            get()._applyFilters()
           })
+          get()._applyFilters()
         },
 
         removeFavorites: (ids: string[]) => {
           set(state => {
             const idSet = new Set(ids)
             state.favorites = state.favorites.filter(f => !idSet.has(f.id))
-            get()._applyFilters()
           })
+          get()._applyFilters()
         },
 
         clearFavorites: () => {
           set(state => {
             state.favorites = []
-            get()._applyFilters()
           })
+          get()._applyFilters()
         },
 
         // === 状态管理实现 ===
@@ -300,8 +315,8 @@ export const useFavoritesStore = create<FavoritesStore>()(
               item.watchStatus = status
               item.updatedAt = Date.now()
             }
-            get()._applyFilters()
           })
+          get()._applyFilters()
         },
 
         updateWatchStatusBulk: (ids: string[], status: FavoriteWatchStatus) => {
@@ -313,8 +328,8 @@ export const useFavoritesStore = create<FavoritesStore>()(
                 f.updatedAt = Date.now()
               }
             })
-            get()._applyFilters()
           })
+          get()._applyFilters()
         },
 
         setRating: (id: string, rating: number) => {
@@ -424,89 +439,90 @@ export const useFavoritesStore = create<FavoritesStore>()(
         },
 
         _applyFilters: () => {
-          set(state => {
-            let filtered = [...state.favorites]
-            const { sourceType, watchStatus, tags, minRating, sortBy, sortOrder } =
-              state.filterOptions
+          // 在 immer 的 set 中调用，直接修改 state
+          const state = get()
+          let filtered = [...state.favorites]
+          const { sourceType, watchStatus, tags, minRating, sortBy, sortOrder } =
+            state.filterOptions
 
-            // 来源筛选
-            if (sourceType && sourceType !== 'all') {
-              filtered = filtered.filter(f => f.sourceType === sourceType)
-            }
+          // 来源筛选
+          if (sourceType && sourceType !== 'all') {
+            filtered = filtered.filter(f => f.sourceType === sourceType)
+          }
 
-            // 状态筛选
-            if (watchStatus && watchStatus !== 'all') {
-              filtered = filtered.filter(f => f.watchStatus === watchStatus)
-            }
+          // 状态筛选
+          if (watchStatus && watchStatus !== 'all') {
+            filtered = filtered.filter(f => f.watchStatus === watchStatus)
+          }
 
-            // 标签筛选 (OR 逻辑)
-            if (tags && tags.length > 0) {
-              filtered = filtered.filter(f => tags.some(tag => f.tags.includes(tag)))
-            }
+          // 标签筛选 (OR 逻辑)
+          if (tags && tags.length > 0) {
+            filtered = filtered.filter(f => tags.some(tag => f.tags.includes(tag)))
+          }
 
-            // 评分筛选
-            if (minRating !== undefined && minRating > 0) {
-              filtered = filtered.filter(f => f.rating !== undefined && f.rating >= minRating)
-            }
+          // 评分筛选
+          if (minRating !== undefined && minRating > 0) {
+            filtered = filtered.filter(f => f.rating !== undefined && f.rating >= minRating)
+          }
 
-            // 排序
-            if (sortBy) {
-              filtered.sort((a, b) => {
-                // title 排序单独处理，因为返回的是字符串
-                if (sortBy === 'title') {
-                  const titleA =
+          // 排序
+          if (sortBy) {
+            filtered.sort((a, b) => {
+              // title 排序单独处理，因为返回的是字符串
+              if (sortBy === 'title') {
+                const titleA =
+                  a.sourceType === 'tmdb'
+                    ? (a as TmdbFavoriteItem).media.title
+                    : (a as CmsFavoriteItem).media.vodName
+                const titleB =
+                  b.sourceType === 'tmdb'
+                    ? (b as TmdbFavoriteItem).media.title
+                    : (b as CmsFavoriteItem).media.vodName
+                return (sortOrder === 'asc' ? 1 : -1) * titleA.localeCompare(titleB, 'zh-CN')
+              }
+
+              // 其他排序都是数字比较
+              let valA: number
+              let valB: number
+
+              switch (sortBy) {
+                case 'addedAt':
+                  valA = a.addedAt
+                  valB = b.addedAt
+                  break
+                case 'updatedAt':
+                  valA = a.updatedAt
+                  valB = b.updatedAt
+                  break
+                case 'rating':
+                  valA = a.rating ?? 0
+                  valB = b.rating ?? 0
+                  break
+                case 'releaseDate':
+                  valA =
                     a.sourceType === 'tmdb'
-                      ? (a as TmdbFavoriteItem).media.title
-                      : (a as CmsFavoriteItem).media.vodName
-                  const titleB =
+                      ? new Date((a as TmdbFavoriteItem).media.releaseDate).getTime()
+                      : 0
+                  valB =
                     b.sourceType === 'tmdb'
-                      ? (b as TmdbFavoriteItem).media.title
-                      : (b as CmsFavoriteItem).media.vodName
-                  return (sortOrder === 'asc' ? 1 : -1) * titleA.localeCompare(titleB, 'zh-CN')
-                }
+                      ? new Date((b as TmdbFavoriteItem).media.releaseDate).getTime()
+                      : 0
+                  break
+                default:
+                  valA = a.addedAt
+                  valB = b.addedAt
+              }
 
-                // 其他排序都是数字比较
-                let valA: number
-                let valB: number
+              if (sortOrder === 'asc') {
+                return valA > valB ? 1 : valA < valB ? -1 : 0
+              } else {
+                return valA < valB ? 1 : valA > valB ? -1 : 0
+              }
+            })
+          }
 
-                switch (sortBy) {
-                  case 'addedAt':
-                    valA = a.addedAt
-                    valB = b.addedAt
-                    break
-                  case 'updatedAt':
-                    valA = a.updatedAt
-                    valB = b.updatedAt
-                    break
-                  case 'rating':
-                    valA = a.rating ?? 0
-                    valB = b.rating ?? 0
-                    break
-                  case 'releaseDate':
-                    valA =
-                      a.sourceType === 'tmdb'
-                        ? new Date((a as TmdbFavoriteItem).media.releaseDate).getTime()
-                        : 0
-                    valB =
-                      b.sourceType === 'tmdb'
-                        ? new Date((b as TmdbFavoriteItem).media.releaseDate).getTime()
-                        : 0
-                    break
-                  default:
-                    valA = a.addedAt
-                    valB = b.addedAt
-                }
-
-                if (sortOrder === 'asc') {
-                  return valA > valB ? 1 : valA < valB ? -1 : 0
-                } else {
-                  return valA < valB ? 1 : valA > valB ? -1 : 0
-                }
-              })
-            }
-
-            state.filteredFavorites = filtered
-          })
+          // 使用 set 更新 filteredFavorites
+          set({ filteredFavorites: filtered })
         },
 
         // === 统计实现 ===
@@ -549,6 +565,34 @@ export const useFavoritesStore = create<FavoritesStore>()(
             f.tags.forEach(tag => tagSet.add(tag))
           })
           return Array.from(tagSet).sort()
+        },
+
+        // === 批量操作实现 ===
+
+        /** 全选当前筛选后的收藏项 */
+        selectAllFiltered: () => {
+          set(state => {
+            state.filteredFavorites.forEach(f => {
+              // 只更新不在已选中集合中的项
+              if (!state.selectedIds?.has(f.id)) {
+                state.selectedIds?.add(f.id)
+              }
+            })
+          })
+        },
+
+        /** 取消全选 */
+        deselectAll: () => {
+          set(state => {
+            state.selectedIds?.clear()
+          })
+        },
+
+        /** 设置选中 ID 集合 */
+        setSelectedIds: (ids: Set<string>) => {
+          set(state => {
+            state.selectedIds = ids
+          })
         },
       })),
       {
