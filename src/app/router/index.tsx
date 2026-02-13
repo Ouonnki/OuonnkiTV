@@ -15,6 +15,7 @@ const HomeView = lazy(() => import('@/features/home/views/HomeView'))
 const SearchHubView = lazy(() => import('@/features/search/views/SearchHubView'))
 const FavoritesView = lazy(() => import('@/features/favorites/views/FavoritesView'))
 const HistoryView = lazy(() => import('@/features/history/views/HistoryView'))
+const TmdbDetailView = lazy(() => import('@/features/media/views/TmdbDetailView'))
 
 // Settings sub-routes
 const SourceSettings = lazy(() => import('@/features/settings/views/SourceSettings'))
@@ -23,8 +24,7 @@ const SystemSettings = lazy(() => import('@/features/settings/views/SystemSettin
 const AboutSettings = lazy(() => import('@/features/settings/views/AboutSettings'))
 
 // Player views
-const StandardPlayer = lazy(() => import('@/features/player/components/StandardPlayer'))
-const RawPlayer = lazy(() => import('@/features/player/components/RawPlayer'))
+const UnifiedPlayer = lazy(() => import('@/features/player/components/UnifiedPlayer'))
 
 // Loading fallback
 const LoadingFallback = () => {
@@ -90,6 +90,14 @@ const router = createBrowserRouter([
         ),
       },
       {
+        path: 'media/:type/:tmdbId',
+        element: (
+          <SuspenseWrapper>
+            <TmdbDetailView />
+          </SuspenseWrapper>
+        ),
+      },
+      {
         path: 'settings',
         element: <SettingsLayout />,
         children: [
@@ -141,16 +149,16 @@ const router = createBrowserRouter([
         path: ':type/:tmdbId',
         element: (
           <SuspenseWrapper>
-            <StandardPlayer />
+            <UnifiedPlayer />
           </SuspenseWrapper>
         ),
       },
       // 模式 2: 源文件直连模式 (Raw)
       {
-        path: 'raw',
+        path: 'cms/:sourceCode/:vodId',
         element: (
           <SuspenseWrapper>
-            <RawPlayer />
+            <UnifiedPlayer />
           </SuspenseWrapper>
         ),
       },

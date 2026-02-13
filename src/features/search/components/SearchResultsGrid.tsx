@@ -9,6 +9,7 @@ import type { SearchMode } from './SearchModeToggle'
 import { getSourceColorScheme } from '@/shared/lib/source-colors'
 import { SourceStatusBadge } from './SourceStatusBadge'
 import { getPosterUrl } from '@/shared/lib/tmdb'
+import { buildCmsPlayPath, buildTmdbDetailPath } from '@/shared/lib/routes'
 
 interface SearchResultsGridProps {
   /** 搜索模式 */
@@ -120,7 +121,7 @@ export function SearchResultsGrid({
               {results.map(item => (
                 <div key={`${item.mediaType}-${item.id}`}>
                   <MediaPosterCard
-                    to={`/media/${item.mediaType}/${item.id}`}
+                    to={buildTmdbDetailPath(item.mediaType, item.id)}
                     posterUrl={getPosterUrl(item.posterPath, 'w342') || null}
                     title={item.title}
                     year={item.releaseDate ? item.releaseDate.split('-')[0] : undefined}
@@ -194,6 +195,10 @@ export function SearchResultsGrid({
         ) : hasResults ? (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8">
             {results.map((item, index) => {
+              if (!item.source_code || !item.vod_id) {
+                return null
+              }
+
               // 根据源代码生成配色方案
               const colorScheme = item.source_code
                 ? getSourceColorScheme(item.source_code)
@@ -202,7 +207,7 @@ export function SearchResultsGrid({
               return (
                 <div key={`${item.source_code}-${item.vod_id}-${index}`}>
                   <MediaPosterCard
-                    to={`/play/raw?id=${item.vod_id}&source=${item.source_code}`}
+                    to={buildCmsPlayPath(item.source_code, item.vod_id)}
                     posterUrl={item.vod_pic || null}
                     title={item.vod_name}
                     year={item.vod_year}

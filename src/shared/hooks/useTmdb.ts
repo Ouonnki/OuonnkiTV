@@ -220,14 +220,16 @@ export function useTmdbDetail<T extends TmdbMovieDetail | TmdbTvDetail>(
 
     try {
       let data: unknown
-      const options = { language, append_to_response: 'credits,recommendations,similar' }
+      const appendToResponse: Array<'credits' | 'recommendations' | 'similar'> = [
+        'credits',
+        'recommendations',
+        'similar',
+      ]
 
       if (mediaType === 'movie') {
-        // @ts-expect-error: options type mismatch
-        data = await client.movies.details(id, options)
+        data = await client.movies.details(id, appendToResponse, language)
       } else {
-        // @ts-expect-error: options type mismatch
-        data = await client.tvShows.details(id, options)
+        data = await client.tvShows.details(id, appendToResponse, language)
       }
 
       // 简单转换，保留大部分原始字段，同时确保基础 MediaItem 字段存在

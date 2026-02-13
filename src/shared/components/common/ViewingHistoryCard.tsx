@@ -6,6 +6,7 @@ import { AspectRatio } from '@/shared/components/ui/aspect-ratio'
 import { Checkbox } from '@/shared/components/ui/checkbox'
 import { Progress } from '@/shared/components/ui/progress'
 import { cn } from '@/shared/lib/utils'
+import { buildCmsPlayPath } from '@/shared/lib/routes'
 import type { ViewingHistoryItem } from '@/shared/types'
 
 interface ViewingHistoryCardProps {
@@ -17,7 +18,7 @@ interface ViewingHistoryCardProps {
 }
 
 const getPlayPath = (item: ViewingHistoryItem) =>
-  `/play/raw?source=${item.sourceCode}&id=${item.vodId}&ep=${item.episodeIndex}`
+  buildCmsPlayPath(item.sourceCode, item.vodId, item.episodeIndex)
 
 const getProgressValue = (item: ViewingHistoryItem) => {
   if (item.duration <= 0) return 0

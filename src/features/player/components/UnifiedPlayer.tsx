@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState, useMemo } from 'react'
-import { useNavigate, useSearchParams } from 'react-router'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate, useParams, useSearchParams } from 'react-router'
 import Artplayer from 'artplayer'
 import Hls, { type HlsConfig } from 'hls.js'
 import { type DetailResult } from '@ouonnki/cms-core'
@@ -26,6 +26,8 @@ import { useViewingHistoryStore } from '@/shared/store/viewingHistoryStore'
 import { useSettingStore } from '@/shared/store/settingStore'
 import { useDocumentTitle, useCmsClient } from '@/shared/hooks'
 import { ArrowUpIcon, ArrowDownIcon } from '@/shared/components/icons'
+import { buildCmsPlayPath, buildTmdbPlayPath } from '@/shared/lib/routes'
+import type { TmdbMediaType } from '@/shared/types/tmdb'
 import _ from 'lodash'
 import { toast } from 'sonner'
 
@@ -33,22 +35,48 @@ interface ArtplayerWithHls extends Artplayer {
   hls?: Hls
 }
 
+interface PlayerRouteParams {
+  [key: string]: string | undefined
+  type?: string
+  tmdbId?: string
+  sourceCode?: string
+  vodId?: string
+}
+
+const isSupportedMediaType = (value: string): value is TmdbMediaType => value === 'movie' || value === 'tv'
+
 // 创建M3U8处理器和自定义HLS加载器
 const m3u8Processor = createM3u8Processor({ filterAds: true })
 const CustomHlsJsLoader = createHlsLoaderClass({ m3u8Processor, Hls })
 
+const parseEpisodeIndex = (value: string | null): number => {
+  const parsed = Number.parseInt(value || '0', 10)
+  return Number.isNaN(parsed) ? 0 : parsed
+}
+
 /**
- * RawPlayer - 直连模式播放器
- * 路由: /play/raw?id=xxx&source=xxx&ep=xxx
+ * UnifiedPlayer - 统一播放器
+ * 支持两类路由：
+ * 1. TMDB 模式: /play/:type/:tmdbId?source=xxx&id=xxx&ep=xxx
+ * 2. CMS 模式: /play/cms/:sourceCode/:vodId?ep=xxx
  */
-export default function RawPlayer() {
+export default function UnifiedPlayer() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
+  const { type = '', tmdbId = '', sourceCode: routeSourceCode = '', vodId: routeVodId = '' } =
+    useParams<PlayerRouteParams>()
   const cmsClient = useCmsClient()
 
-  const vodId = searchParams.get('id') || ''
-  const sourceCode = searchParams.get('source') || ''
-  const episodeIndexParam = searchParams.get('ep') || '0'
+  const querySourceCode = searchParams.get('source') || ''
+  const queryVodId = searchParams.get('id') || ''
+  const sourceCode = routeSourceCode || querySourceCode
+  const vodId = routeVodId || queryVodId
+
+  const isTmdbRoute = Boolean(type && tmdbId)
+  const isCmsRoute = Boolean(routeSourceCode && routeVodId)
+  const tmdbMediaType = isSupportedMediaType(type) ? type : null
+
+  const episodeIndexParam = searchParams.get('ep')
 
   const playerRef = useRef<Artplayer | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -66,10 +94,7 @@ export default function RawPlayer() {
   }, [viewingHistory, playback])
 
   const [detail, setDetail] = useState<DetailResult | null>(null)
-  const [selectedEpisode, setSelectedEpisode] = useState(() => {
-    const index = parseInt(episodeIndexParam)
-    return isNaN(index) ? 0 : index
-  })
+  const [selectedEpisode, setSelectedEpisode] = useState(() => parseEpisodeIndex(episodeIndexParam))
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isReversed, setIsReversed] = useState(playback.defaultEpisodeOrder === 'desc')
@@ -106,18 +131,47 @@ export default function RawPlayer() {
 
   const pageTitle = useMemo(() => {
     const title = detail?.videoInfo?.title
-    if (title) {
-      return `${title}`
-    }
+    if (title) return title
     return '视频播放'
   }, [detail?.videoInfo?.title])
 
   useDocumentTitle(pageTitle)
 
+  const buildCurrentPlayPath = useCallback(
+    (episodeIndex: number) => {
+      if (isCmsRoute) {
+        return buildCmsPlayPath(routeSourceCode, routeVodId, episodeIndex)
+      }
+
+      if (isTmdbRoute && tmdbMediaType) {
+        return buildTmdbPlayPath(tmdbMediaType, tmdbId, {
+          sourceCode,
+          vodId,
+          episodeIndex,
+        })
+      }
+
+      return buildCmsPlayPath(sourceCode, vodId, episodeIndex)
+    },
+    [
+      isCmsRoute,
+      isTmdbRoute,
+      routeSourceCode,
+      routeVodId,
+      sourceCode,
+      tmdbId,
+      tmdbMediaType,
+      vodId,
+    ],
+  )
+
   useEffect(() => {
     const fetchVideoDetail = async () => {
       if (!sourceCode || !vodId) {
-        setError('缺少必要的参数')
+        const missingSourceMessage = isTmdbRoute
+          ? 'TMDB 播放模式缺少匹配资源，请先在详情页选择可播放源'
+          : '缺少必要的播放参数'
+        setError(missingSourceMessage)
         setLoading(false)
         return
       }
@@ -128,11 +182,10 @@ export default function RawPlayer() {
       try {
         const api = videoAPIs.find(api => api.id === sourceCode)
         if (!api) {
-          throw new Error('未找到对应的API配置')
+          throw new Error('未找到对应的 API 配置')
         }
 
         const response = await cmsClient.getDetail(vodId, api)
-
         if (response.success && response.episodes && response.episodes.length > 0) {
           setDetail(response)
         } else {
@@ -147,11 +200,11 @@ export default function RawPlayer() {
     }
 
     fetchVideoDetail()
-  }, [sourceCode, vodId, videoAPIs, cmsClient])
+  }, [cmsClient, isTmdbRoute, sourceCode, videoAPIs, vodId])
 
   useEffect(() => {
-    const urlEpisodeIndex = parseInt(episodeIndexParam)
-    if (!isNaN(urlEpisodeIndex) && urlEpisodeIndex !== selectedEpisode) {
+    const urlEpisodeIndex = parseEpisodeIndex(episodeIndexParam)
+    if (urlEpisodeIndex !== selectedEpisode) {
       setSelectedEpisode(urlEpisodeIndex)
     }
   }, [episodeIndexParam, selectedEpisode])
@@ -170,9 +223,7 @@ export default function RawPlayer() {
       if (selectedEpisode < total - 1) {
         const nextIndex = selectedEpisode + 1
         setSelectedEpisode(nextIndex)
-        navigate(`/play/raw?id=${vodId}&source=${sourceCode}&ep=${nextIndex}`, {
-          replace: true,
-        })
+        navigate(buildCurrentPlayPath(nextIndex), { replace: true })
         toast.info(`即将播放下一集: ${detail.videoInfo?.episodes_names?.[nextIndex]}`)
       }
     }
@@ -237,20 +288,21 @@ export default function RawPlayer() {
           item.vodId === vodId &&
           item.episodeIndex === selectedEpisode,
       )
+
       if (existingHistory && existingHistory.playbackPosition > 0) {
         art.seek = existingHistory.playbackPosition
         toast.success('已自动跳转到上次观看位置')
       }
     })
 
-    const normalAddHistory = () => {
+    const addHistorySnapshot = () => {
       if (!sourceCode || !vodId || !detail?.videoInfo) return
       addViewingHistory({
         title: detail.videoInfo.title || '未知视频',
         imageUrl: detail.videoInfo.cover || '',
-        sourceCode: sourceCode || '',
+        sourceCode,
         sourceName: detail.videoInfo.source_name || '',
-        vodId: vodId || '',
+        vodId,
         episodeIndex: selectedEpisode,
         episodeName: detail.videoInfo.episodes_names?.[selectedEpisode],
         playbackPosition: art.currentTime || 0,
@@ -259,13 +311,13 @@ export default function RawPlayer() {
       })
     }
 
-    art.on('video:play', normalAddHistory)
-    art.on('video:pause', normalAddHistory)
+    art.on('video:play', addHistorySnapshot)
+    art.on('video:pause', addHistorySnapshot)
     art.on('video:ended', () => {
-      normalAddHistory()
+      addHistorySnapshot()
       nextEpisode()
     })
-    art.on('video:error', normalAddHistory)
+    art.on('video:error', addHistorySnapshot)
 
     let lastTimeUpdate = 0
     const TIME_UPDATE_INTERVAL = 3000
@@ -281,13 +333,13 @@ export default function RawPlayer() {
         addViewingHistory({
           title: detail.videoInfo.title || '未知视频',
           imageUrl: detail.videoInfo.cover || '',
-          sourceCode: sourceCode || '',
+          sourceCode,
           sourceName: detail.videoInfo.source_name || '',
-          vodId: vodId || '',
+          vodId,
           episodeIndex: selectedEpisode,
           episodeName: detail.videoInfo.episodes_names?.[selectedEpisode],
           playbackPosition: currentTime,
-          duration: duration,
+          duration,
           timestamp: Date.now(),
         })
       }
@@ -297,21 +349,29 @@ export default function RawPlayer() {
 
     return () => {
       if (playerRef.current && playerRef.current.destroy) {
-        normalAddHistory()
+        addHistorySnapshot()
         playerRef.current.destroy(false)
         playerRef.current = null
       }
     }
-  }, [selectedEpisode, detail, sourceCode, vodId, addViewingHistory, navigate, adFilteringEnabled])
+  }, [
+    addViewingHistory,
+    adFilteringEnabled,
+    buildCurrentPlayPath,
+    detail,
+    navigate,
+    selectedEpisode,
+    sourceCode,
+    vodId,
+  ])
 
   const handleEpisodeChange = (displayIndex: number) => {
     const actualIndex = isReversed
       ? (detail?.videoInfo?.episodes_names?.length || 0) - 1 - displayIndex
       : displayIndex
+
     setSelectedEpisode(actualIndex)
-    navigate(`/play/raw?id=${vodId}&source=${sourceCode}&ep=${actualIndex}`, {
-      replace: true,
-    })
+    navigate(buildCurrentPlayPath(actualIndex), { replace: true })
   }
 
   const pageRanges = useMemo(() => {
@@ -382,18 +442,18 @@ export default function RawPlayer() {
           selectedEpisodes.push({
             name: episodes[actualIndex],
             displayIndex: i,
-            actualIndex: actualIndex,
+            actualIndex,
           })
         }
       }
       return selectedEpisodes
-    } else {
-      return episodes.slice(start, end + 1).map((name, idx: number) => ({
-        name,
-        displayIndex: start + idx,
-        actualIndex: start + idx,
-      }))
     }
+
+    return episodes.slice(start, end + 1).map((name, idx: number) => ({
+      name,
+      displayIndex: start + idx,
+      actualIndex: start + idx,
+    }))
   }, [currentPageRange, detail?.videoInfo?.episodes_names, isReversed])
 
   if (loading) {
@@ -440,6 +500,12 @@ export default function RawPlayer() {
   return (
     <TooltipProvider>
       <div className="container mx-auto max-w-6xl p-2 sm:p-4">
+        <div className="mb-2 flex justify-end md:mb-0">
+          <Badge variant="secondary" className="text-xs">
+            {isTmdbRoute ? 'TMDB 播放模式' : 'CMS 直连模式'}
+          </Badge>
+        </div>
+
         {/* 视频信息 - 移动端 */}
         <div className="mb-4 flex flex-col gap-2 md:hidden">
           <div className="flex items-center justify-between">
@@ -528,28 +594,26 @@ export default function RawPlayer() {
                   name: string
                   displayIndex: number
                   actualIndex: number
-                }) => {
-                  return (
-                    <Tooltip key={`${name}-${displayIndex}`} delayDuration={1000}>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="secondary"
-                          className={
-                            selectedEpisode === actualIndex
-                              ? 'border border-gray-200 bg-gray-900 text-white drop-shadow-2xl'
-                              : 'border border-gray-200 bg-white/30 text-gray-800 drop-shadow-2xl backdrop-blur-md transition-all duration-300 hover:scale-105 hover:bg-black/80 hover:text-white'
-                          }
-                          onClick={() => handleEpisodeChange(displayIndex)}
-                        >
-                          <span className="overflow-hidden text-ellipsis whitespace-nowrap">
-                            {name}
-                          </span>
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>{name}</TooltipContent>
-                    </Tooltip>
-                  )
-                },
+                }) => (
+                  <Tooltip key={`${name}-${displayIndex}`} delayDuration={1000}>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="secondary"
+                        className={
+                          selectedEpisode === actualIndex
+                            ? 'border border-gray-200 bg-gray-900 text-white drop-shadow-2xl'
+                            : 'border border-gray-200 bg-white/30 text-gray-800 drop-shadow-2xl backdrop-blur-md transition-all duration-300 hover:scale-105 hover:bg-black/80 hover:text-white'
+                        }
+                        onClick={() => handleEpisodeChange(displayIndex)}
+                      >
+                        <span className="overflow-hidden text-ellipsis whitespace-nowrap">
+                          {name}
+                        </span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>{name}</TooltipContent>
+                  </Tooltip>
+                ),
               )}
             </div>
           </div>

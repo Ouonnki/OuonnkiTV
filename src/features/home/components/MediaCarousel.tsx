@@ -14,6 +14,7 @@ import { useEffect, useState } from 'react'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { getPosterUrl } from '@/shared/lib/tmdb'
 import type { TmdbMediaItem } from '@/shared/types/tmdb'
+import { buildTmdbDetailPath } from '@/shared/lib/routes'
 
 interface MediaCarouselProps {
   /** 板块标题 */
@@ -126,7 +127,7 @@ export function MediaCarousel({ title, items, loading = false, linkTo }: MediaCa
             {items.map(item => (
               <CarouselItem key={item.id} className="h-fit basis-1/3 md:basis-1/4 lg:basis-1/6">
                 <MediaPosterCard
-                  to={item.mediaType === 'movie' ? `/movie/${item.id}` : `/tv/${item.id}`}
+                  to={buildTmdbDetailPath(item.mediaType, item.id)}
                   posterUrl={getPosterUrl(item.posterPath, 'w342')}
                   title={item.title}
                 />

@@ -16,6 +16,7 @@ import { isBrowser } from 'react-device-detect'
 import clsx from 'clsx'
 import { motion } from 'framer-motion'
 import type { ViewingHistoryItem } from '@/shared/types'
+import { buildCmsPlayPath } from '@/shared/lib/routes'
 
 dayjs.extend(relativeTime)
 dayjs.locale('zh-cn')
@@ -64,7 +65,7 @@ const HistoryList = ({
           >
             <NavLink
               className="w-full"
-              to={`/video/${item.sourceCode}/${item.vodId}/${item.episodeIndex}`}
+              to={buildCmsPlayPath(item.sourceCode, item.vodId, item.episodeIndex)}
             >
               <div className="flex h-[30vw] w-full md:h-[8rem]">
                 <div className="relative shrink-0">

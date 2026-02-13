@@ -29,6 +29,7 @@ import { FavoriteWatchStatus } from '../../types/favorites'
 import type { FavoriteItem } from '../../types/favorites'
 import { getSourceColorScheme } from '@/shared/lib/source-colors'
 import { getPosterUrl } from '@/shared/lib/tmdb'
+import { buildCmsPlayPath, buildTmdbDetailPath } from '@/shared/lib/routes'
 import { toast } from 'sonner'
 
 /** 观看状态配置 */
@@ -62,7 +63,7 @@ function favoriteToPosterCard(item: FavoriteItem) {
   if (item.sourceType === 'tmdb') {
     const { media } = item
     return {
-      to: `/media/${item.media.mediaType}/${item.media.id}`,
+      to: buildTmdbDetailPath(item.media.mediaType, item.media.id),
       posterUrl: getPosterUrl(media.posterPath, 'w342') || null,
       title: media.title,
       year: media.releaseDate?.split('-')[0],
@@ -71,7 +72,7 @@ function favoriteToPosterCard(item: FavoriteItem) {
   } else {
     const { media } = item
     return {
-      to: `/play/raw?id=${media.vodId}&source=${media.sourceCode}`,
+      to: buildCmsPlayPath(media.sourceCode, media.vodId),
       posterUrl: media.vodPic || null,
       title: media.vodName,
       year: media.vodYear,
