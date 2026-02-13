@@ -44,7 +44,11 @@ export const useFavorites = () => {
 
   // 所有标签 (去重排序)
   const allTags = useMemo<string[]>(() => {
-    return useFavoritesStore.getState().getAllTags()
+    const tagSet = new Set<string>()
+    favorites.forEach(f => {
+      f.tags.forEach(tag => tagSet.add(tag))
+    })
+    return Array.from(tagSet).sort()
   }, [favorites])
 
   // 基础 CRUD 方法
