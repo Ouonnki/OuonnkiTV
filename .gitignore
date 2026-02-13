@@ -31,5 +31,8 @@ dist-ssr
 # Claude
 /.claude
 
+# Codex
+/.codex
+
 # TypeScript build info
 *.tsbuildinfo
