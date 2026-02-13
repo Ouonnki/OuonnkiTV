@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Play } from 'lucide-react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import {
   type CarouselApi,
   Carousel,
@@ -7,12 +7,12 @@ import {
 } from '@/shared/components/ui/carousel'
 import { AspectRatio } from '@/shared/components/ui/aspect-ratio'
 import { Button } from '@/shared/components/ui/button'
-import { Progress } from '@/shared/components/ui/progress'
 import { Skeleton } from '@/shared/components/ui/skeleton'
 import { NavLink } from 'react-router'
 import { useViewingHistoryStore } from '@/shared/store'
 import { useEffect, useState } from 'react'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
+import { ViewingHistoryCard } from '@/shared/components/common'
 
 /**
  * ContinueWatchingSkeleton - 骨架屏组件
@@ -115,43 +115,10 @@ export function ContinueWatching() {
             {viewingHistory.map(item => {
               return (
                 <CarouselItem
-                  key={item.vodId}
+                  key={`${item.sourceCode}-${item.vodId}-${item.episodeIndex}`}
                   className="h-fit basis-1/2 rounded-lg md:basis-1/3 lg:basis-1/5"
                 >
-                  <NavLink
-                    to={`/play/raw?source=${item.sourceCode}&id=${item.vodId}&ep=${item.episodeIndex}`}
-                  >
-                    <div className="group relative cursor-pointer overflow-hidden rounded-lg">
-                      <AspectRatio ratio={1.778}>
-                        <img
-                          className="h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-110"
-                          src={item.imageUrl}
-                          alt={item.title}
-                        />
-                        {/* 默认：底部剧名 - hover 时淡出 */}
-                        <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-2 pt-6 transition-opacity duration-300 group-hover:opacity-0">
-                          <span className="line-clamp-1 text-sm font-medium text-white">
-                            {item.title}
-                          </span>
-                        </div>
-                      </AspectRatio>
-                      {/* 进度条 - hover 时隐藏 */}
-                      <Progress
-                        className="h-1 transition-opacity duration-300 group-hover:opacity-0 [&>*]:bg-red-600 dark:[&>*]:bg-red-800"
-                        value={(item.playbackPosition / item.duration) * 100}
-                      />
-                      {/* Hover 全卡片遮罩 + 播放按钮 */}
-                      <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                        <div className="flex size-12 items-center justify-center rounded-full bg-white/90 text-black shadow-lg">
-                          <Play className="size-6 fill-current" />
-                        </div>
-                      </div>
-                      {/* Hover：左上角剧集名 */}
-                      <span className="pointer-events-none absolute top-2 left-2 rounded bg-black/60 px-1.5 py-0.5 text-xs font-medium text-white opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                        {item.episodeName}
-                      </span>
-                    </div>
-                  </NavLink>
+                  <ViewingHistoryCard item={item} />
                 </CarouselItem>
               )
             })}
