@@ -14,9 +14,32 @@ export const useFavorites = () => {
   const filteredFavorites = useFavoritesStore(state => state.filteredFavorites)
   const filterOptions = useFavoritesStore(state => state.filterOptions)
 
-  // 统计信息 (使用 memo 避免重复计算)
+  // 统计信息
   const stats = useMemo<FavoriteStats>(() => {
-    return useFavoritesStore.getState().getStats()
+    const result: FavoriteStats = {
+      total: favorites.length,
+      tmdbCount: 0,
+      cmsCount: 0,
+      notWatchedCount: 0,
+      watchingCount: 0,
+      completedCount: 0,
+    }
+    favorites.forEach(f => {
+      if (f.sourceType === 'tmdb') result.tmdbCount++
+      else result.cmsCount++
+      switch (f.watchStatus) {
+        case FavoriteWatchStatus.NOT_WATCHED:
+          result.notWatchedCount++
+          break
+        case FavoriteWatchStatus.WATCHING:
+          result.watchingCount++
+          break
+        case FavoriteWatchStatus.COMPLETED:
+          result.completedCount++
+          break
+      }
+    })
+    return result
   }, [favorites])
 
   // 所有标签 (去重排序)

@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react'
-import { useNavigate } from 'react-router'
+import { toast } from 'sonner'
 import { StatusTabs } from '../components/StatusTabs'
 import { FavoritesGrid } from '../components/ui/favoritesGrid'
 import { ManagementPanel } from '../components/ManagementPanel'
@@ -23,11 +23,11 @@ export default function FavoritesView() {
   } = useFavorites()
 
   const { SidebarInsetPortal } = usePortalToSidebarInset()
-  const navigate = useNavigate()
 
   const [activeTab, setActiveTab] = useState<FavoriteWatchStatus | 'all'>('all')
   const [selectionMode, setSelectionMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [tabsExpanded, setTabsExpanded] = useState(false)
 
   // 当前显示的收藏列表（根据状态标签筛选）
   const displayFavorites = useMemo(() => {
@@ -42,7 +42,10 @@ export default function FavoritesView() {
     const currentTabIds = displayFavorites.map(f => f.id)
     removeFavorites(currentTabIds)
     setSelectedIds(new Set())
-  }, [displayFavorites, removeFavorites, setSelectedIds])
+    setStoreSelectedIds(new Set())
+    setSelectionMode(false)
+    toast.success(`已清空 ${currentTabIds.length} 个收藏`)
+  }, [displayFavorites, removeFavorites, setStoreSelectedIds])
 
   // 切换状态标签
   const handleTabChange = useCallback(
@@ -77,31 +80,8 @@ export default function FavoritesView() {
     const idsToDelete = Array.from(selectedIds)
     removeFavorites(idsToDelete)
     setSelectedIds(new Set())
+    toast.success(`已删除 ${idsToDelete.length} 个收藏`)
   }, [selectedIds, removeFavorites])
-
-  // 卡片点击（跳转到对应详情页）
-  const handleCardClick = useCallback(
-    (item: {
-      sourceType: string
-      media: { mediaType?: string; id?: number; vodId?: string; sourceCode?: string }
-    }) => {
-      if (item.sourceType === 'tmdb') {
-        navigate(`/media/${item.media.mediaType}/${item.media.id}`)
-      } else {
-        navigate(`/play/raw?id=${item.media.vodId}&source=${item.media.sourceCode}`)
-      }
-    },
-    [navigate],
-  )
-
-  // 处理选中状态变化
-  const handleSelectionChange = useCallback(
-    (selected: Set<string>) => {
-      setSelectedIds(selected)
-      setStoreSelectedIds(selected)
-    },
-    [setStoreSelectedIds],
-  )
 
   const hasContent = displayFavorites.length > 0
   const isAllSelected = selectedIds.size === displayFavorites.length && displayFavorites.length > 0
@@ -111,8 +91,8 @@ export default function FavoritesView() {
       {/* 页面头部 - 单行布局 */}
       <header className="border-border bg-sidebar/80 sticky top-0 z-20 border-b backdrop-blur-md">
         <div className="px-4">
-          <div className="flex h-14 items-center justify-between">
-            {/* 左侧：标题和统计 */}
+          {/* 桌面端：标题 + StatusTabs 单行 */}
+          <div className="hidden md:flex h-14 items-center justify-between">
             <div className="flex items-center gap-2">
               <h1 className="text-lg font-bold">收藏</h1>
               {stats.total > 0 && (
@@ -121,9 +101,30 @@ export default function FavoritesView() {
                 </span>
               )}
             </div>
-
-            {/* 右侧：状态分类标签 */}
             <StatusTabs currentStatus={activeTab} onStatusChange={handleTabChange} stats={stats} />
+          </div>
+
+          {/* 移动端：标题 + 可折叠 StatusTabs 单行 */}
+          <div className="flex h-14 items-center gap-2 md:hidden">
+            {!tabsExpanded && (
+              <div className="flex items-center gap-2">
+                <h1 className="text-lg font-bold">收藏</h1>
+                {stats.total > 0 && (
+                  <span className="text-muted-foreground text-sm">
+                    共 <span className="text-primary font-medium">{stats.total}</span> 项
+                  </span>
+                )}
+              </div>
+            )}
+            <div className={tabsExpanded ? 'w-full' : 'ml-auto'}>
+              <StatusTabs
+                collapsible
+                onExpandedChange={setTabsExpanded}
+                currentStatus={activeTab}
+                onStatusChange={handleTabChange}
+                stats={stats}
+              />
+            </div>
           </div>
         </div>
       </header>
@@ -144,18 +145,17 @@ export default function FavoritesView() {
             </p>
           </div>
         ) : (
-          <>
-            {/* 收藏网格 */}
             <FavoritesGrid
               favorites={displayFavorites}
               selectedIds={selectedIds}
-              onSelectionChange={handleSelectionChange}
+              onSelectionChange={selected => {
+                setSelectedIds(selected)
+                setStoreSelectedIds(selected)
+              }}
               selectionMode={selectionMode}
-              onCardClick={handleCardClick}
               onUpdateWatchStatus={updateWatchStatus}
               onRemoveFavorite={removeFavorite}
             />
-          </>
         )}
       </main>
 
