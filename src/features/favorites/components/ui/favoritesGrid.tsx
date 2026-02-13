@@ -2,11 +2,30 @@ import { Checkbox } from '@/shared/components/ui/checkbox'
 import { MediaPosterCard } from '@/shared/components/common/MediaPosterCard'
 import { Skeleton } from '@/shared/components/ui/skeleton'
 import { NoResultIcon } from '@/shared/components/icons'
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuSub,
+  ContextMenuSubContent,
+  ContextMenuSubTrigger,
+  ContextMenuTrigger,
+} from '@/shared/components/ui/context-menu'
+import { Eye, EyeOff, CheckCircle, Trash2 } from 'lucide-react'
 import { cn } from '@/shared/lib/utils'
+import { FavoriteWatchStatus } from '../../types/favorites'
 import type { FavoriteItem } from '../../types/favorites'
 import { getSourceColorScheme } from '@/shared/lib/source-colors'
 import { useCallback } from 'react'
 import { getPosterUrl } from '@/shared/lib/tmdb'
+
+/** 观看状态配置 */
+const watchStatusOptions = [
+  { value: FavoriteWatchStatus.NOT_WATCHED, label: '未观看', icon: EyeOff },
+  { value: FavoriteWatchStatus.WATCHING, label: '正在看', icon: Eye },
+  { value: FavoriteWatchStatus.COMPLETED, label: '已看完', icon: CheckCircle },
+] as const
 
 interface FavoritesGridProps {
   /** 收藏列表 */
@@ -17,6 +36,10 @@ interface FavoritesGridProps {
   onSelectionChange: (selected: Set<string>) => void
   /** 卡片点击回调（非多选模式时） */
   onCardClick?: (item: FavoriteItem) => void
+  /** 更改观看状态回调 */
+  onUpdateWatchStatus?: (id: string, status: FavoriteWatchStatus) => void
+  /** 删除单个收藏回调 */
+  onRemoveFavorite?: (id: string) => void
   /** 是否处于多选模式 */
   selectionMode: boolean
   /** 是否加载中 */
@@ -58,6 +81,8 @@ export function FavoritesGrid({
   selectedIds,
   onSelectionChange,
   onCardClick,
+  onUpdateWatchStatus,
+  onRemoveFavorite,
   selectionMode,
   loading = false,
 }: FavoritesGridProps) {
@@ -120,60 +145,92 @@ export function FavoritesGrid({
         const isSelected = selectedIds.has(item.id)
 
         return (
-          <div
-            key={item.id}
-            className={cn(
-              'relative',
-              // 多选模式禁用 hover 效果
-              selectionMode && 'pointer-events-auto',
-            )}
-          >
-            {/* 多选模式的复选框 - 始终显示，选中状态用背景区分 */}
-            {selectionMode && (
-              <Checkbox
-                checked={isSelected}
-                onCheckedChange={checked => {
-                  const next = new Set(selectedIds)
-                  if (checked) {
-                    next.add(item.id)
-                  } else {
-                    next.delete(item.id)
-                  }
-                  onSelectionChange(next)
-                }}
-                onClick={e => {
-                  e.stopPropagation()
-                }}
-                className="pointer-events-auto absolute top-2 left-2 z-10 size-7 rounded-md shadow-sm"
-              />
-            )}
+          <ContextMenu key={item.id}>
+            <ContextMenuTrigger asChild>
+              <div
+                className={cn(
+                  'relative',
+                  selectionMode && 'pointer-events-auto',
+                )}
+              >
+                {/* 多选模式的复选框 */}
+                {selectionMode && (
+                  <Checkbox
+                    checked={isSelected}
+                    onCheckedChange={checked => {
+                      const next = new Set(selectedIds)
+                      if (checked) {
+                        next.add(item.id)
+                      } else {
+                        next.delete(item.id)
+                      }
+                      onSelectionChange(next)
+                    }}
+                    onClick={e => {
+                      e.stopPropagation()
+                    }}
+                    className="pointer-events-auto absolute top-2 left-2 z-10 size-7 rounded-md shadow-sm"
+                  />
+                )}
 
-            {/* 海报卡片容器 */}
-            <div
-              className={cn(
-                // 多选模式：禁用点击跳转，显示 pointer 光标
-                selectionMode ? 'cursor-pointer' : 'cursor-pointer',
-                // 多选模式：禁用 group hover 效果（通过 pointer-events-none）
-                selectionMode && '[&_a]:pointer-events-none',
-              )}
-            >
-              {/* 多选模式下用 div 包裹，阻止内部链接跳转 */}
-              {selectionMode ? (
-                <div onClick={() => handleCardClick(item)}>
-                  <MediaPosterCard {...cardProps} />
+                {/* 海报卡片容器 */}
+                <div
+                  className={cn(
+                    selectionMode ? 'cursor-pointer' : 'cursor-pointer',
+                    selectionMode && '[&_a]:pointer-events-none',
+                  )}
+                >
+                  <div onClick={selectionMode ? () => handleCardClick(item) : undefined}>
+                    <MediaPosterCard {...cardProps} />
+                  </div>
                 </div>
-              ) : (
-                <a href={cardProps.to}>
-                  <MediaPosterCard {...cardProps} />
-                </a>
-              )}
-            </div>
 
-            {/* 选中状态的边框高亮 */}
-            {isSelected && (
-              <div className="ring-primary ring-offset-background pointer-events-none absolute inset-0 rounded-lg ring-2 ring-offset-2" />
-            )}
-          </div>
+                {/* 选中状态的边框高亮 */}
+                {isSelected && (
+                  <div className="ring-primary ring-offset-background pointer-events-none absolute left-0 right-0 top-0 overflow-hidden rounded-lg ring-2 ring-offset-2" style={{ aspectRatio: '2/3' }} />
+                )}
+              </div>
+            </ContextMenuTrigger>
+
+            <ContextMenuContent>
+              {/* 更改观看状态子菜单 */}
+              <ContextMenuSub>
+                <ContextMenuSubTrigger>
+                  <Eye className="mr-2 size-4" />
+                  观看状态
+                </ContextMenuSubTrigger>
+                <ContextMenuSubContent>
+                  {watchStatusOptions.map(option => {
+                    const Icon = option.icon
+                    return (
+                      <ContextMenuItem
+                        key={option.value}
+                        disabled={item.watchStatus === option.value}
+                        onClick={() => onUpdateWatchStatus?.(item.id, option.value)}
+                      >
+                        <Icon className="mr-2 size-4" />
+                        {option.label}
+                        {item.watchStatus === option.value && (
+                          <span className="text-muted-foreground ml-auto text-xs">当前</span>
+                        )}
+                      </ContextMenuItem>
+                    )
+                  })}
+                </ContextMenuSubContent>
+              </ContextMenuSub>
+
+              <ContextMenuSeparator />
+
+              {/* 删除收藏 */}
+              <ContextMenuItem
+                variant="destructive"
+                onClick={() => onRemoveFavorite?.(item.id)}
+              >
+                <Trash2 className="mr-2 size-4" />
+                删除收藏
+              </ContextMenuItem>
+            </ContextMenuContent>
+          </ContextMenu>
         )
       })}
     </div>
