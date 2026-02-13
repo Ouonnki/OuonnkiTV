@@ -37,6 +37,7 @@ import {
 } from '@/features/media/components'
 
 const isSupportedMediaType = (value: string): value is TmdbMediaType => value === 'movie' || value === 'tv'
+const TMDB_SEARCH_PATH = '/search?mode=tmdb'
 
 export default function TmdbDetailView() {
   const navigate = useNavigate()
@@ -115,7 +116,7 @@ export default function TmdbDetailView() {
         <Card className="w-full max-w-lg rounded-lg">
           <CardContent className="space-y-4 pt-6 text-center">
             <p className="text-sm text-red-500">无效的媒体地址，请返回重试</p>
-            <Button variant="secondary" onClick={() => navigate(-1)}>
+            <Button variant="secondary" onClick={() => navigate(TMDB_SEARCH_PATH)}>
               返回
             </Button>
           </CardContent>
@@ -134,7 +135,7 @@ export default function TmdbDetailView() {
         <Card className="w-full max-w-lg rounded-lg">
           <CardContent className="space-y-4 pt-6 text-center">
             <p className="text-sm text-red-500">{error || '获取详情失败'}</p>
-            <Button variant="secondary" onClick={() => navigate(-1)}>
+            <Button variant="secondary" onClick={() => navigate(TMDB_SEARCH_PATH)}>
               返回
             </Button>
           </CardContent>
@@ -245,7 +246,7 @@ export default function TmdbDetailView() {
         adultLevel={adultLevel}
         heroLogo={heroLogo}
         favorited={favorited}
-        onBack={() => navigate(-1)}
+        onBack={() => navigate(TMDB_SEARCH_PATH)}
         onToggleFavorite={() => toggleTmdbFavorite(mediaSnapshot)}
       />
 

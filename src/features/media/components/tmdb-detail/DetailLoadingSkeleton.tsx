@@ -8,19 +8,30 @@ export function DetailLoadingSkeleton() {
         <div className="absolute inset-0 flex min-h-[500px] flex-col justify-end gap-6 p-5 md:min-h-[620px] md:p-8 lg:flex-row lg:items-end lg:justify-between">
           <div className="flex flex-col gap-4 md:max-w-2xl">
             <div className="space-y-3">
-              <Skeleton className="h-14 w-52 md:h-18 md:w-80" />
+              <Skeleton className="h-12 w-[78vw] max-w-[280px] md:h-18 md:w-80" />
               <Skeleton className="h-4 w-56 md:h-5 md:w-72" />
             </div>
-            <div className="flex flex-wrap items-center gap-2">
+
+            <div className="flex items-center gap-1.5 overflow-hidden md:hidden">
+              <Skeleton className="h-6 w-14 shrink-0 rounded-full" />
+              <Skeleton className="h-6 w-12 shrink-0 rounded-full" />
+              <Skeleton className="h-6 w-14 shrink-0 rounded-full" />
+              <Skeleton className="h-6 w-12 shrink-0 rounded-full" />
+            </div>
+
+            <div className="hidden flex-wrap items-center gap-2 md:flex">
               <Skeleton className="h-7 w-18 rounded-full" />
               <Skeleton className="h-7 w-16 rounded-full" />
               <Skeleton className="h-7 w-20 rounded-full" />
               <Skeleton className="h-7 w-22 rounded-full" />
+              <Skeleton className="h-7 w-24 rounded-full" />
+              <Skeleton className="h-7 w-24 rounded-full" />
             </div>
+
             <div className="space-y-2">
               <Skeleton className="h-4 w-full md:w-[90%]" />
-              <Skeleton className="h-4 w-[88%] md:w-[84%]" />
-              <Skeleton className="h-4 w-[72%] md:w-[68%]" />
+              <Skeleton className="h-4 w-[84%] md:w-[84%]" />
+              <Skeleton className="hidden h-4 w-[68%] md:block md:w-[68%]" />
             </div>
             <div className="flex gap-3">
               <Skeleton className="h-9 w-28 rounded-md" />

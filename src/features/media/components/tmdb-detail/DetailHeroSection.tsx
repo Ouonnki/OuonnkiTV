@@ -44,7 +44,8 @@ export function DetailHeroSection({
   onBack,
   onToggleFavorite,
 }: DetailHeroSectionProps) {
-  const heroBadgeClass = 'h-7 gap-1.5 px-2.5 text-xs leading-none text-white [&_svg]:size-3.5'
+  const heroBadgeClass =
+    'h-6 gap-1 px-2 text-[10px] leading-none text-white [&_svg]:size-3 md:h-7 md:gap-1.5 md:px-2.5 md:text-xs md:[&_svg]:size-3.5'
 
   return (
     <section className="relative overflow-hidden rounded-lg">
@@ -77,7 +78,7 @@ export function DetailHeroSection({
               <img
                 src={getPosterUrl(heroLogo.file_path, 'w500')}
                 alt={detail.title}
-                className="max-h-28 max-w-[320px] object-contain md:max-h-36 md:max-w-[420px]"
+                className="max-h-24 max-w-[78vw] object-contain sm:max-w-[320px] md:max-h-36 md:max-w-[420px]"
               />
             ) : (
               <h1 className="text-3xl leading-tight font-bold text-white md:text-5xl">{detail.title}</h1>
@@ -85,7 +86,47 @@ export function DetailHeroSection({
             {richDetail.tagline && <p className="text-sm italic text-white/80 md:text-base">{richDetail.tagline}</p>}
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 text-xs md:text-sm">
+          <div className="flex items-center gap-1.5 overflow-hidden text-xs md:hidden">
+            <Badge className={`${heroBadgeClass} shrink-0 bg-white/20`}>
+              {tmdbType === 'movie' ? (
+                <>
+                  <Film />
+                  电影
+                </>
+              ) : (
+                <>
+                  <Tv />
+                  剧集
+                </>
+              )}
+            </Badge>
+            {releaseYear && (
+              <Badge className={`${heroBadgeClass} shrink-0 bg-white/20`}>
+                <CalendarDays />
+                {releaseYear}
+              </Badge>
+            )}
+            {detail.voteAverage > 0 ? (
+              <Badge className={`${heroBadgeClass} shrink-0 bg-white/20`}>
+                <Star className="fill-current text-amber-300" />
+                {detail.voteAverage.toFixed(1)}
+              </Badge>
+            ) : (
+              <Badge className={`${heroBadgeClass} shrink-0 bg-white/20`}>
+                <Flame className="text-orange-300" />
+                {detail.popularity.toFixed(1)}
+              </Badge>
+            )}
+            {adultLevel && (
+              <Badge
+                className={`${heroBadgeClass} shrink-0 ${adultLevel === 'NSFW' ? 'bg-red-500/80' : 'bg-emerald-500/80'}`}
+              >
+                {adultLevel}
+              </Badge>
+            )}
+          </div>
+
+          <div className="hidden flex-wrap items-center gap-2 text-sm md:flex">
             <Badge className={`${heroBadgeClass} bg-white/20 hover:bg-white/30`}>
               {tmdbType === 'movie' ? (
                 <>
@@ -135,7 +176,7 @@ export function DetailHeroSection({
             )}
           </div>
 
-          <p className="line-clamp-4 text-sm leading-6 text-white/85 md:text-base">{detail.overview || '暂无简介'}</p>
+          <p className="line-clamp-2 text-sm leading-6 text-white/85 md:line-clamp-4 md:text-base">{detail.overview || '暂无简介'}</p>
 
           <div className="flex flex-wrap gap-3">
             <Button className="bg-white font-semibold text-black hover:bg-white/90" onClick={onToggleFavorite}>
