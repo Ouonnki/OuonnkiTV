@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
+import type { AppendToResponseMovieKey, AppendToResponseTvKey } from 'tmdb-ts'
 import { useTmdbStore } from '../store/tmdbStore'
 import { getTmdbClient, normalizeToMediaItem } from '../lib/tmdb'
 import type { TmdbMediaType, TmdbMovieDetail, TmdbTvDetail } from '../types/tmdb'
@@ -220,16 +221,39 @@ export function useTmdbDetail<T extends TmdbMovieDetail | TmdbTvDetail>(
 
     try {
       let data: unknown
-      const appendToResponse: Array<'credits' | 'recommendations' | 'similar'> = [
+      const movieAppendToResponse: AppendToResponseMovieKey[] = [
         'credits',
+        'images',
+        'videos',
+        'reviews',
         'recommendations',
+        'keywords',
+        'release_dates',
+        'external_ids',
+        'translations',
+        'watch/providers',
+        'similar',
+      ]
+      const tvAppendToResponse: AppendToResponseTvKey[] = [
+        'credits',
+        'aggregate_credits',
+        'images',
+        'videos',
+        'reviews',
+        'recommendations',
+        'keywords',
+        'content_ratings',
+        'episode_groups',
+        'external_ids',
+        'translations',
+        'watch/providers',
         'similar',
       ]
 
       if (mediaType === 'movie') {
-        data = await client.movies.details(id, appendToResponse, language)
+        data = await client.movies.details(id, movieAppendToResponse, language)
       } else {
-        data = await client.tvShows.details(id, appendToResponse, language)
+        data = await client.tvShows.details(id, tvAppendToResponse, language)
       }
 
       // 简单转换，保留大部分原始字段，同时确保基础 MediaItem 字段存在
