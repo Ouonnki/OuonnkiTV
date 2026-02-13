@@ -1,153 +1,118 @@
-import { useEffect, useMemo, useState } from 'react'
-import { NavLink, useNavigate, useParams } from 'react-router'
-import { ArrowLeft, SearchX } from 'lucide-react'
-import type { VideoItem } from '@ouonnki/cms-core'
-import { useCmsClient } from '@/shared/hooks'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useNavigate, useParams } from 'react-router'
+import { AnimatePresence, motion } from 'framer-motion'
+import { useDocumentTitle } from '@/shared/hooks'
 import { useTmdbDetail } from '@/shared/hooks/useTmdb'
-import { getPosterUrl } from '@/shared/lib/tmdb'
-import { buildTmdbPlayPath } from '@/shared/lib/routes'
-import { useApiStore } from '@/shared/store/apiStore'
-import type { TmdbMediaType, TmdbMovieDetail, TmdbTvDetail } from '@/shared/types/tmdb'
-import { Badge } from '@/shared/components/ui/badge'
+import type {
+  TmdbMediaItem,
+  TmdbMediaType,
+  TmdbMovieDetail,
+  TmdbTvDetail,
+} from '@/shared/types/tmdb'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent } from '@/shared/components/ui/card'
-import { Spinner } from '@/shared/components/ui/spinner'
-
-const normalizeTitle = (value: string) =>
-  value
-    .toLowerCase()
-    .replace(/[^\w\u4e00-\u9fa5]/g, '')
-    .trim()
+import { useFavoritesStore } from '@/features/favorites/store/favoritesStore'
+import {
+  DetailCastTab,
+  DetailHeroSection,
+  DetailLoadingSkeleton,
+  DetailOverviewTab,
+  DetailProductionTab,
+  DetailSeasonsTab,
+  DetailTabNav,
+  type DetailInfoField,
+  type DetailTab,
+  type TmdbRichDetail,
+  extractRecommendations,
+  formatCurrencyUSD,
+  formatLargeNumber,
+  formatRuntime,
+  getReleaseYear,
+  mapAdultLevel,
+  mapBooleanLabel,
+  mapCountryCodeToName,
+  mapLanguageCodeToName,
+  mapTvTypeLabel,
+  pickHeroLogo,
+} from '@/features/media/components'
 
 const isSupportedMediaType = (value: string): value is TmdbMediaType => value === 'movie' || value === 'tv'
 
-const buildMatchScore = (item: VideoItem, titleCandidates: string[], releaseYear?: string) => {
-  const name = normalizeTitle(item.vod_name || '')
-  let score = 0
-
-  for (const candidate of titleCandidates) {
-    if (!candidate) continue
-    if (name === candidate) {
-      score = Math.max(score, 100)
-      continue
-    }
-
-    if (name.includes(candidate) || candidate.includes(name)) {
-      score = Math.max(score, 75)
-      continue
-    }
-  }
-
-  if (releaseYear && item.vod_year === releaseYear) {
-    score += 12
-  }
-
-  if (item.vod_remarks) {
-    score += 3
-  }
-
-  return score
-}
-
-/**
- * TmdbDetailView - TMDB 详情页
- * 路由: /media/:type/:tmdbId
- */
 export default function TmdbDetailView() {
   const navigate = useNavigate()
   const { type = '', tmdbId = '' } = useParams<{ type: string; tmdbId: string }>()
-  const cmsClient = useCmsClient()
-  const { videoAPIs } = useApiStore()
 
   const mediaType = isSupportedMediaType(type) ? type : null
   const parsedTmdbId = Number(tmdbId)
   const isValidId = Number.isInteger(parsedTmdbId) && parsedTmdbId > 0
   const isValidRoute = Boolean(mediaType) && isValidId
 
+  const favorited = useFavoritesStore(state =>
+    mediaType && isValidId ? state.isTmdbFavorited(parsedTmdbId, mediaType) : false,
+  )
+  const toggleTmdbFavorite = useFavoritesStore(state => state.toggleTmdbFavorite)
+
   const { detail, loading, error } = useTmdbDetail<TmdbMovieDetail | TmdbTvDetail>(
     isValidRoute ? parsedTmdbId : undefined,
     (mediaType || 'movie') as TmdbMediaType,
   )
 
-  const enabledSources = useMemo(() => {
-    return videoAPIs.filter(source => source.isEnabled)
-  }, [videoAPIs])
+  const [activeTab, setActiveTab] = useState<DetailTab>('overview')
+  const tabListRef = useRef<HTMLDivElement | null>(null)
+  const [tabIndicator, setTabIndicator] = useState({ x: 0, width: 0, ready: false })
 
-  const [matchedItems, setMatchedItems] = useState<VideoItem[]>([])
-  const [matching, setMatching] = useState(false)
-  const [matchError, setMatchError] = useState<string | null>(null)
+  const tabItems: Array<{ key: DetailTab; label: string }> = [
+    { key: 'overview', label: '概览' },
+    { key: 'production', label: '制作与发行' },
+    { key: 'cast', label: '演员' },
+    ...(mediaType === 'tv' ? [{ key: 'seasons' as const, label: '季信息' }] : []),
+  ]
 
-  useEffect(() => {
-    if (!detail || !mediaType || !isValidId) return
-    if (enabledSources.length === 0) {
-      setMatchedItems([])
-      setMatchError('当前没有启用的视频源，无法匹配可播放资源')
+  const updateTabIndicator = useCallback(() => {
+    const listEl = tabListRef.current
+    if (!listEl) return
+
+    const activeEl = listEl.querySelector<HTMLButtonElement>(`button[data-tab='${activeTab}']`)
+    if (!activeEl) {
+      setTabIndicator(prev => (prev.ready ? { ...prev, ready: false } : prev))
       return
     }
 
-    const abortController = new AbortController()
+    const listRect = listEl.getBoundingClientRect()
+    const activeRect = activeEl.getBoundingClientRect()
 
-    const matchResources = async () => {
-      setMatching(true)
-      setMatchError(null)
+    setTabIndicator({
+      x: activeRect.left - listRect.left,
+      width: activeRect.width,
+      ready: true,
+    })
+  }, [activeTab])
 
-      try {
-        const queries = Array.from(
-          new Set([detail.title, detail.originalTitle].map(value => value?.trim()).filter(Boolean)),
-        )
+  useDocumentTitle(detail?.title || '媒体详情')
 
-        const resultMap = new Map<string, VideoItem>()
+  useLayoutEffect(() => {
+    const frameId = window.requestAnimationFrame(() => {
+      updateTabIndicator()
+    })
+    return () => window.cancelAnimationFrame(frameId)
+  }, [updateTabIndicator, tabItems.length, loading, detail?.id])
 
-        for (const query of queries) {
-          const results = await cmsClient.aggregatedSearch(
-            query,
-            enabledSources,
-            1,
-            abortController.signal,
-          )
+  useEffect(() => {
+    const onResize = () => updateTabIndicator()
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [updateTabIndicator, tabItems.length])
 
-          results.forEach(item => {
-            const key = `${item.source_code}::${item.vod_id}`
-            if (!resultMap.has(key)) {
-              resultMap.set(key, item)
-            }
-          })
-        }
-
-        const releaseYear = detail.releaseDate?.slice(0, 4)
-        const normalizedCandidates = queries.map(normalizeTitle)
-
-        const rankedItems = Array.from(resultMap.values())
-          .map(item => ({
-            item,
-            score: buildMatchScore(item, normalizedCandidates, releaseYear),
-          }))
-          .filter(result => result.score > 0)
-          .sort((a, b) => b.score - a.score)
-          .slice(0, 24)
-          .map(result => result.item)
-
-        setMatchedItems(rankedItems)
-      } catch (matchErr) {
-        if ((matchErr as Error).name !== 'AbortError') {
-          setMatchError((matchErr as Error).message || '匹配资源失败')
-        }
-      } finally {
-        setMatching(false)
-      }
+  useEffect(() => {
+    if (mediaType !== 'tv' && activeTab === 'seasons') {
+      setActiveTab('overview')
     }
-
-    matchResources()
-
-    return () => {
-      abortController.abort()
-    }
-  }, [cmsClient, detail, enabledSources, isValidId, mediaType])
+  }, [activeTab, mediaType])
 
   if (!isValidRoute) {
     return (
       <div className="flex min-h-[70vh] items-center justify-center p-4">
-        <Card className="w-full max-w-lg">
+        <Card className="w-full max-w-lg rounded-lg">
           <CardContent className="space-y-4 pt-6 text-center">
             <p className="text-sm text-red-500">无效的媒体地址，请返回重试</p>
             <Button variant="secondary" onClick={() => navigate(-1)}>
@@ -160,20 +125,13 @@ export default function TmdbDetailView() {
   }
 
   if (loading) {
-    return (
-      <div className="flex min-h-[70vh] items-center justify-center p-4">
-        <div className="flex flex-col items-center gap-3">
-          <Spinner size="lg" />
-          <p className="text-muted-foreground text-sm">正在加载 TMDB 详情...</p>
-        </div>
-      </div>
-    )
+    return <DetailLoadingSkeleton />
   }
 
   if (error || !detail) {
     return (
       <div className="flex min-h-[70vh] items-center justify-center p-4">
-        <Card className="w-full max-w-lg">
+        <Card className="w-full max-w-lg rounded-lg">
           <CardContent className="space-y-4 pt-6 text-center">
             <p className="text-sm text-red-500">{error || '获取详情失败'}</p>
             <Button variant="secondary" onClick={() => navigate(-1)}>
@@ -186,108 +144,158 @@ export default function TmdbDetailView() {
   }
 
   const tmdbType = mediaType as TmdbMediaType
+  const richDetail = detail as TmdbRichDetail
+
+  const releaseYear = getReleaseYear(detail.releaseDate)
+  const heroLogo = pickHeroLogo(richDetail.images?.logos || [])
+  const adultLevel = mapAdultLevel(richDetail.adult)
+  const runtimeLabel =
+    tmdbType === 'movie'
+      ? formatRuntime(richDetail.runtime || 0)
+      : (richDetail.episode_run_time?.[0] || 0) > 0
+        ? `单集约${richDetail.episode_run_time?.[0] || 0}分钟`
+        : ''
+
+  const castList = (richDetail.credits?.cast || [])
+    .slice()
+    .sort((a, b) => (a.order ?? 999) - (b.order ?? 999))
+    .slice(0, 30)
+
+  const genres = richDetail.genres || []
+  const keywordList = richDetail.keywords?.keywords || richDetail.keywords?.results || []
+  const recommendationItems = extractRecommendations(richDetail, tmdbType)
+
+  const productionCompanies = richDetail.production_companies || []
+  const productionCountries = richDetail.production_countries || []
+  const spokenLanguages = richDetail.spoken_languages || []
+  const networks = richDetail.networks || []
+  const seasons = richDetail.seasons || []
+
+  const mappedOriginalLanguage = mapLanguageCodeToName(detail.originalLanguage, spokenLanguages)
+  const mappedOriginCountries =
+    (detail.originCountry || [])
+      .map(countryCode => mapCountryCodeToName(countryCode))
+      .filter(Boolean)
+      .join(' / ') || productionCountries.map(country => country.name).join(' / ')
+
+  const mediaSnapshot: TmdbMediaItem = {
+    id: detail.id,
+    mediaType: tmdbType,
+    title: detail.title,
+    originalTitle: detail.originalTitle,
+    overview: detail.overview,
+    posterPath: detail.posterPath,
+    backdropPath: detail.backdropPath,
+    logoPath: null,
+    releaseDate: detail.releaseDate,
+    voteAverage: detail.voteAverage,
+    voteCount: detail.voteCount,
+    popularity: detail.popularity,
+    genreIds: detail.genreIds,
+    originalLanguage: detail.originalLanguage,
+    originCountry: detail.originCountry,
+  }
+
+  const coreInfoFields: DetailInfoField[] = [
+    { label: '发布日期', value: detail.releaseDate || '' },
+    { label: '首播日期', value: richDetail.first_air_date || '' },
+    { label: '最后播出', value: richDetail.last_air_date || '' },
+    { label: '评分人数', value: formatLargeNumber(detail.voteCount) },
+    { label: '热度', value: detail.popularity.toFixed(1) },
+    { label: '原始语言', value: mappedOriginalLanguage },
+    { label: '原产国家', value: mappedOriginCountries },
+    { label: '剧集形式', value: tmdbType === 'tv' ? mapTvTypeLabel(richDetail.type) : '' },
+    { label: '成人内容', value: adultLevel },
+  ].filter(field => field.value)
+
+  const movieInfoFields: DetailInfoField[] = [
+    { label: '片长', value: runtimeLabel },
+    { label: '预算', value: formatCurrencyUSD(richDetail.budget) },
+    { label: '票房', value: formatCurrencyUSD(richDetail.revenue) },
+    { label: '系列归属', value: richDetail.belongs_to_collection?.name || '' },
+  ].filter(field => field.value)
+
+  const tvInfoFields: DetailInfoField[] = [
+    { label: '单集时长', value: runtimeLabel },
+    { label: '季数', value: richDetail.number_of_seasons ? `${richDetail.number_of_seasons}` : '' },
+    { label: '集数', value: richDetail.number_of_episodes ? `${richDetail.number_of_episodes}` : '' },
+    { label: '制作中', value: mapBooleanLabel(richDetail.in_production) },
+    {
+      label: '最近播出集',
+      value: richDetail.last_episode_to_air
+        ? `S${richDetail.last_episode_to_air.season_number || '?'}E${richDetail.last_episode_to_air.episode_number || '?'} ${richDetail.last_episode_to_air.name || ''}`
+        : '',
+    },
+    {
+      label: '下一待播集',
+      value: richDetail.next_episode_to_air
+        ? `S${richDetail.next_episode_to_air.season_number || '?'}E${richDetail.next_episode_to_air.episode_number || '?'} ${richDetail.next_episode_to_air.name || ''}`
+        : '',
+    },
+  ].filter(field => field.value)
 
   return (
-    <div className="space-y-5 p-4 pb-8 md:p-6">
-      <div>
-        <Button variant="ghost" onClick={() => navigate(-1)}>
-          <ArrowLeft className="size-4" />
-          返回
-        </Button>
-      </div>
+    <div className="space-y-0">
+      <DetailHeroSection
+        detail={detail}
+        richDetail={richDetail}
+        tmdbType={tmdbType}
+        releaseYear={releaseYear}
+        runtimeLabel={runtimeLabel}
+        adultLevel={adultLevel}
+        heroLogo={heroLogo}
+        favorited={favorited}
+        onBack={() => navigate(-1)}
+        onToggleFavorite={() => toggleTmdbFavorite(mediaSnapshot)}
+      />
 
-      <Card className="overflow-hidden border-none bg-white/20 shadow-sm backdrop-blur-md">
-        <CardContent className="p-4 md:p-6">
-          <div className="flex flex-col gap-4 md:flex-row">
-            <div className="mx-auto w-45 shrink-0 md:mx-0">
-              <div className="overflow-hidden rounded-lg">
-                {detail.posterPath ? (
-                  <img
-                    src={getPosterUrl(detail.posterPath, 'w342')}
-                    alt={detail.title}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="bg-muted text-muted-foreground flex aspect-[2/3] items-center justify-center text-xs">
-                    无海报
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className="space-y-3">
-              <div className="space-y-1">
-                <h1 className="text-2xl font-bold">{detail.title}</h1>
-                {detail.originalTitle && detail.originalTitle !== detail.title && (
-                  <p className="text-muted-foreground text-sm">{detail.originalTitle}</p>
-                )}
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="secondary">{mediaType === 'movie' ? '电影' : '剧集'}</Badge>
-                {detail.releaseDate && <Badge variant="secondary">{detail.releaseDate}</Badge>}
-                {detail.voteAverage > 0 && (
-                  <Badge variant="secondary">评分 {detail.voteAverage.toFixed(1)}</Badge>
-                )}
-              </div>
-              {detail.overview && (
-                <p className="text-muted-foreground line-clamp-5 text-sm leading-6">
-                  {detail.overview}
-                </p>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <DetailTabNav
+        tabListRef={tabListRef}
+        tabItems={tabItems}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        tabIndicator={tabIndicator}
+      />
 
-      <Card className="border-none bg-white/20 shadow-sm backdrop-blur-md">
-        <CardContent className="space-y-4 p-4 md:p-6">
-          <div className="flex items-center justify-between gap-2">
-            <h2 className="text-lg font-semibold">可播放资源匹配</h2>
-            {matching && (
-              <div className="text-muted-foreground flex items-center gap-2 text-sm">
-                <Spinner size="sm" />
-                匹配中...
-              </div>
+      <div className="mt-6 px-2 pb-6 md:px-3 md:pb-8">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={activeTab}
+            className="space-y-8"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+          >
+            {activeTab === 'overview' && (
+              <DetailOverviewTab
+                tmdbType={tmdbType}
+                genres={genres}
+                keywordList={keywordList}
+                coreInfoFields={coreInfoFields}
+                movieInfoFields={movieInfoFields}
+                tvInfoFields={tvInfoFields}
+                recommendationItems={recommendationItems}
+              />
             )}
-          </div>
 
-          {matchError && <p className="text-sm text-red-500">{matchError}</p>}
+            {activeTab === 'production' && (
+              <DetailProductionTab
+                tmdbType={tmdbType}
+                movieInfoFields={movieInfoFields}
+                tvInfoFields={tvInfoFields}
+                productionCompanies={productionCompanies}
+                productionCountries={productionCountries}
+                networks={networks}
+              />
+            )}
 
-          {!matching && !matchError && matchedItems.length === 0 && (
-            <div className="text-muted-foreground flex items-center gap-2 text-sm">
-              <SearchX className="size-4" />
-              暂未匹配到可播放资源，可稍后重试
-            </div>
-          )}
+            {activeTab === 'cast' && <DetailCastTab castList={castList} />}
 
-          {matchedItems.length > 0 && (
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              {matchedItems.map(item => (
-                <div
-                  key={`${item.source_code}-${item.vod_id}`}
-                  className="rounded-lg border border-white/30 bg-white/30 p-3"
-                >
-                  <div className="mb-3 space-y-1">
-                    <p className="line-clamp-1 font-medium">{item.vod_name}</p>
-                    <p className="text-muted-foreground text-xs">
-                      来源：{item.source_name} {item.vod_year ? `· ${item.vod_year}` : ''}
-                    </p>
-                  </div>
-                  <Button asChild size="sm" className="w-full">
-                    <NavLink
-                      to={buildTmdbPlayPath(tmdbType, parsedTmdbId, {
-                        sourceCode: item.source_code,
-                        vodId: item.vod_id,
-                      })}
-                    >
-                      使用该资源播放
-                    </NavLink>
-                  </Button>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            {activeTab === 'seasons' && <DetailSeasonsTab tmdbType={tmdbType} seasons={seasons} />}
+          </motion.div>
+        </AnimatePresence>
+      </div>
     </div>
   )
 }
