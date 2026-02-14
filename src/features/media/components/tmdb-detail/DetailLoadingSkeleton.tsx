@@ -4,8 +4,8 @@ export function DetailLoadingSkeleton() {
   return (
     <div className="space-y-0 [&_[data-slot=skeleton]]:bg-zinc-200 [&_[data-slot=skeleton]]:ring-1 [&_[data-slot=skeleton]]:ring-zinc-300/70 dark:[&_[data-slot=skeleton]]:bg-zinc-700/45 dark:[&_[data-slot=skeleton]]:ring-zinc-600/40">
       <section className="relative overflow-hidden rounded-lg">
-        <Skeleton className="h-[500px] w-full md:h-[620px]" />
-        <div className="absolute inset-0 flex min-h-[500px] flex-col justify-end gap-6 p-5 md:min-h-[620px] md:p-8 lg:flex-row lg:items-end lg:justify-between">
+        <Skeleton className="h-[420px] w-full sm:h-[460px] md:h-[620px]" />
+        <div className="absolute inset-0 flex min-h-[420px] flex-col justify-end gap-5 p-4 sm:min-h-[460px] sm:p-5 md:min-h-[620px] md:gap-6 md:p-8 lg:flex-row lg:items-end lg:justify-between">
           <div className="flex flex-col gap-4 md:max-w-2xl">
             <div className="space-y-3">
               <Skeleton className="h-12 w-[78vw] max-w-[280px] md:h-18 md:w-80" />

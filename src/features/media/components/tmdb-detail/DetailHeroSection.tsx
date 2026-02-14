@@ -71,7 +71,7 @@ export function DetailHeroSection({
         返回
       </Button>
 
-      <div className="relative z-10 flex min-h-[500px] flex-col justify-end gap-6 p-5 md:min-h-[620px] md:p-8 lg:flex-row lg:items-end lg:justify-between">
+      <div className="relative z-10 flex min-h-[420px] flex-col justify-end gap-5 p-4 sm:min-h-[460px] sm:p-5 md:min-h-[620px] md:gap-6 md:p-8 lg:flex-row lg:items-end lg:justify-between">
         <div className="flex flex-col gap-4 md:max-w-2xl">
           <div className="space-y-3">
             {heroLogo ? (
