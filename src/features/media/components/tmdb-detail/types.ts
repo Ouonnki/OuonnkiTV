@@ -114,7 +114,7 @@ export interface DetailInfoField {
   value: string
 }
 
-export type DetailTab = 'overview' | 'production' | 'cast' | 'seasons'
+export type DetailTab = 'overview' | 'playlist' | 'production' | 'cast' | 'seasons'
 
 export type TmdbRichDetail = (TmdbMovieDetail | TmdbTvDetail) & {
   id: number

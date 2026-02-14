@@ -48,6 +48,7 @@ export function DetailLoadingSkeleton() {
       <section className="-mt-px flex justify-center">
         <div className="flex items-center gap-6 py-3">
           <Skeleton className="h-4 w-10" />
+          <Skeleton className="h-4 w-14" />
           <Skeleton className="h-4 w-16" />
           <Skeleton className="h-4 w-10" />
           <Skeleton className="h-4 w-12" />

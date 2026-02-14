@@ -17,6 +17,7 @@ import {
   DetailHeroSection,
   DetailLoadingSkeleton,
   DetailOverviewTab,
+  DetailPlaylistTab,
   DetailProductionTab,
   DetailSeasonsTab,
   DetailTabNav,
@@ -34,6 +35,7 @@ import {
   mapLanguageCodeToName,
   mapTvTypeLabel,
   pickHeroLogo,
+  usePlaylistMatches,
 } from '@/features/media/components'
 
 const isSupportedMediaType = (value: string): value is TmdbMediaType => value === 'movie' || value === 'tv'
@@ -57,6 +59,7 @@ export default function TmdbDetailView() {
     isValidRoute ? parsedTmdbId : undefined,
     (mediaType || 'movie') as TmdbMediaType,
   )
+  const tmdbType = (mediaType || 'movie') as TmdbMediaType
 
   const [activeTab, setActiveTab] = useState<DetailTab>('overview')
   const tabListRef = useRef<HTMLDivElement | null>(null)
@@ -64,6 +67,7 @@ export default function TmdbDetailView() {
 
   const tabItems: Array<{ key: DetailTab; label: string }> = [
     { key: 'overview', label: '概览' },
+    { key: 'playlist', label: '播放列表' },
     { key: 'production', label: '制作与发行' },
     { key: 'cast', label: '演员' },
     ...(mediaType === 'tv' ? [{ key: 'seasons' as const, label: '季信息' }] : []),
@@ -110,6 +114,18 @@ export default function TmdbDetailView() {
     }
   }, [activeTab, mediaType])
 
+  const safeRichDetail = detail as TmdbRichDetail | undefined
+  const safeSeasons = safeRichDetail?.seasons || []
+  const playlistMatches = usePlaylistMatches({
+    active: activeTab === 'playlist' && Boolean(detail) && isValidRoute,
+    tmdbType,
+    tmdbId: parsedTmdbId,
+    title: detail?.title || '',
+    originalTitle: detail?.originalTitle || '',
+    releaseDate: detail?.releaseDate || '',
+    seasons: safeSeasons,
+  })
+
   if (!isValidRoute) {
     return (
       <div className="flex min-h-[70vh] items-center justify-center p-4">
@@ -144,7 +160,6 @@ export default function TmdbDetailView() {
     )
   }
 
-  const tmdbType = mediaType as TmdbMediaType
   const richDetail = detail as TmdbRichDetail
 
   const releaseYear = getReleaseYear(detail.releaseDate)
@@ -277,6 +292,24 @@ export default function TmdbDetailView() {
                 movieInfoFields={movieInfoFields}
                 tvInfoFields={tvInfoFields}
                 recommendationItems={recommendationItems}
+              />
+            )}
+
+            {activeTab === 'playlist' && (
+              <DetailPlaylistTab
+                tmdbType={tmdbType}
+                tmdbId={detail.id}
+                loading={playlistMatches.loading}
+                error={playlistMatches.error}
+                searched={playlistMatches.searched}
+                searchedKeyword={playlistMatches.searchedKeyword}
+                progress={playlistMatches.progress}
+                startedAt={playlistMatches.startedAt}
+                completedAt={playlistMatches.completedAt}
+                candidates={playlistMatches.candidates}
+                movieSourceMatches={playlistMatches.movieSourceMatches}
+                seasonSourceMatches={playlistMatches.seasonSourceMatches}
+                onRetry={playlistMatches.retry}
               />
             )}
 
