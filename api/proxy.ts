@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { handleProxyRequest } from '../src/shared/lib/proxy'
+import { handleProxyRequest } from '../shared/proxy-core.js'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // CORS
