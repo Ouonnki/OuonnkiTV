@@ -200,10 +200,14 @@ function MatchRow({
   const year = entry.item.vod_year || ''
   const remarks = entry.item.vod_remarks || ''
   const cover = entry.item.vod_pic || ''
+  const rowClass =
+    density === 'compact'
+      ? 'flex flex-col gap-2.5 sm:flex-row sm:items-start sm:justify-between sm:gap-3'
+      : 'flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4'
 
   return (
-    <div className={density === 'compact' ? 'flex items-start justify-between gap-3' : 'flex items-start justify-between gap-4'}>
-      <div className="flex min-w-0 flex-1 gap-3">
+    <div className={rowClass}>
+      <div className="flex min-w-0 w-full gap-3 sm:w-auto sm:flex-1">
         <div className={density === 'compact' ? 'border-border/40 bg-muted/30 size-12 shrink-0 overflow-hidden rounded-md border' : 'border-border/40 bg-muted/30 size-14 shrink-0 overflow-hidden rounded-md border'}>
           {cover ? (
             <img src={cover} alt={title} className="h-full w-full object-cover" loading="lazy" />
@@ -222,7 +226,7 @@ function MatchRow({
             <div className="text-muted-foreground flex flex-wrap items-center gap-2 text-xs">
               {year && <span>{year}</span>}
               {remarks && (
-                <Badge variant="outline" className="rounded-full text-[11px]">
+                <Badge variant="outline" className="max-w-full rounded-full text-[11px] whitespace-nowrap">
                   {remarks}
                 </Badge>
               )}
@@ -231,8 +235,9 @@ function MatchRow({
         </div>
       </div>
 
-      <div className="flex shrink-0 items-center gap-2 self-center">
-        <Badge variant="outline" className="h-7 rounded-full px-2.5 py-0 text-[11px]">
+      <div className="flex w-full shrink-0 items-center justify-between gap-2 sm:w-auto sm:justify-end sm:self-center">
+        <p className="text-muted-foreground text-xs sm:hidden">分数 {entry.score}</p>
+        <Badge variant="outline" className="hidden h-7 rounded-full px-2.5 py-0 text-[11px] sm:inline-flex">
           分数 {entry.score}
         </Badge>
         {playLink ? (
