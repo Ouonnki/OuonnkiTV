@@ -7,6 +7,7 @@ import {
   Film,
   Flame,
   Heart,
+  Play,
   Star,
   Tv,
 } from 'lucide-react'
@@ -29,6 +30,7 @@ interface DetailHeroSectionProps {
   heroLogo: DetailImage | null
   favorited: boolean
   onBack: () => void
+  onPlayNow: () => void
   onToggleFavorite: () => void
 }
 
@@ -42,6 +44,7 @@ export function DetailHeroSection({
   heroLogo,
   favorited,
   onBack,
+  onPlayNow,
   onToggleFavorite,
 }: DetailHeroSectionProps) {
   const heroBadgeClass =
@@ -70,6 +73,18 @@ export function DetailHeroSection({
         <ArrowLeft className="size-4" />
         返回
       </Button>
+      {richDetail.homepage && (
+        <Button
+          asChild
+          variant="ghost"
+          className="absolute top-4 right-4 z-20 !bg-transparent text-white/90 transition-colors hover:!bg-transparent hover:text-white"
+        >
+          <a href={richDetail.homepage} target="_blank" rel="noreferrer">
+            <ExternalLink className="size-4" />
+            官方页面
+          </a>
+        </Button>
+      )}
 
       <div className="relative z-10 flex min-h-[420px] flex-col justify-end gap-5 p-4 sm:min-h-[460px] sm:p-5 md:min-h-[620px] md:gap-6 md:p-8 lg:flex-row lg:items-end lg:justify-between">
         <div className="flex flex-col gap-4 md:max-w-2xl">
@@ -179,7 +194,18 @@ export function DetailHeroSection({
           <p className="line-clamp-2 text-sm leading-6 text-white/85 md:line-clamp-4 md:text-base">{detail.overview || '暂无简介'}</p>
 
           <div className="flex flex-wrap gap-3">
-            <Button className="bg-white font-semibold text-black hover:bg-white/90" onClick={onToggleFavorite}>
+            <Button
+              className="bg-white font-semibold text-black shadow-lg hover:bg-white/90"
+              onClick={onPlayNow}
+            >
+              <Play className="size-4" />
+              立即播放
+            </Button>
+            <Button
+              variant="outline"
+              className="border-white/35 bg-white/12 font-semibold text-white hover:bg-white/20 hover:text-white"
+              onClick={onToggleFavorite}
+            >
               <motion.span
                 key={favorited ? 'favorited' : 'unfavorited'}
                 initial={{ scale: 0.65, rotate: -14, opacity: 0.6 }}
@@ -190,14 +216,6 @@ export function DetailHeroSection({
               </motion.span>
               {favorited ? '已加入收藏' : '加入收藏'}
             </Button>
-            {richDetail.homepage && (
-              <Button asChild variant="secondary" className="bg-white/25 text-white hover:bg-white/35 hover:text-white">
-                <a href={richDetail.homepage} target="_blank" rel="noreferrer">
-                  <ExternalLink className="size-4" />
-                  官方页面
-                </a>
-              </Button>
-            )}
           </div>
         </div>
 

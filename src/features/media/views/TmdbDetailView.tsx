@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useDocumentTitle } from '@/shared/hooks'
 import { useTmdbDetail } from '@/shared/hooks/useTmdb'
+import { buildTmdbPlayPath } from '@/shared/lib/routes'
 import type {
   TmdbMediaItem,
   TmdbMediaType,
@@ -262,6 +263,7 @@ export default function TmdbDetailView() {
         heroLogo={heroLogo}
         favorited={favorited}
         onBack={() => navigate(TMDB_SEARCH_PATH)}
+        onPlayNow={() => navigate(buildTmdbPlayPath(tmdbType, detail.id))}
         onToggleFavorite={() => toggleTmdbFavorite(mediaSnapshot)}
       />
 
