@@ -6,6 +6,7 @@ interface TmdbPlayPathOptions {
   sourceCode?: string
   vodId?: string
   episodeIndex?: number
+  seasonNumber?: number
 }
 
 export function buildTmdbDetailPath(mediaType: TmdbMediaType, tmdbId: number | string): string {
@@ -30,6 +31,10 @@ export function buildTmdbPlayPath(
 
   if (typeof options.episodeIndex === 'number') {
     query.set('ep', String(options.episodeIndex))
+  }
+
+  if (typeof options.seasonNumber === 'number' && options.seasonNumber > 0) {
+    query.set('season', String(options.seasonNumber))
   }
 
   const search = query.toString()

@@ -1,35 +1,37 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate, useParams, useSearchParams } from 'react-router'
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router'
 import Artplayer from 'artplayer'
 import Hls, { type HlsConfig } from 'hls.js'
+import { ChevronDown } from 'lucide-react'
 import { type DetailResult } from '@ouonnki/cms-core'
 import { createM3u8Processor, createHlsLoaderClass } from '@ouonnki/cms-core/m3u8'
 import { Card, CardContent } from '@/shared/components/ui/card'
 import { Button } from '@/shared/components/ui/button'
-import { Badge } from '@/shared/components/ui/badge'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/shared/components/ui/collapsible'
 import { Spinner } from '@/shared/components/ui/spinner'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/shared/components/ui/tooltip'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/shared/components/ui/select'
 import { useApiStore } from '@/shared/store/apiStore'
 import { useViewingHistoryStore } from '@/shared/store/viewingHistoryStore'
 import { useSettingStore } from '@/shared/store/settingStore'
 import { useDocumentTitle, useCmsClient } from '@/shared/hooks'
-import { ArrowUpIcon, ArrowDownIcon } from '@/shared/components/icons'
-import { buildCmsPlayPath, buildTmdbPlayPath } from '@/shared/lib/routes'
-import type { TmdbMediaType } from '@/shared/types/tmdb'
-import _ from 'lodash'
+import { cn } from '@/shared/lib/utils'
+import { buildCmsPlayPath, buildTmdbDetailPath, buildTmdbPlayPath } from '@/shared/lib/routes'
+import { useFavoritesStore } from '@/features/favorites/store/favoritesStore'
+import type { TmdbMediaItem, TmdbMediaType } from '@/shared/types/tmdb'
+import type { VideoItem } from '@/shared/types/video'
+import { useTmdbRecommendations } from '@/shared/hooks/useTmdb'
 import { toast } from 'sonner'
+import _ from 'lodash'
+import {
+  PlayerEpisodePanel,
+  PlayerHeroSection,
+  PlayerInfoAndRecommendations,
+  PlayerLoadingSkeleton,
+} from '@/features/player/components'
+import { useEpisodePagination, useTmdbPlayback } from '@/features/player/hooks'
 
 interface ArtplayerWithHls extends Artplayer {
   hls?: Hls
@@ -45,169 +47,336 @@ interface PlayerRouteParams {
 
 const isSupportedMediaType = (value: string): value is TmdbMediaType => value === 'movie' || value === 'tv'
 
-// 创建M3U8处理器和自定义HLS加载器
 const m3u8Processor = createM3u8Processor({ filterAds: true })
 const CustomHlsJsLoader = createHlsLoaderClass({ m3u8Processor, Hls })
 
 const parseEpisodeIndex = (value: string | null): number => {
   const parsed = Number.parseInt(value || '0', 10)
-  return Number.isNaN(parsed) ? 0 : parsed
+  return Number.isNaN(parsed) || parsed < 0 ? 0 : parsed
 }
 
-/**
- * UnifiedPlayer - 统一播放器
- * 支持两类路由：
- * 1. TMDB 模式: /play/:type/:tmdbId?source=xxx&id=xxx&ep=xxx
- * 2. CMS 模式: /play/cms/:sourceCode/:vodId?ep=xxx
- */
+const parsePositiveNumber = (value: string | null): number | null => {
+  const parsed = Number.parseInt(value || '', 10)
+  if (Number.isNaN(parsed) || parsed <= 0) {
+    return null
+  }
+  return parsed
+}
+
+const stripHtmlTags = (value: string) => {
+  const stripped = value
+    .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?>[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  return stripped
+}
+
 export default function UnifiedPlayer() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [searchParams] = useSearchParams()
   const { type = '', tmdbId = '', sourceCode: routeSourceCode = '', vodId: routeVodId = '' } =
     useParams<PlayerRouteParams>()
+
   const cmsClient = useCmsClient()
-
-  const querySourceCode = searchParams.get('source') || ''
-  const queryVodId = searchParams.get('id') || ''
-  const sourceCode = routeSourceCode || querySourceCode
-  const vodId = routeVodId || queryVodId
-
-  const isTmdbRoute = Boolean(type && tmdbId)
-  const isCmsRoute = Boolean(routeSourceCode && routeVodId)
-  const tmdbMediaType = isSupportedMediaType(type) ? type : null
-
-  const episodeIndexParam = searchParams.get('ep')
-
-  const playerRef = useRef<Artplayer | null>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
-
   const { videoAPIs, adFilteringEnabled } = useApiStore()
   const { addViewingHistory, viewingHistory } = useViewingHistoryStore()
   const { playback } = useSettingStore()
 
   const viewingHistoryRef = useRef(viewingHistory)
   const playbackRef = useRef(playback)
+  const detailRef = useRef<DetailResult | null>(null)
+  const pendingSeekRef = useRef<number | null>(null)
 
   useEffect(() => {
     viewingHistoryRef.current = viewingHistory
     playbackRef.current = playback
-  }, [viewingHistory, playback])
+  }, [playback, viewingHistory])
+
+  const querySourceCode = searchParams.get('source') || ''
+  const queryVodId = searchParams.get('id') || ''
+  const querySeasonNumber = parsePositiveNumber(searchParams.get('season'))
+  const episodeIndexParam = searchParams.get('ep')
+
+  const isTmdbRoute = Boolean(type && tmdbId)
+  const isCmsRoute = Boolean(routeSourceCode && routeVodId)
+  const tmdbMediaType = isSupportedMediaType(type) ? type : null
+  const parsedTmdbId = Number.parseInt(tmdbId, 10)
+
+  const tmdbPlayback = useTmdbPlayback({
+    enabled: isTmdbRoute,
+    mediaType: tmdbMediaType,
+    tmdbId: Number.isInteger(parsedTmdbId) ? parsedTmdbId : 0,
+    querySourceCode,
+    querySeasonNumber,
+  })
+
+  const { recommendations: fallbackRecommendations } = useTmdbRecommendations()
+  const toggleCmsFavorite = useFavoritesStore(state => state.toggleCmsFavorite)
+  const toggleTmdbFavorite = useFavoritesStore(state => state.toggleTmdbFavorite)
 
   const [detail, setDetail] = useState<DetailResult | null>(null)
-  const [selectedEpisode, setSelectedEpisode] = useState(() => parseEpisodeIndex(episodeIndexParam))
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [isReversed, setIsReversed] = useState(playback.defaultEpisodeOrder === 'desc')
-  const [currentPageRange, setCurrentPageRange] = useState<string>('')
-  const [episodesPerPage, setEpisodesPerPage] = useState(100)
+  const [isDetailRefreshing, setIsDetailRefreshing] = useState(false)
+  const [playerNotice, setPlayerNotice] = useState('')
+  const [playerNoticeProgress, setPlayerNoticeProgress] = useState(0)
+  const [playerNoticeDuration, setPlayerNoticeDuration] = useState(2200)
+  const [activeRightPanel, setActiveRightPanel] = useState<'episode' | 'source' | 'season' | null>('episode')
+  const selectedEpisode = parseEpisodeIndex(episodeIndexParam)
+  const playerNoticeTimerRef = useRef<number | null>(null)
+  const playerNoticeAnimationFrameRef = useRef<number | null>(null)
 
   useEffect(() => {
-    const calculateEpisodesPerPage = () => {
-      const width = window.innerWidth
-      let cols = 2
-      let rows = 8
+    detailRef.current = detail
+  }, [detail])
 
-      if (width >= 1024) {
-        cols = 8
-        rows = 5
-      } else if (width >= 768) {
-        cols = 6
-        rows = 6
-      } else if (width >= 640) {
-        cols = 3
-        rows = 8
-      }
+  const showPlayerNotice = useCallback((message: string, duration = 2200) => {
+    setPlayerNotice(message)
+    setPlayerNoticeDuration(duration)
+    setPlayerNoticeProgress(100)
 
-      setEpisodesPerPage(cols * rows)
+    if (playerNoticeTimerRef.current) {
+      window.clearTimeout(playerNoticeTimerRef.current)
+    }
+    if (playerNoticeAnimationFrameRef.current) {
+      window.cancelAnimationFrame(playerNoticeAnimationFrameRef.current)
     }
 
-    calculateEpisodesPerPage()
-    window.addEventListener('resize', calculateEpisodesPerPage)
-    return () => window.removeEventListener('resize', calculateEpisodesPerPage)
+    playerNoticeAnimationFrameRef.current = window.requestAnimationFrame(() => {
+      playerNoticeAnimationFrameRef.current = window.requestAnimationFrame(() => {
+        setPlayerNoticeProgress(0)
+        playerNoticeAnimationFrameRef.current = null
+      })
+    })
+
+    playerNoticeTimerRef.current = window.setTimeout(() => {
+      setPlayerNotice('')
+      setPlayerNoticeProgress(0)
+      playerNoticeTimerRef.current = null
+    }, duration)
   }, [])
 
-  const getTitle = () => detail?.videoInfo?.title || '未知视频'
-  const sourceName = detail?.videoInfo?.source_name || '未知来源'
+  useEffect(() => {
+    return () => {
+      if (playerNoticeTimerRef.current) {
+        window.clearTimeout(playerNoticeTimerRef.current)
+      }
+      if (playerNoticeAnimationFrameRef.current) {
+        window.cancelAnimationFrame(playerNoticeAnimationFrameRef.current)
+      }
+    }
+  }, [])
 
-  const pageTitle = useMemo(() => {
-    const title = detail?.videoInfo?.title
-    if (title) return title
-    return '视频播放'
-  }, [detail?.videoInfo?.title])
+  const resolvedSourceCode = isCmsRoute ? routeSourceCode : tmdbPlayback.resolvedSourceCode
+  const resolvedVodId = isCmsRoute ? routeVodId : tmdbPlayback.resolvedVodId
+  const cmsFavoriteActive = useFavoritesStore(state =>
+    isCmsRoute && resolvedVodId && resolvedSourceCode
+      ? state.isCmsFavorited(resolvedVodId, resolvedSourceCode)
+      : false,
+  )
+  const tmdbFavoriteActive = useFavoritesStore(state =>
+    isTmdbRoute && tmdbMediaType && parsedTmdbId > 0
+      ? state.isTmdbFavorited(parsedTmdbId, tmdbMediaType)
+      : false,
+  )
 
-  useDocumentTitle(pageTitle)
+  const sourceConfig = useMemo(
+    () => videoAPIs.find(api => api.id === resolvedSourceCode),
+    [resolvedSourceCode, videoAPIs],
+  )
 
   const buildCurrentPlayPath = useCallback(
-    (episodeIndex: number) => {
+    (
+      episodeIndex: number,
+      options?: {
+        sourceCode?: string
+        vodId?: string
+        seasonNumber?: number
+      },
+    ) => {
       if (isCmsRoute) {
         return buildCmsPlayPath(routeSourceCode, routeVodId, episodeIndex)
       }
 
       if (isTmdbRoute && tmdbMediaType) {
         return buildTmdbPlayPath(tmdbMediaType, tmdbId, {
-          sourceCode,
-          vodId,
+          sourceCode: options?.sourceCode || resolvedSourceCode,
+          vodId: options?.vodId || resolvedVodId,
           episodeIndex,
+          seasonNumber: options?.seasonNumber ?? tmdbPlayback.selectedSeasonNumber ?? undefined,
         })
       }
 
-      return buildCmsPlayPath(sourceCode, vodId, episodeIndex)
+      return buildCmsPlayPath(resolvedSourceCode, resolvedVodId, episodeIndex)
     },
     [
       isCmsRoute,
       isTmdbRoute,
+      resolvedSourceCode,
+      resolvedVodId,
       routeSourceCode,
       routeVodId,
-      sourceCode,
       tmdbId,
       tmdbMediaType,
-      vodId,
+      tmdbPlayback.selectedSeasonNumber,
     ],
   )
 
   useEffect(() => {
+    if (!location.pathname.startsWith('/play/')) return
+    if (!isTmdbRoute || !tmdbMediaType) return
+    if (tmdbPlayback.tmdbLoading || tmdbPlayback.playlist.loading) return
+    if (!tmdbPlayback.playlist.searched) return
+
+    if (!tmdbPlayback.resolvedSourceCode || !tmdbPlayback.resolvedVodId) return
+
+    const currentSeason = parsePositiveNumber(searchParams.get('season'))
+    const targetSeason = tmdbPlayback.selectedSeasonNumber || null
+    const episodeFromUrl = parseEpisodeIndex(episodeIndexParam)
+
+    const sourceUnchanged = querySourceCode === tmdbPlayback.resolvedSourceCode
+    const vodUnchanged = queryVodId === tmdbPlayback.resolvedVodId
+    const seasonUnchanged = currentSeason === targetSeason
+
+    if (sourceUnchanged && vodUnchanged && seasonUnchanged) return
+
+    navigate(
+      buildTmdbPlayPath(tmdbMediaType, tmdbId, {
+        sourceCode: tmdbPlayback.resolvedSourceCode,
+        vodId: tmdbPlayback.resolvedVodId,
+        episodeIndex: episodeFromUrl,
+        seasonNumber: targetSeason || undefined,
+      }),
+      { replace: true },
+    )
+  }, [
+    isTmdbRoute,
+    querySourceCode,
+    queryVodId,
+    episodeIndexParam,
+    location.pathname,
+    navigate,
+    searchParams,
+    tmdbId,
+    tmdbMediaType,
+    tmdbPlayback.playlist.loading,
+    tmdbPlayback.playlist.searched,
+    tmdbPlayback.resolvedSourceCode,
+    tmdbPlayback.resolvedVodId,
+    tmdbPlayback.selectedSeasonNumber,
+    tmdbPlayback.tmdbLoading,
+  ])
+
+  useEffect(() => {
     const fetchVideoDetail = async () => {
-      if (!sourceCode || !vodId) {
-        const missingSourceMessage = isTmdbRoute
-          ? 'TMDB 播放模式缺少匹配资源，请先在详情页选择可播放源'
-          : '缺少必要的播放参数'
-        setError(missingSourceMessage)
-        setLoading(false)
+      if (!resolvedSourceCode || !resolvedVodId) {
+        if (isTmdbRoute && (tmdbPlayback.tmdbLoading || tmdbPlayback.playlist.loading)) {
+          if (!detailRef.current) {
+            setLoading(true)
+          }
+          setIsDetailRefreshing(Boolean(detailRef.current))
+          setError(null)
+          return
+        }
+
+        if (isTmdbRoute && tmdbPlayback.playlist.searched) {
+          if (!detailRef.current) {
+            setLoading(false)
+            setDetail(null)
+          }
+          setIsDetailRefreshing(false)
+          setError('没有匹配到可播放资源，请返回详情页重新匹配')
+          return
+        }
+
+        if (!detailRef.current) {
+          setLoading(false)
+          setDetail(null)
+        }
+        setIsDetailRefreshing(false)
+        setError('缺少必要的播放参数')
         return
       }
 
-      setLoading(true)
+      if (detailRef.current) {
+        setIsDetailRefreshing(true)
+      } else {
+        setLoading(true)
+      }
       setError(null)
 
       try {
-        const api = videoAPIs.find(api => api.id === sourceCode)
-        if (!api) {
-          throw new Error('未找到对应的 API 配置')
+        if (!sourceConfig) {
+          throw new Error('未找到对应视频源配置，请检查源设置')
         }
 
-        const response = await cmsClient.getDetail(vodId, api)
+        const response = await cmsClient.getDetail(resolvedVodId, sourceConfig)
         if (response.success && response.episodes && response.episodes.length > 0) {
           setDetail(response)
-        } else {
-          throw new Error(response.error || '获取视频详情失败')
+          return
         }
-      } catch (err) {
-        console.error('获取视频详情失败:', err)
-        setError(err instanceof Error ? err.message : '获取视频详情失败')
+
+        throw new Error(response.error || '获取视频详情失败')
+      } catch (fetchError) {
+        console.error('获取视频详情失败:', fetchError)
+        if (!detailRef.current) {
+          setDetail(null)
+        }
+        setError(fetchError instanceof Error ? fetchError.message : '获取视频详情失败')
       } finally {
         setLoading(false)
+        setIsDetailRefreshing(false)
       }
     }
 
     fetchVideoDetail()
-  }, [cmsClient, isTmdbRoute, sourceCode, videoAPIs, vodId])
+  }, [
+    cmsClient,
+    isTmdbRoute,
+    resolvedSourceCode,
+    resolvedVodId,
+    sourceConfig,
+    tmdbPlayback.playlist.loading,
+    tmdbPlayback.playlist.searched,
+    tmdbPlayback.tmdbLoading,
+  ])
+
+  const episodes = useMemo(() => {
+    if (!detail) return []
+
+    if (detail.videoInfo?.episodes_names && detail.videoInfo.episodes_names.length > 0) {
+      return detail.videoInfo.episodes_names
+    }
+
+    return detail.episodes.map((_, index) => `第 ${index + 1} 集`)
+  }, [detail])
 
   useEffect(() => {
-    const urlEpisodeIndex = parseEpisodeIndex(episodeIndexParam)
-    if (urlEpisodeIndex !== selectedEpisode) {
-      setSelectedEpisode(urlEpisodeIndex)
-    }
-  }, [episodeIndexParam, selectedEpisode])
+    if (episodes.length === 0) return
+    if (selectedEpisode < episodes.length) return
+
+    const nextEpisode = 0
+    navigate(buildCurrentPlayPath(nextEpisode), { replace: true })
+  }, [buildCurrentPlayPath, episodes.length, navigate, selectedEpisode])
+
+  const episodePagination = useEpisodePagination({
+    episodes,
+    selectedEpisode,
+    defaultDescOrder: playback.defaultEpisodeOrder === 'desc',
+  })
+
+  const playerRef = useRef<Artplayer | null>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (!detail?.episodes || !detail.episodes[selectedEpisode] || !containerRef.current) return
@@ -216,15 +385,15 @@ export default function UnifiedPlayer() {
       playerRef.current.destroy(false)
     }
 
+    const isMobileViewport = window.matchMedia('(max-width: 639px)').matches
+
     const nextEpisode = () => {
       if (!playbackRef.current.isAutoPlayEnabled) return
 
-      const total = detail.videoInfo?.episodes_names?.length || 0
-      if (selectedEpisode < total - 1) {
+      if (selectedEpisode < episodes.length - 1) {
         const nextIndex = selectedEpisode + 1
-        setSelectedEpisode(nextIndex)
         navigate(buildCurrentPlayPath(nextIndex), { replace: true })
-        toast.info(`即将播放下一集: ${detail.videoInfo?.episodes_names?.[nextIndex]}`)
+        showPlayerNotice(`即将播放下一集: ${episodes[nextIndex]}`)
       }
     }
 
@@ -236,7 +405,7 @@ export default function UnifiedPlayer() {
       muted: false,
       autoplay: false,
       pip: true,
-      autoSize: true,
+      autoSize: false,
       autoMini: true,
       screenshot: true,
       setting: true,
@@ -245,14 +414,14 @@ export default function UnifiedPlayer() {
       playbackRate: true,
       aspectRatio: true,
       fullscreen: true,
-      fullscreenWeb: true,
+      fullscreenWeb: !isMobileViewport,
       subtitleOffset: true,
       miniProgressBar: true,
       mutex: true,
       backdrop: true,
       playsInline: true,
-      airplay: true,
-      theme: '#23ade5',
+      airplay: !isMobileViewport,
+      theme: '#ef4444',
       lang: 'zh-cn',
       moreVideoAttr: {
         crossOrigin: 'anonymous',
@@ -282,29 +451,39 @@ export default function UnifiedPlayer() {
     playerRef.current = art
 
     art.on('ready', () => {
+      if (art.video) {
+        art.video.style.objectFit = 'contain'
+        art.video.style.objectPosition = 'center center'
+        art.video.style.background = '#000'
+      }
+
       const existingHistory = viewingHistoryRef.current.find(
         item =>
-          item.sourceCode === sourceCode &&
-          item.vodId === vodId &&
+          item.sourceCode === resolvedSourceCode &&
+          item.vodId === resolvedVodId &&
           item.episodeIndex === selectedEpisode,
       )
 
-      if (existingHistory && existingHistory.playbackPosition > 0) {
+      if (pendingSeekRef.current && pendingSeekRef.current > 0) {
+        art.seek = pendingSeekRef.current
+        pendingSeekRef.current = null
+        showPlayerNotice('已继承上一个源的播放进度')
+      } else if (existingHistory && existingHistory.playbackPosition > 0) {
         art.seek = existingHistory.playbackPosition
-        toast.success('已自动跳转到上次观看位置')
+        showPlayerNotice('已自动跳转到上次观看位置')
       }
     })
 
     const addHistorySnapshot = () => {
-      if (!sourceCode || !vodId || !detail?.videoInfo) return
+      if (!resolvedSourceCode || !resolvedVodId || !detail.videoInfo) return
       addViewingHistory({
         title: detail.videoInfo.title || '未知视频',
         imageUrl: detail.videoInfo.cover || '',
-        sourceCode,
+        sourceCode: resolvedSourceCode,
         sourceName: detail.videoInfo.source_name || '',
-        vodId,
+        vodId: resolvedVodId,
         episodeIndex: selectedEpisode,
-        episodeName: detail.videoInfo.episodes_names?.[selectedEpisode],
+        episodeName: episodes[selectedEpisode],
         playbackPosition: art.currentTime || 0,
         duration: art.duration || 0,
         timestamp: Date.now(),
@@ -323,7 +502,7 @@ export default function UnifiedPlayer() {
     const TIME_UPDATE_INTERVAL = 3000
 
     const timeUpdateHandler = () => {
-      if (!sourceCode || !vodId || !detail?.videoInfo) return
+      if (!resolvedSourceCode || !resolvedVodId || !detail.videoInfo) return
       const currentTime = art.currentTime || 0
       const duration = art.duration || 0
       const timeSinceLastUpdate = Date.now() - lastTimeUpdate
@@ -333,11 +512,11 @@ export default function UnifiedPlayer() {
         addViewingHistory({
           title: detail.videoInfo.title || '未知视频',
           imageUrl: detail.videoInfo.cover || '',
-          sourceCode,
+          sourceCode: resolvedSourceCode,
           sourceName: detail.videoInfo.source_name || '',
-          vodId,
+          vodId: resolvedVodId,
           episodeIndex: selectedEpisode,
-          episodeName: detail.videoInfo.episodes_names?.[selectedEpisode],
+          episodeName: episodes[selectedEpisode],
           playbackPosition: currentTime,
           duration,
           timestamp: Date.now(),
@@ -345,9 +524,11 @@ export default function UnifiedPlayer() {
       }
     }
 
-    art.on('video:timeupdate', _.throttle(timeUpdateHandler, TIME_UPDATE_INTERVAL))
+    const throttledTimeUpdate = _.throttle(timeUpdateHandler, TIME_UPDATE_INTERVAL)
+    art.on('video:timeupdate', throttledTimeUpdate)
 
     return () => {
+      throttledTimeUpdate.cancel()
       if (playerRef.current && playerRef.current.destroy) {
         addHistorySnapshot()
         playerRef.current.destroy(false)
@@ -359,121 +540,233 @@ export default function UnifiedPlayer() {
     adFilteringEnabled,
     buildCurrentPlayPath,
     detail,
+    episodes,
     navigate,
+    resolvedSourceCode,
+    resolvedVodId,
     selectedEpisode,
-    sourceCode,
-    vodId,
+    showPlayerNotice,
   ])
 
   const handleEpisodeChange = (displayIndex: number) => {
-    const actualIndex = isReversed
-      ? (detail?.videoInfo?.episodes_names?.length || 0) - 1 - displayIndex
-      : displayIndex
-
-    setSelectedEpisode(actualIndex)
+    pendingSeekRef.current = null
+    const actualIndex = episodePagination.toActualIndex(displayIndex)
+    if (actualIndex === selectedEpisode) return
     navigate(buildCurrentPlayPath(actualIndex), { replace: true })
   }
 
-  const pageRanges = useMemo(() => {
-    const totalEpisodes = detail?.videoInfo?.episodes_names?.length || 0
-    if (totalEpisodes === 0) return []
+  const handleSourceChange = (sourceCode: string) => {
+    if (!isTmdbRoute || !tmdbMediaType) return
 
-    const ranges: { label: string; value: string; start: number; end: number }[] = []
+    const nextOption = tmdbPlayback.sourceOptions.find(option => option.sourceCode === sourceCode)
+    if (!nextOption || !nextOption.bestVodId) return
 
-    if (isReversed) {
-      for (let i = 0; i < totalEpisodes; i += episodesPerPage) {
-        const start = i
-        const end = Math.min(i + episodesPerPage - 1, totalEpisodes - 1)
-        const labelStart = totalEpisodes - start
-        const labelEnd = totalEpisodes - end
-        ranges.push({
-          label: `${labelStart}-${labelEnd}`,
-          value: `${start}-${end}`,
-          start,
-          end,
-        })
-      }
-    } else {
-      for (let i = 0; i < totalEpisodes; i += episodesPerPage) {
-        const start = i
-        const end = Math.min(i + episodesPerPage - 1, totalEpisodes - 1)
-        ranges.push({
-          label: `${start + 1}-${end + 1}`,
-          value: `${start}-${end}`,
-          start,
-          end,
-        })
-      }
-    }
+    pendingSeekRef.current = playerRef.current?.currentTime || null
 
-    return ranges
-  }, [detail?.videoInfo?.episodes_names?.length, episodesPerPage, isReversed])
+    const nextPath = buildTmdbPlayPath(tmdbMediaType, tmdbId, {
+      sourceCode: nextOption.sourceCode,
+      vodId: nextOption.bestVodId,
+      episodeIndex: selectedEpisode,
+      seasonNumber: tmdbPlayback.selectedSeasonNumber || undefined,
+    })
 
-  useEffect(() => {
-    if (pageRanges.length === 0 || !detail?.videoInfo?.episodes_names) return
-
-    const totalEpisodes = detail.videoInfo.episodes_names.length
-    const actualSelectedIndex = selectedEpisode
-    const displayIndex = isReversed ? totalEpisodes - 1 - actualSelectedIndex : actualSelectedIndex
-
-    const rangeContainingSelected = pageRanges.find(
-      range => displayIndex >= range.start && displayIndex <= range.end,
-    )
-
-    if (rangeContainingSelected) {
-      setCurrentPageRange(rangeContainingSelected.value)
-    } else {
-      setCurrentPageRange(pageRanges[0].value)
-    }
-  }, [pageRanges, selectedEpisode, isReversed, detail?.videoInfo?.episodes_names])
-
-  const currentPageEpisodes = useMemo(() => {
-    if (!currentPageRange || !detail?.videoInfo?.episodes_names) return []
-
-    const [start, end] = currentPageRange.split('-').map(Number)
-    const totalEpisodes = detail.videoInfo.episodes_names.length
-    const episodes = detail.videoInfo.episodes_names
-
-    if (isReversed) {
-      const selectedEpisodes = []
-      for (let i = start; i <= end; i++) {
-        const actualIndex = totalEpisodes - 1 - i
-        if (actualIndex >= 0 && actualIndex < totalEpisodes) {
-          selectedEpisodes.push({
-            name: episodes[actualIndex],
-            displayIndex: i,
-            actualIndex,
-          })
-        }
-      }
-      return selectedEpisodes
-    }
-
-    return episodes.slice(start, end + 1).map((name, idx: number) => ({
-      name,
-      displayIndex: start + idx,
-      actualIndex: start + idx,
-    }))
-  }, [currentPageRange, detail?.videoInfo?.episodes_names, isReversed])
-
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center p-4">
-        <div className="text-center">
-          <Spinner size="lg" />
-          <p className="mt-4 text-gray-500">正在加载视频信息...</p>
-        </div>
-      </div>
-    )
+    navigate(nextPath, { replace: true })
+    showPlayerNotice(`已切换到 ${nextOption.sourceName}`)
   }
 
-  if (error) {
+  const handleSeasonChange = (seasonNumber: number) => {
+    if (!isTmdbRoute || tmdbMediaType !== 'tv') return
+
+    pendingSeekRef.current = null
+
+    const seasonSourceOptions = tmdbPlayback.getSourceOptionsForSeason(seasonNumber)
+    if (seasonSourceOptions.length === 0) {
+      showPlayerNotice('该季暂无可用源')
+      return
+    }
+
+    const preferredSource =
+      seasonSourceOptions.find(option => option.sourceCode === resolvedSourceCode) || seasonSourceOptions[0]
+
+    const nextPath = buildTmdbPlayPath('tv', tmdbId, {
+      sourceCode: preferredSource.sourceCode,
+      vodId: preferredSource.bestVodId,
+      episodeIndex: 0,
+      seasonNumber,
+    })
+
+    navigate(nextPath, { replace: true })
+  }
+
+  const handleToggleCmsFavorite = useCallback(() => {
+    if (!isCmsRoute || !resolvedVodId || !resolvedSourceCode) return
+
+    const video: VideoItem = {
+      vod_id: resolvedVodId,
+      vod_name: detail?.videoInfo?.title || '未知视频',
+      vod_pic: detail?.videoInfo?.cover,
+      vod_year: detail?.videoInfo?.year,
+      vod_area: detail?.videoInfo?.area,
+      vod_remarks: detail?.videoInfo?.remarks,
+      vod_content: detail?.videoInfo?.desc,
+      type_name: detail?.videoInfo?.type,
+      source_code: resolvedSourceCode,
+      source_name: detail?.videoInfo?.source_name || '',
+    }
+
+    toggleCmsFavorite(video)
+    toast.success(cmsFavoriteActive ? '已取消收藏' : '已加入收藏')
+  }, [
+    cmsFavoriteActive,
+    detail?.videoInfo?.area,
+    detail?.videoInfo?.cover,
+    detail?.videoInfo?.desc,
+    detail?.videoInfo?.remarks,
+    detail?.videoInfo?.source_name,
+    detail?.videoInfo?.title,
+    detail?.videoInfo?.type,
+    detail?.videoInfo?.year,
+    isCmsRoute,
+    resolvedSourceCode,
+    resolvedVodId,
+    toggleCmsFavorite,
+  ])
+
+  const handleToggleTmdbFavorite = useCallback(() => {
+    if (!isTmdbRoute || !tmdbMediaType || parsedTmdbId <= 0) return
+
+    const tmdbMedia: TmdbMediaItem = {
+      id: parsedTmdbId,
+      mediaType: tmdbMediaType,
+      title: tmdbPlayback.tmdbDetail?.title || '未知视频',
+      originalTitle: tmdbPlayback.tmdbDetail?.originalTitle || tmdbPlayback.tmdbDetail?.title || '未知视频',
+      overview: tmdbPlayback.tmdbDetail?.overview || '',
+      posterPath: tmdbPlayback.tmdbDetail?.posterPath || null,
+      backdropPath: tmdbPlayback.tmdbDetail?.backdropPath || null,
+      logoPath: tmdbPlayback.tmdbDetail?.logoPath || null,
+      releaseDate: tmdbPlayback.tmdbDetail?.releaseDate || '',
+      voteAverage: tmdbPlayback.tmdbDetail?.voteAverage || 0,
+      voteCount: tmdbPlayback.tmdbDetail?.voteCount || 0,
+      popularity: tmdbPlayback.tmdbDetail?.popularity || 0,
+      genreIds: tmdbPlayback.tmdbDetail?.genreIds || [],
+      originalLanguage: tmdbPlayback.tmdbDetail?.originalLanguage || '',
+      originCountry: tmdbPlayback.tmdbDetail?.originCountry || [],
+    }
+
+    toggleTmdbFavorite(tmdbMedia)
+    toast.success(tmdbFavoriteActive ? '已取消收藏' : '已加入收藏')
+  }, [
+    isTmdbRoute,
+    parsedTmdbId,
+    tmdbFavoriteActive,
+    tmdbMediaType,
+    tmdbPlayback.tmdbDetail?.backdropPath,
+    tmdbPlayback.tmdbDetail?.genreIds,
+    tmdbPlayback.tmdbDetail?.logoPath,
+    tmdbPlayback.tmdbDetail?.originalLanguage,
+    tmdbPlayback.tmdbDetail?.originalTitle,
+    tmdbPlayback.tmdbDetail?.originCountry,
+    tmdbPlayback.tmdbDetail?.overview,
+    tmdbPlayback.tmdbDetail?.popularity,
+    tmdbPlayback.tmdbDetail?.posterPath,
+    tmdbPlayback.tmdbDetail?.releaseDate,
+    tmdbPlayback.tmdbDetail?.title,
+    tmdbPlayback.tmdbDetail?.voteAverage,
+    tmdbPlayback.tmdbDetail?.voteCount,
+    toggleTmdbFavorite,
+  ])
+
+  const sourceOptions = useMemo(() => {
+    if (isTmdbRoute) {
+      return tmdbPlayback.sourceOptions
+    }
+
+    const sourceName =
+      detail?.videoInfo?.source_name || sourceConfig?.name || routeSourceCode || resolvedSourceCode || '直连源'
+
+    return [
+      {
+        sourceCode: resolvedSourceCode,
+        sourceName,
+        bestVodId: resolvedVodId,
+        bestScore: 0,
+      },
+    ]
+  }, [
+    detail?.videoInfo?.source_name,
+    isTmdbRoute,
+    resolvedSourceCode,
+    resolvedVodId,
+    routeSourceCode,
+    sourceConfig?.name,
+    tmdbPlayback.sourceOptions,
+  ])
+
+  const title = detail?.videoInfo?.title || tmdbPlayback.tmdbDetail?.title || '未知视频'
+  const sourceName =
+    detail?.videoInfo?.source_name ||
+    sourceOptions.find(option => option.sourceCode === resolvedSourceCode)?.sourceName ||
+    '未知来源'
+
+  const rawOverview = tmdbPlayback.tmdbDetail?.overview || detail?.videoInfo?.desc || ''
+  const overview = isCmsRoute ? stripHtmlTags(rawOverview) : rawOverview
+  const pageTitle = title || '视频播放'
+  useDocumentTitle(pageTitle)
+
+  const recommendationItems = isTmdbRoute
+    ? tmdbPlayback.recommendations.length > 0
+      ? tmdbPlayback.recommendations
+      : fallbackRecommendations
+    : []
+  const detailLink =
+    isTmdbRoute && tmdbMediaType ? buildTmdbDetailPath(tmdbMediaType, tmdbId) : undefined
+  const seasonCount =
+    tmdbMediaType === 'tv'
+      ? tmdbPlayback.tmdbRichDetail?.number_of_seasons || tmdbPlayback.seasonOptions.length
+      : undefined
+  const episodeCount =
+    tmdbMediaType === 'tv'
+      ? tmdbPlayback.tmdbRichDetail?.number_of_episodes || detail?.episodes.length
+      : undefined
+  const hasSeasonPanel = !isCmsRoute && tmdbPlayback.seasonOptions.length > 0
+
+  const modeLabel = isTmdbRoute ? 'TMDB 播放模式' : 'CMS 直连模式'
+  const collapsibleContentClassName =
+    'overflow-hidden border-t border-border/45 p-3 md:p-4 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 data-[state=open]:slide-in-from-top-1 data-[state=closed]:slide-out-to-top-1 data-[state=open]:duration-300 data-[state=closed]:duration-200'
+
+  const getPanelClassName = (panel: 'source' | 'season' | 'episode') =>
+    cn(
+      'overflow-hidden rounded-lg border border-border/60 bg-card/55 transition-all',
+      activeRightPanel === panel && 'xl:flex xl:min-h-0 xl:flex-1 xl:flex-col',
+    )
+
+  useEffect(() => {
+    if (isCmsRoute && activeRightPanel !== 'episode') {
+      setActiveRightPanel('episode')
+      return
+    }
+
+    if (!hasSeasonPanel && activeRightPanel === 'season') {
+      setActiveRightPanel('episode')
+    }
+  }, [activeRightPanel, hasSeasonPanel, isCmsRoute])
+
+  const shouldShowLoading =
+    !detail &&
+    (loading ||
+      (isTmdbRoute && (tmdbPlayback.tmdbLoading || (!tmdbPlayback.playlist.searched && !tmdbPlayback.tmdbError))))
+
+  if (shouldShowLoading) {
+    return <PlayerLoadingSkeleton mode={isCmsRoute ? 'cms' : 'tmdb'} />
+  }
+
+  if (tmdbPlayback.tmdbError) {
     return (
-      <div className="flex min-h-screen items-center justify-center p-4">
-        <Card className="w-full max-w-sm">
-          <CardContent className="pt-6 text-center">
-            <p className="mb-4 text-red-500">{error}</p>
-            <Button className="w-full" onClick={() => navigate(-1)} variant="secondary">
+      <div className="flex min-h-[60vh] items-center justify-center p-4">
+        <Card className="w-full max-w-lg">
+          <CardContent className="space-y-4 pt-6 text-center">
+            <p className="text-sm text-red-500">{tmdbPlayback.tmdbError}</p>
+            <Button variant="secondary" onClick={() => navigate(-1)}>
               返回
             </Button>
           </CardContent>
@@ -482,13 +775,13 @@ export default function UnifiedPlayer() {
     )
   }
 
-  if (!detail || !detail.episodes || detail.episodes.length === 0) {
+  if (!detail || detail.episodes.length === 0) {
     return (
-      <div className="flex min-h-screen items-center justify-center p-4">
-        <Card className="w-full max-w-sm">
-          <CardContent className="pt-6 text-center">
-            <p className="mb-4 text-gray-500">无法获取播放信息</p>
-            <Button className="w-full" onClick={() => navigate(-1)} variant="secondary">
+      <div className="flex min-h-[60vh] items-center justify-center p-4">
+        <Card className="w-full max-w-lg">
+          <CardContent className="space-y-4 pt-6 text-center">
+            <p className="text-sm text-red-500">{error || '无法获取播放信息'}</p>
+            <Button variant="secondary" onClick={() => navigate(-1)}>
               返回
             </Button>
           </CardContent>
@@ -498,127 +791,264 @@ export default function UnifiedPlayer() {
   }
 
   return (
-    <TooltipProvider>
-      <div className="container mx-auto max-w-6xl p-2 sm:p-4">
-        <div className="mb-2 flex justify-end md:mb-0">
-          <Badge variant="secondary" className="text-xs">
-            {isTmdbRoute ? 'TMDB 播放模式' : 'CMS 直连模式'}
-          </Badge>
-        </div>
+    <div className="space-y-4 md:space-y-5">
+      {isTmdbRoute && (
+        <PlayerHeroSection
+          modeLabel={modeLabel}
+          sourceName={sourceName}
+          title={title}
+          overview={overview}
+          posterPath={tmdbPlayback.tmdbDetail?.posterPath}
+          backdropPath={tmdbPlayback.tmdbDetail?.backdropPath}
+          tmdbMediaType={tmdbMediaType}
+          currentEpisodeText={episodes[selectedEpisode] || `第 ${selectedEpisode + 1} 集`}
+          totalEpisodeText={`${detail.episodes.length} 集`}
+          onBack={() => navigate(-1)}
+        />
+      )}
 
-        {/* 视频信息 - 移动端 */}
-        <div className="mb-4 flex flex-col gap-2 md:hidden">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-semibold text-gray-600">{sourceName}</p>
-              <h4 className="text-lg font-bold">{getTitle()}</h4>
+      <section className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="space-y-3">
+          {error && (
+            <div className="rounded-lg border border-red-400/35 bg-red-500/10 px-3 py-2 text-sm text-red-500">
+              {error}
             </div>
-            <Button size="sm" variant="secondary" onClick={() => navigate(-1)}>
-              返回
-            </Button>
-          </div>
-          <div className="flex items-center gap-2">
-            <Badge variant="default">第 {selectedEpisode + 1} 集</Badge>
-            <p className="text-sm text-gray-600">共 {detail.episodes.length} 集</p>
-          </div>
-        </div>
+          )}
 
-        {/* 视频信息 - 桌面端 */}
-        <div className="mb-4 hidden items-center justify-between md:flex">
-          <div className="flex items-center gap-4">
-            <div>
-              <p className="text-sm font-semibold text-gray-500">{sourceName}</p>
-              <h4 className="text-xl font-bold">{getTitle()}</h4>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="default">第 {selectedEpisode + 1} 集</Badge>
-              <p className="text-sm text-gray-500">共 {detail.episodes.length} 集</p>
-            </div>
-          </div>
-          <Button size="sm" variant="secondary" onClick={() => navigate(-1)}>
-            返回
-          </Button>
-        </div>
-
-        {/* 播放器 */}
-        <Card className="mb-4 overflow-hidden border-none sm:mb-6">
-          <CardContent className="p-0">
+          <section className="relative overflow-hidden rounded-lg border border-border/60 bg-black/95 shadow-lg">
             <div
               id="player"
               ref={containerRef}
-              className="flex aspect-video w-full items-center rounded-lg bg-black"
+              className="aspect-video min-h-[180px] w-full bg-black sm:h-[clamp(240px,56vw,74vh)] sm:min-h-[220px] sm:aspect-auto [&_.art-video-player]:!h-full [&_.art-video-player]:!w-full [&_.artplayer-app]:!h-full [&_.artplayer-app]:!w-full [&_video]:!h-full [&_video]:!w-full"
             />
-          </CardContent>
-        </Card>
-
-        {/* 选集列表 */}
-        {detail.videoInfo?.episodes_names && detail.videoInfo?.episodes_names.length > 0 && (
-          <div className="mt-4 flex flex-col">
-            <div className="flex flex-col gap-2 p-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-semibold text-gray-900">选集</h2>
-                <div className="flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setIsReversed(!isReversed)}
-                    className="text-sm text-gray-600"
-                  >
-                    {isReversed ? <ArrowUpIcon size={18} /> : <ArrowDownIcon size={18} />}
-                    <span className="ml-1">{isReversed ? '正序' : '倒序'}</span>
-                  </Button>
-                  {pageRanges.length > 1 && (
-                    <Select value={currentPageRange} onValueChange={setCurrentPageRange}>
-                      <SelectTrigger className="w-32 border-gray-200 bg-white/30 font-medium text-gray-800 backdrop-blur-md">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="border-gray-200/50 bg-white/40 backdrop-blur-2xl">
-                        {pageRanges.map(range => (
-                          <SelectItem key={range.value} value={range.value}>
-                            {range.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
+            {playerNotice && (
+              <div className="pointer-events-none absolute top-3 right-3 z-30 w-[min(78vw,340px)]">
+                <div className="overflow-hidden rounded-md border border-white/15 bg-black/65 shadow-lg backdrop-blur-sm">
+                  <div className="px-3 py-1.5 text-xs text-white">{playerNotice}</div>
+                  <div className="h-0.5 bg-white/20">
+                    <div
+                      className="h-full bg-red-500 transition-[width] ease-linear"
+                      style={{
+                        width: `${playerNoticeProgress}%`,
+                        transitionDuration: `${playerNoticeDuration}ms`,
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3 rounded-lg bg-white/30 p-4 pt-0 shadow-lg/5 backdrop-blur-md sm:grid-cols-3 md:grid-cols-6 lg:grid-cols-8">
-              {currentPageEpisodes.map(
-                ({
-                  name,
-                  displayIndex,
-                  actualIndex,
-                }: {
-                  name: string
-                  displayIndex: number
-                  actualIndex: number
-                }) => (
-                  <Tooltip key={`${name}-${displayIndex}`} delayDuration={1000}>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="secondary"
-                        className={
-                          selectedEpisode === actualIndex
-                            ? 'border border-gray-200 bg-gray-900 text-white drop-shadow-2xl'
-                            : 'border border-gray-200 bg-white/30 text-gray-800 drop-shadow-2xl backdrop-blur-md transition-all duration-300 hover:scale-105 hover:bg-black/80 hover:text-white'
-                        }
-                        onClick={() => handleEpisodeChange(displayIndex)}
-                      >
-                        <span className="overflow-hidden text-ellipsis whitespace-nowrap">
-                          {name}
+            )}
+            {isDetailRefreshing && (
+              <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/50 backdrop-blur-[2px]">
+                <div className="flex items-center gap-2 rounded-full bg-black/55 px-3 py-1.5 text-sm text-white">
+                  <Spinner size="sm" />
+                  正在切换资源...
+                </div>
+              </div>
+            )}
+          </section>
+        </div>
+
+        <aside className="xl:sticky xl:top-20 xl:h-[clamp(240px,56vw,74vh)] xl:min-h-[220px] xl:pr-1">
+          {isCmsRoute ? (
+            <section className="space-y-3 rounded-lg border border-border/60 bg-card/55 p-3 md:p-4 xl:h-full xl:min-h-0">
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-semibold">选集</h2>
+                <span className="text-muted-foreground text-xs">共 {detail.episodes.length} 集</span>
+              </div>
+              <PlayerEpisodePanel
+                totalEpisodes={detail.episodes.length}
+                selectedEpisode={selectedEpisode}
+                isReversed={episodePagination.isReversed}
+                onToggleOrder={() => episodePagination.setIsReversed(prev => !prev)}
+                pageRanges={episodePagination.pageRanges}
+                currentPageRange={episodePagination.currentPageRange}
+                onPageRangeChange={episodePagination.setCurrentPageRange}
+                episodes={episodePagination.currentPageEpisodes}
+                onEpisodeSelect={handleEpisodeChange}
+                compact
+                fillHeight
+                hideHeader
+                className="border-0 bg-transparent p-0 md:p-0"
+              />
+            </section>
+          ) : (
+            <div className="space-y-3 xl:flex xl:h-full xl:flex-col xl:gap-3 xl:space-y-0">
+              <Collapsible
+                open={activeRightPanel === 'source'}
+                onOpenChange={open => setActiveRightPanel(open ? 'source' : null)}
+                className={getPanelClassName('source')}
+              >
+                <CollapsibleTrigger asChild>
+                  <button
+                    type="button"
+                    className="flex w-full items-center justify-between px-3 py-3 text-sm font-semibold md:px-4"
+                  >
+                    <span className="flex items-center gap-1.5">
+                      换源
+                      <span className="text-muted-foreground text-xs">{sourceOptions.length} 源</span>
+                    </span>
+                    <ChevronDown
+                      className={`size-4 transition-transform ${activeRightPanel === 'source' ? 'rotate-180' : ''}`}
+                    />
+                  </button>
+                </CollapsibleTrigger>
+                <CollapsibleContent
+                  className={cn(
+                    collapsibleContentClassName,
+                    activeRightPanel === 'source' && 'xl:flex-1 xl:min-h-0',
+                  )}
+                >
+                  <div className="flex flex-wrap gap-2">
+                    {sourceOptions.map(option => {
+                      const active = option.sourceCode === resolvedSourceCode
+                      return (
+                        <Button
+                          key={option.sourceCode}
+                          size="sm"
+                          variant={active ? 'default' : 'secondary'}
+                          className="rounded-full"
+                          onClick={() => handleSourceChange(option.sourceCode)}
+                        >
+                          {option.sourceName}
+                          {isTmdbRoute && <span className="text-[11px] opacity-70">{option.bestScore}</span>}
+                        </Button>
+                      )
+                    })}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+
+            {hasSeasonPanel && (
+              <Collapsible
+                open={activeRightPanel === 'season'}
+                onOpenChange={open => setActiveRightPanel(open ? 'season' : null)}
+                className={getPanelClassName('season')}
+              >
+                <CollapsibleTrigger asChild>
+                  <button
+                    type="button"
+                    className="flex w-full items-center justify-between px-3 py-3 text-sm font-semibold md:px-4"
+                  >
+                    <span className="flex items-center gap-1.5">
+                      选季
+                      <span className="text-muted-foreground text-xs">
+                        {tmdbPlayback.seasonOptions.length} 季
+                      </span>
+                    </span>
+                    <ChevronDown
+                      className={`size-4 transition-transform ${activeRightPanel === 'season' ? 'rotate-180' : ''}`}
+                    />
+                  </button>
+                </CollapsibleTrigger>
+                <CollapsibleContent
+                  className={cn(
+                    collapsibleContentClassName,
+                    activeRightPanel === 'season' && 'xl:flex-1 xl:min-h-0',
+                  )}
+                >
+                  <div className="flex flex-wrap gap-2">
+                    {tmdbPlayback.seasonOptions.map(option => {
+                      const active = option.seasonNumber === tmdbPlayback.selectedSeasonNumber
+                      return (
+                        <Button
+                          key={option.seasonNumber}
+                          size="sm"
+                          variant={active ? 'default' : 'secondary'}
+                          className="rounded-full"
+                          onClick={() => handleSeasonChange(option.seasonNumber)}
+                        >
+                          S{option.seasonNumber}
+                          <span className="text-[11px] opacity-70">{option.matchedSourceCount}</span>
+                        </Button>
+                      )
+                    })}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            )}
+            {episodes.length > 0 && (
+                <Collapsible
+                  open={activeRightPanel === 'episode'}
+                  onOpenChange={open => setActiveRightPanel(open ? 'episode' : null)}
+                  className={getPanelClassName('episode')}
+                >
+                  <CollapsibleTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex w-full items-center justify-between px-3 py-3 text-sm font-semibold md:px-4"
+                    >
+                      <span className="flex items-center gap-1.5">
+                        选集
+                        <span className="text-muted-foreground text-xs">
+                          第 {selectedEpisode + 1} 集 / 共 {detail.episodes.length} 集
                         </span>
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>{name}</TooltipContent>
-                  </Tooltip>
-                ),
-              )}
+                      </span>
+                      <ChevronDown
+                        className={`size-4 transition-transform ${activeRightPanel === 'episode' ? 'rotate-180' : ''}`}
+                      />
+                    </button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent
+                    className={cn(
+                      collapsibleContentClassName,
+                      activeRightPanel === 'episode' && 'xl:flex-1 xl:min-h-0',
+                    )}
+                  >
+                    <div className={activeRightPanel === 'episode' ? 'xl:h-full' : undefined}>
+                      <PlayerEpisodePanel
+                        totalEpisodes={detail.episodes.length}
+                        selectedEpisode={selectedEpisode}
+                        isReversed={episodePagination.isReversed}
+                        onToggleOrder={() => episodePagination.setIsReversed(prev => !prev)}
+                        pageRanges={episodePagination.pageRanges}
+                        currentPageRange={episodePagination.currentPageRange}
+                        onPageRangeChange={episodePagination.setCurrentPageRange}
+                        episodes={episodePagination.currentPageEpisodes}
+                        onEpisodeSelect={handleEpisodeChange}
+                        compact
+                        fillHeight={activeRightPanel === 'episode'}
+                        hideHeader
+                        className="border-0 bg-transparent p-0 md:p-0"
+                      />
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+            )}
             </div>
-          </div>
-        )}
-      </div>
-    </TooltipProvider>
+          )}
+        </aside>
+      </section>
+
+      <PlayerInfoAndRecommendations
+        title={title}
+        originalTitle={tmdbPlayback.tmdbDetail?.originalTitle}
+        overview={overview}
+        sourceName={sourceName}
+        modeLabel={modeLabel}
+        releaseDate={tmdbPlayback.tmdbDetail?.releaseDate}
+        rating={tmdbPlayback.tmdbDetail?.voteAverage}
+        posterPath={tmdbPlayback.tmdbDetail?.posterPath}
+        cmsCover={detail.videoInfo?.cover}
+        tmdbMediaType={tmdbMediaType}
+        seasonCount={seasonCount}
+        episodeCount={episodeCount}
+        detailLink={detailLink}
+        showRecommendations={isTmdbRoute}
+        favoriteAction={
+          isCmsRoute
+            ? {
+                active: cmsFavoriteActive,
+                onToggle: handleToggleCmsFavorite,
+              }
+            : isTmdbRoute && tmdbMediaType
+              ? {
+                  active: tmdbFavoriteActive,
+                  onToggle: handleToggleTmdbFavorite,
+                }
+              : undefined
+        }
+        recommendations={recommendationItems}
+      />
+    </div>
   )
 }

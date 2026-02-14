@@ -4,7 +4,6 @@ import { OkiLogo } from '@/shared/components/icons'
 
 // Layouts
 import MainLayout from '@/app/layouts/MainLayout'
-import PlayerLayout from '@/app/layouts/PlayerLayout'
 import SettingsLayout from '@/app/layouts/SettingsLayout'
 
 // Auth
@@ -98,6 +97,22 @@ const router = createBrowserRouter([
         ),
       },
       {
+        path: 'play/:type/:tmdbId',
+        element: (
+          <SuspenseWrapper>
+            <UnifiedPlayer />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'play/cms/:sourceCode/:vodId',
+        element: (
+          <SuspenseWrapper>
+            <UnifiedPlayer />
+          </SuspenseWrapper>
+        ),
+      },
+      {
         path: 'settings',
         element: <SettingsLayout />,
         children: [
@@ -135,32 +150,6 @@ const router = createBrowserRouter([
             ),
           },
         ],
-      },
-    ],
-  },
-
-  // B. 播放页路由 (独立全屏，不复用 MainLayout)
-  {
-    path: '/play',
-    element: <PlayerLayout />,
-    children: [
-      // 模式 1: 标准元数据模式 (TMDB) - 未来功能
-      {
-        path: ':type/:tmdbId',
-        element: (
-          <SuspenseWrapper>
-            <UnifiedPlayer />
-          </SuspenseWrapper>
-        ),
-      },
-      // 模式 2: 源文件直连模式 (Raw)
-      {
-        path: 'cms/:sourceCode/:vodId',
-        element: (
-          <SuspenseWrapper>
-            <UnifiedPlayer />
-          </SuspenseWrapper>
-        ),
       },
     ],
   },
