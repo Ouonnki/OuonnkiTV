@@ -11,6 +11,34 @@ import {
 import { Gauge, ListFilter, PlaySquare, Timer } from 'lucide-react'
 import { SettingsItem, SettingsPageShell, SettingsSection } from '../common'
 
+interface ToggleSettingItemProps {
+  id: string
+  title: string
+  description: string
+  checked: boolean
+  onCheckedChange: (checked: boolean) => void
+}
+
+function ToggleSettingItem({
+  id,
+  title,
+  description,
+  checked,
+  onCheckedChange,
+}: ToggleSettingItemProps) {
+  return (
+    <div className="bg-muted/35 flex min-h-[92px] flex-col rounded-lg px-4 py-3">
+      <div className="min-w-0 space-y-1">
+        <p className="text-sm font-medium md:text-base">{title}</p>
+        <p className="text-muted-foreground text-sm">{description}</p>
+      </div>
+      <div className="mt-2 flex justify-end">
+        <Switch id={id} checked={checked} onCheckedChange={onCheckedChange} />
+      </div>
+    </div>
+  )
+}
+
 export default function PlaybackSettings() {
   const { playback, setPlaybackSettings } = useSettingStore()
   const { adFilteringEnabled, setAdFilteringEnabled } = useApiStore()
@@ -27,45 +55,33 @@ export default function PlaybackSettings() {
         icon={<PlaySquare className="size-4" />}
         tone="violet"
       >
-        <SettingsItem
+        <ToggleSettingItem
+          id="playback-viewing-history"
           title="开启观看记录"
           description="自动记录您的观看进度，便于下次续播。"
-          control={
-            <Switch
-              checked={playback.isViewingHistoryEnabled}
-              onCheckedChange={checked => setPlaybackSettings({ isViewingHistoryEnabled: checked })}
-            />
-          }
+          checked={playback.isViewingHistoryEnabled}
+          onCheckedChange={checked => setPlaybackSettings({ isViewingHistoryEnabled: checked })}
         />
-        <SettingsItem
+        <ToggleSettingItem
+          id="playback-viewing-progress"
           title="详情页显示观看进度"
           description="在媒体详情页展示已观看剧集与当前进度。"
-          control={
-            <Switch
-              checked={playback.isViewingHistoryVisible}
-              onCheckedChange={checked => setPlaybackSettings({ isViewingHistoryVisible: checked })}
-            />
-          }
+          checked={playback.isViewingHistoryVisible}
+          onCheckedChange={checked => setPlaybackSettings({ isViewingHistoryVisible: checked })}
         />
-        <SettingsItem
+        <ToggleSettingItem
+          id="playback-auto-play"
           title="自动续播下一集"
           description="当前一集播放完毕后自动切换到下一集。"
-          control={
-            <Switch
-              checked={playback.isAutoPlayEnabled}
-              onCheckedChange={checked => setPlaybackSettings({ isAutoPlayEnabled: checked })}
-            />
-          }
+          checked={playback.isAutoPlayEnabled}
+          onCheckedChange={checked => setPlaybackSettings({ isAutoPlayEnabled: checked })}
         />
-        <SettingsItem
+        <ToggleSettingItem
+          id="playback-ad-filtering"
           title="跳过切片广告"
           description="尝试检测并跳过 #EXT-X-DISCONTINUITY 标记的广告片段。"
-          control={
-            <Switch
-              checked={adFilteringEnabled}
-              onCheckedChange={checked => setAdFilteringEnabled(checked)}
-            />
-          }
+          checked={adFilteringEnabled}
+          onCheckedChange={checked => setAdFilteringEnabled(checked)}
         />
       </SettingsSection>
 

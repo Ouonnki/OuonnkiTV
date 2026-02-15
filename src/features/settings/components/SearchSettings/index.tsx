@@ -16,6 +16,7 @@ export default function SearchSettings() {
       <SettingsItem
         title="开启搜索历史"
         description="记录你的搜索关键词，用于快捷回填。"
+        controlClassName="self-end mt-1"
         control={
           <Switch
             checked={search.isSearchHistoryEnabled}
@@ -26,6 +27,7 @@ export default function SearchSettings() {
       <SettingsItem
         title="显示搜索历史"
         description="在搜索框聚焦时展示历史关键词。"
+        controlClassName="self-end mt-1"
         control={
           <Switch
             checked={search.isSearchHistoryVisible}

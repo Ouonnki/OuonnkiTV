@@ -17,6 +17,7 @@ interface SettingsSectionProps {
   action?: ReactNode
   children: ReactNode
   className?: string
+  headerClassName?: string
   variant?: 'card' | 'flat'
   tone?: 'slate' | 'sky' | 'emerald' | 'violet' | 'amber' | 'rose' | 'cyan'
 }
@@ -27,6 +28,7 @@ interface SettingsItemProps {
   control?: ReactNode
   children?: ReactNode
   className?: string
+  controlClassName?: string
 }
 
 export function SettingsPageShell({
@@ -65,6 +67,7 @@ export function SettingsSection({
   action,
   children,
   className,
+  headerClassName,
   variant = 'card',
   tone = 'slate',
 }: SettingsSectionProps) {
@@ -124,7 +127,12 @@ export function SettingsSection({
           )}
         />
       ) : null}
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div
+        className={cn(
+          'mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between',
+          headerClassName,
+        )}
+      >
         <div className="flex items-start gap-3">
           {icon ? (
             <div
@@ -154,6 +162,7 @@ export function SettingsItem({
   control,
   children,
   className,
+  controlClassName,
 }: SettingsItemProps) {
   return (
     <div
@@ -166,7 +175,7 @@ export function SettingsItem({
         <p className="text-sm font-medium md:text-base">{title}</p>
         {description ? <p className="text-muted-foreground text-sm">{description}</p> : null}
       </div>
-      {control ? <div className="shrink-0">{control}</div> : null}
+      {control ? <div className={cn('shrink-0', controlClassName)}>{control}</div> : null}
       {children}
     </div>
   )

@@ -1,9 +1,10 @@
+import { useEffect, useRef, useState } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router'
 import { cn } from '@/shared/lib'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { ArrowLeft, Compass, FolderCog, Info, ListVideo, Play, Settings2 } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
 import { CustomAnimatedOutlet } from '@/shared/components/AnimatedOutlet'
 import { animationPresets } from '@/shared/lib/animationVariants'
 
@@ -11,6 +12,7 @@ const settingsModules = [
   {
     id: 'source',
     name: '视频源管理',
+    shortName: '视频源',
     icon: ListVideo,
     path: '/settings/source',
     description: '管理站点可用视频源，支持导入、导出、启停与参数编辑。',
@@ -22,6 +24,7 @@ const settingsModules = [
   {
     id: 'playback',
     name: '播放设置',
+    shortName: '播放',
     icon: Play,
     path: '/settings/playback',
     description: '按你的观看习惯组合播放行为与剧集展示方式。',
@@ -33,6 +36,7 @@ const settingsModules = [
   {
     id: 'system',
     name: '系统设置',
+    shortName: '系统',
     icon: Settings2,
     path: '/settings/system',
     description: '组合网络、搜索、主题与系统行为，统一管理应用偏好。',
@@ -44,6 +48,7 @@ const settingsModules = [
   {
     id: 'profile',
     name: '个人配置',
+    shortName: '配置',
     icon: FolderCog,
     path: '/settings/profile',
     description: '管理个人配置快照，支持导入、导出与一键恢复默认状态。',
@@ -55,6 +60,7 @@ const settingsModules = [
   {
     id: 'about',
     name: '关于项目',
+    shortName: '关于',
     icon: Info,
     path: '/settings/about',
     description: '查看项目概览、资源入口与版本迭代信息。',
@@ -73,99 +79,176 @@ const settingsModules = [
 export default function SettingsLayout() {
   const navigate = useNavigate()
   const location = useLocation()
+  const tabScrollRef = useRef<HTMLDivElement | null>(null)
+  const tabListRef = useRef<HTMLDivElement | null>(null)
+  const [edgeHint, setEdgeHint] = useState({ left: false, right: false })
   const activeModule =
     settingsModules.find(module => location.pathname.startsWith(module.path)) || settingsModules[0]
 
-  const renderTabs = (className?: string) => (
-    <div
-      className={cn(
-        'bg-muted relative inline-flex min-w-max items-center rounded-full p-1',
-        className,
-      )}
-    >
-      {settingsModules.map(module => {
-        const isActive = module.id === activeModule.id
+  useEffect(() => {
+    const scrollEl = tabScrollRef.current
+    const listEl = tabListRef.current
+    if (!scrollEl || !listEl) return
 
-        return (
-          <NavLink
-            key={module.id}
-            to={module.path}
-            className={cn(
-              'relative z-10 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition-colors',
-              isActive ? 'text-primary' : 'text-muted-foreground hover:text-primary/80',
-            )}
-          >
-            <module.icon className={cn('size-3.5', isActive ? module.iconClass : '')} />
-            <span className={cn('inline-block size-1.5 rounded-full', module.dotClass)} />
-            <span>{module.name}</span>
-            {isActive ? (
-              <motion.div
-                layoutId="settings-tab-indicator"
-                className="bg-background absolute inset-0 -z-10 rounded-full shadow-sm"
-                transition={{
-                  type: 'spring',
-                  stiffness: 400,
-                  damping: 30,
-                }}
-              />
-            ) : null}
-          </NavLink>
-        )
-      })}
-    </div>
+    const updateEdgeHint = () => {
+      const overflow = scrollEl.scrollWidth > scrollEl.clientWidth + 1
+      if (!overflow) {
+        setEdgeHint(prev => (prev.left || prev.right ? { left: false, right: false } : prev))
+        return
+      }
+
+      const maxScrollLeft = scrollEl.scrollWidth - scrollEl.clientWidth
+      const nextLeft = scrollEl.scrollLeft > 2
+      const nextRight = scrollEl.scrollLeft < maxScrollLeft - 2
+
+      setEdgeHint(prev =>
+        prev.left === nextLeft && prev.right === nextRight
+          ? prev
+          : { left: nextLeft, right: nextRight },
+      )
+    }
+
+    updateEdgeHint()
+    scrollEl.addEventListener('scroll', updateEdgeHint, { passive: true })
+    window.addEventListener('resize', updateEdgeHint)
+
+    const resizeObserver = new ResizeObserver(updateEdgeHint)
+    resizeObserver.observe(scrollEl)
+    resizeObserver.observe(listEl)
+
+    return () => {
+      scrollEl.removeEventListener('scroll', updateEdgeHint)
+      window.removeEventListener('resize', updateEdgeHint)
+      resizeObserver.disconnect()
+    }
+  }, [location.pathname])
+
+  const renderTabs = (className?: string) => (
+    <section className={cn('relative', className)}>
+      <div ref={tabScrollRef} className="scrollbar-hide overflow-x-auto">
+        <div
+          ref={tabListRef}
+          className="relative flex min-w-max items-center gap-3 border-b border-transparent md:gap-5"
+        >
+          {settingsModules.map(module => {
+            const isActive = module.id === activeModule.id
+
+            return (
+              <NavLink
+                key={module.id}
+                to={module.path}
+                data-module-id={module.id}
+                className="relative shrink-0 px-1 py-1.5 text-xs font-medium whitespace-nowrap md:py-2 md:text-sm"
+              >
+                <span
+                  className={cn(
+                    'inline-flex items-center gap-1.5 transition-colors',
+                    isActive ? 'text-foreground' : 'text-muted-foreground hover:text-foreground/80',
+                  )}
+                >
+                  <span className={cn('inline-block size-1.5 rounded-full', module.dotClass)} />
+                  <span>{module.name}</span>
+                </span>
+                {isActive ? (
+                  <motion.span
+                    layoutId="settings-tab-underline"
+                    className={cn(
+                      'absolute right-0 bottom-0 left-0 h-0.5 rounded-full',
+                      module.dotClass,
+                    )}
+                    transition={{ type: 'spring', stiffness: 420, damping: 38, mass: 0.35 }}
+                  />
+                ) : null}
+              </NavLink>
+            )
+          })}
+        </div>
+      </div>
+      <div
+        className={cn(
+          'from-sidebar via-sidebar/72 pointer-events-none absolute top-0 bottom-[3px] left-0 z-10 w-9 rounded-r-2xl bg-gradient-to-r to-transparent transition-opacity duration-300 ease-out',
+          edgeHint.left ? 'opacity-100' : 'opacity-0',
+        )}
+      />
+      <div
+        className={cn(
+          'from-sidebar via-sidebar/72 pointer-events-none absolute top-0 right-0 bottom-[3px] z-10 w-10 rounded-l-2xl bg-gradient-to-l to-transparent transition-opacity duration-300 ease-out',
+          edgeHint.right ? 'opacity-100' : 'opacity-0',
+        )}
+      />
+    </section>
   )
 
   return (
     <div className="min-h-[90vh] pb-8">
       <header className="border-border bg-sidebar/80 sticky top-0 z-20 border-b backdrop-blur-md">
-        <div className="py-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <Button variant="ghost" size="sm" className="shrink-0" onClick={() => navigate('/')}>
+        <div className="py-1.5 md:py-3">
+          <div className="flex flex-wrap items-center gap-1.5 md:gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 shrink-0 px-2 text-xs md:h-9 md:px-3 md:text-sm"
+              onClick={() => navigate('/')}
+            >
               <ArrowLeft />
               返回
             </Button>
 
-            <div className="min-w-0">
-              <h1 className="truncate text-base font-bold md:text-lg">设置中心</h1>
-              <p className="text-muted-foreground text-xs">管理播放与系统偏好</p>
+            <div className="min-w-0 flex-1 text-right md:flex-none md:text-left">
+              <h1 className="truncate text-base font-bold md:text-xl">设置中心</h1>
+              <p className="text-muted-foreground hidden text-xs md:block">管理播放与系统偏好</p>
             </div>
 
-            <div className="order-3 w-full overflow-x-auto pb-0.5 md:order-none md:ml-auto md:w-auto md:overflow-visible md:pb-0">
+            <div className="order-3 w-full md:order-none md:ml-auto md:flex md:w-[min(58vw,760px)] md:justify-end md:pr-3">
               {renderTabs()}
             </div>
           </div>
         </div>
       </header>
 
-      <main className="w-full px-3 pt-4 md:px-4">
-        {activeModule.showGuide !== false ? (
-          <section className="from-muted/35 to-muted/20 border-border/70 mb-4 rounded-xl border border-dashed bg-gradient-to-r px-4 py-3">
-            <div className="flex items-start gap-3">
-              <div className="bg-background text-muted-foreground flex size-8 shrink-0 items-center justify-center rounded-lg border">
-                <Compass className={cn('size-4', activeModule.iconClass)} />
-              </div>
+      <main className="w-full px-0 pt-2 md:px-4 md:pt-4">
+        <AnimatePresence initial={false} mode="wait">
+          {activeModule.showGuide !== false ? (
+            <motion.section
+              key={`guide-${activeModule.id}`}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.22, ease: [0.25, 0.1, 0.25, 1] }}
+              className="from-muted/35 to-muted/20 border-border/70 mb-4 rounded-xl border border-dashed bg-gradient-to-r px-3 py-2.5 md:px-4 md:py-3"
+            >
+              <div className="flex items-start gap-2.5 md:gap-3">
+                <div className="bg-background text-muted-foreground flex size-7 shrink-0 items-center justify-center rounded-lg border md:size-8">
+                  <Compass className={cn('size-3.5 md:size-4', activeModule.iconClass)} />
+                </div>
 
-              <div className="space-y-2">
-                <p className="text-muted-foreground text-[11px] font-medium tracking-wide uppercase">
-                  模块导览
-                </p>
-                <h2 className="text-base font-semibold md:text-lg">{activeModule.name}</h2>
-                <p className="text-muted-foreground text-sm">{activeModule.description}</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {activeModule.badges.map(label => (
-                    <Badge
-                      key={label}
-                      variant="outline"
-                      className={cn('font-normal', activeModule.badgeClass)}
-                    >
-                      {label}
-                    </Badge>
-                  ))}
+                <div className="min-w-0 flex-1 space-y-1.5 md:space-y-2">
+                  <p className="text-muted-foreground hidden text-[11px] font-medium tracking-wide uppercase md:block">
+                    模块导览
+                  </p>
+                  <h2 className="text-sm font-semibold md:text-lg">{activeModule.name}</h2>
+                  <p className="text-muted-foreground line-clamp-2 text-xs md:line-clamp-none md:text-sm">
+                    {activeModule.description}
+                  </p>
+                  <p className="text-muted-foreground text-[11px] md:hidden">
+                    {activeModule.badges.slice(0, 2).join(' · ')}
+                  </p>
+                  <div className="hidden flex-wrap gap-1.5 md:flex">
+                    {activeModule.badges.map(label => (
+                      <Badge
+                        key={label}
+                        variant="outline"
+                        className={cn('font-normal', activeModule.badgeClass)}
+                      >
+                        {label}
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
-          </section>
-        ) : null}
+            </motion.section>
+          ) : null}
+        </AnimatePresence>
 
         <CustomAnimatedOutlet variants={animationPresets.slideX} />
       </main>

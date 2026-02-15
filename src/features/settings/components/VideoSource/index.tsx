@@ -1,6 +1,6 @@
 import { Button } from '@/shared/components/ui/button'
 import { ScrollArea } from '@/shared/components/ui/scroll-area'
-import { CircleX, CircleCheckBig, ChevronRight } from 'lucide-react'
+import { CircleX, CircleCheckBig } from 'lucide-react'
 import { Switch } from '@/shared/components/ui/switch'
 import { cn } from '@/shared/lib'
 import { useRef, useState, useEffect } from 'react'
@@ -12,12 +12,12 @@ import { Badge } from '@/shared/components/ui/badge'
 import ActionDropdown from '@/shared/components/common/ActionDropdown'
 import VideoSourceForm from './VideoSourceForm'
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/shared/components/ui/dialog'
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/components/ui/select'
 import { v4 as uuidv4 } from 'uuid'
 import { URLSourceModal, TextSourceModal } from './ImportSourceModal'
 import { SettingsSection } from '../common'
@@ -51,6 +51,12 @@ export default function VideoSource() {
   // 确保 selectedIndex 在有效范围内，防止删除最后一个元素时数组越界
   const safeIndex = Math.min(selectedIndex, Math.max(0, showVideoAPIs.length - 1))
   const selectedSource = showVideoAPIs[safeIndex]
+  const selectSourceById = (sourceId: string) => {
+    const index = showVideoAPIs.findIndex(source => source.id === sourceId)
+    if (index >= 0) {
+      setSelectedIndex(index)
+    }
+  }
 
   // 如果 selectedIndex 超出范围，更新它 (可选，为了状态一致性)
   useEffect(() => {
@@ -165,6 +171,7 @@ export default function VideoSource() {
         description="在这里添加、编辑、导入、导出并控制视频源启用状态。"
         variant="flat"
         tone="sky"
+        headerClassName="flex-row items-start justify-between gap-2"
         action={
           <ActionDropdown
             label="添加源"
@@ -221,6 +228,51 @@ export default function VideoSource() {
           </Badge>
         </div>
 
+        <div className="bg-card/70 mb-3 rounded-xl p-3 md:hidden">
+          <div className="space-y-2">
+            <p className="text-muted-foreground text-xs">切换视频源</p>
+            <Select
+              value={selectedSource?.id}
+              onValueChange={value => {
+                selectSourceById(value)
+              }}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="选择视频源" />
+              </SelectTrigger>
+              <SelectContent>
+                {showVideoAPIs.map(source => (
+                  <SelectItem key={source.id} value={source.id}>
+                    <div className="flex min-w-0 items-center gap-2">
+                      <span className="max-w-52 truncate">{source.name}</span>
+                      <span
+                        className={cn(
+                          'inline-block size-1.5 rounded-full',
+                          source.isEnabled ? 'bg-emerald-500' : 'bg-zinc-400',
+                        )}
+                      />
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="bg-muted/35 flex items-center justify-between rounded-lg px-3 py-2">
+              <p className="text-muted-foreground text-xs">
+                已启用 {getSelectedAPIs().length}/{videoAPIs.length}
+              </p>
+              <Button
+                onClick={handleToggleAll}
+                variant="ghost"
+                size="sm"
+                disabled={showVideoAPIs.length === 0}
+                className="h-7 px-2 text-xs"
+              >
+                {isAllSelected ? '全部停用' : '全部启用'}
+              </Button>
+            </div>
+          </div>
+        </div>
+
         <div className="flex flex-col gap-4 md:flex-row">
           {/* Desktop: Sidebar List */}
           <div className="bg-card/70 hidden w-64 flex-col rounded-xl p-3 md:flex md:self-stretch">
@@ -246,13 +298,13 @@ export default function VideoSource() {
                 {showVideoAPIs.map((source, index) => (
                   <div
                     className={cn(
-                      'hover:bg-accent flex h-10 items-center justify-between rounded-md px-3 text-sm transition-colors',
+                      'hover:bg-accent flex h-10 items-center justify-between gap-2 rounded-md px-3 text-sm transition-colors',
                       selectedSource?.id === source.id ? 'bg-accent text-accent-foreground' : '',
                     )}
                     key={source.id}
                     onClick={() => setSelectedIndex(index)}
                   >
-                    <p>{source.name}</p>
+                    <p className="truncate">{source.name}</p>
                     <Switch
                       onClick={e => e.stopPropagation()}
                       onCheckedChange={() => setApiEnabled(source.id, !source.isEnabled)}
@@ -267,75 +319,19 @@ export default function VideoSource() {
           <div className="bg-card/70 flex flex-1 flex-col rounded-xl p-4">
             {selectedSource ? (
               <>
-                <div className="border-border flex items-center justify-between border-b pb-3">
-                  <div className="flex flex-col gap-1">
-                    <h3 className="text-lg font-semibold">{selectedSource.name}</h3>
+                <div className="border-border flex items-start justify-between gap-3 border-b pb-3">
+                  <div className="min-w-0 flex flex-col gap-1">
+                    <h3 className="truncate text-base font-semibold md:text-lg">
+                      {selectedSource.name}
+                    </h3>
                     <p className="text-muted-foreground text-xs">
-                      最后更新时间：
-                      {dayjs(selectedSource.updatedAt).format('YYYY-MM-DD HH:mm:ss')}
+                      更新于 {dayjs(selectedSource.updatedAt).format('YYYY-MM-DD HH:mm')}
                     </p>
                   </div>
-                  {/* Mobile: Source Switcher Button */}
-                  <div className="md:hidden">
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button variant="outline" size="sm">
-                          切换视频源
-                          <ChevronRight />
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>选择视频源</DialogTitle>
-                        </DialogHeader>
-                        <div className="flex items-center justify-between py-2">
-                          <p className="text-muted-foreground text-sm">
-                            已启用 {getSelectedAPIs().length}/{videoAPIs.length}
-                          </p>
-                          <Button
-                            onClick={handleToggleAll}
-                            variant="ghost"
-                            size="sm"
-                            disabled={showVideoAPIs.length === 0}
-                          >
-                            {isAllSelected ? '全部停用' : '全部启用'}
-                          </Button>
-                        </div>
-                        <ScrollArea className="h-[24rem] rounded-md pr-2">
-                          <div className="flex flex-col gap-2 rounded-md">
-                            {showVideoAPIs.map((source, index) => (
-                              <div
-                                className={cn(
-                                  'flex h-12 items-center justify-between rounded-md border border-transparent px-4 py-2 text-sm transition-colors hover:cursor-pointer',
-                                  selectedSource?.id === source.id
-                                    ? 'border-border bg-accent'
-                                    : 'hover:bg-accent/60',
-                                )}
-                                key={source.id}
-                                onClick={() => setSelectedIndex(index)}
-                              >
-                                <p
-                                  className={cn(
-                                    'font-medium',
-                                    selectedSource?.id === source.id ? 'text-primary' : '',
-                                  )}
-                                >
-                                  {source.name}
-                                </p>
-                                <Switch
-                                  onClick={e => e.stopPropagation()}
-                                  onCheckedChange={() =>
-                                    setApiEnabled(source.id, !source.isEnabled)
-                                  }
-                                  checked={source.isEnabled}
-                                />
-                              </div>
-                            ))}
-                          </div>
-                        </ScrollArea>
-                      </DialogContent>
-                    </Dialog>
-                  </div>
+                  <Switch
+                    checked={selectedSource.isEnabled}
+                    onCheckedChange={checked => setApiEnabled(selectedSource.id, checked)}
+                  />
                 </div>
                 <div className="mt-3">
                   <VideoSourceForm sourceInfo={selectedSource} />

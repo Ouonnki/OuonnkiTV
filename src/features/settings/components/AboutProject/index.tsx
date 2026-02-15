@@ -32,7 +32,7 @@ export default function AboutProject() {
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-2">
+            <div className="hidden flex-wrap gap-2 md:flex">
               <Badge variant="outline">当前版本 v{currentVersion}</Badge>
               <Badge variant="outline">累计发布 {updateHistory.length} 个版本</Badge>
             </div>

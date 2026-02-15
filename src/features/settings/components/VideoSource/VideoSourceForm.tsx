@@ -77,10 +77,10 @@ function InputFormItem<T extends FieldValues>({
   return (
     <Field>
       <div className="flex flex-col items-start gap-1">
-        <FieldLabel className="text-lg" htmlFor={id}>
+        <FieldLabel className="text-base md:text-lg" htmlFor={id}>
           {label}
         </FieldLabel>
-        <FieldDescription className="flex items-center gap-1">
+        <FieldDescription className="flex items-center gap-1 text-xs md:text-sm">
           <Info size={16} className="hidden md:block" />
           {description}
         </FieldDescription>
@@ -130,16 +130,16 @@ function VideoSourceFormItem<T extends FieldValues>({
       errors={errors}
       asChild
     >
-      <div className="flex items-center justify-between gap-5">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between md:gap-5">
         <Input
           placeholder="例如：source1"
           {...register('id' as Path<T>)}
           aria-invalid={errors['id'] ? true : false}
           disabled={isRandomId}
         />
-        <div className="flex w-40 items-center justify-end gap-2">
+        <div className="flex items-center gap-2 self-start md:self-auto">
           <Checkbox checked={isRandomId} onCheckedChange={handleRandomIdChange} />
-          <Label>使用随机ID</Label>
+          <Label className="text-xs md:text-sm">使用随机ID</Label>
         </div>
       </div>
     </InputFormItem>
@@ -225,7 +225,7 @@ export default function VideoSourceForm({ sourceInfo }: { sourceInfo: VideoApi }
       <div className="flex flex-col gap-4 pt-4">
         {/* 基本设置 */}
         <FieldSet>
-          <FieldLegend className="text-xl! font-semibold">基本信息</FieldLegend>
+          <FieldLegend className="text-lg! font-semibold md:text-xl!">基本信息</FieldLegend>
           <FieldDescription>视频源的基本信息</FieldDescription>
           <FieldGroup>
             <VideoSourceFormItem register={register} errors={errors} setValue={setValue} />
@@ -256,7 +256,7 @@ export default function VideoSourceForm({ sourceInfo }: { sourceInfo: VideoApi }
               type="url"
             />
             <Field orientation="horizontal">
-              <FieldLabel className="text-lg" htmlFor="isEnabled">
+              <FieldLabel className="text-base md:text-lg" htmlFor="isEnabled">
                 是否启用视频源
               </FieldLabel>
               <Controller
@@ -273,9 +273,9 @@ export default function VideoSourceForm({ sourceInfo }: { sourceInfo: VideoApi }
         {/* 高级设置 */}
         <FieldSet>
           <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-            <div className="flex items-center justify-between pb-6">
+            <div className="flex items-start justify-between gap-2 pb-6">
               <div>
-                <FieldLegend className="text-xl! font-semibold">高级设置</FieldLegend>
+                <FieldLegend className="text-lg! font-semibold md:text-xl!">高级设置</FieldLegend>
                 <FieldDescription>
                   视频源的高级设置，包括超时时间、重试次数等（可选）
                 </FieldDescription>
@@ -311,12 +311,12 @@ export default function VideoSourceForm({ sourceInfo }: { sourceInfo: VideoApi }
             </CollapsibleContent>
           </Collapsible>
         </FieldSet>
-        <div className="flex items-end justify-between">
+        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <span className="text-red-600 hover:cursor-pointer hover:text-red-500 hover:underline">
+              <Button variant="ghost" type="button" className="h-9 px-0 text-red-600 hover:text-red-500">
                 删除本视频源
-              </span>
+              </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
@@ -338,7 +338,7 @@ export default function VideoSourceForm({ sourceInfo }: { sourceInfo: VideoApi }
             </AlertDialogContent>
           </AlertDialog>
 
-          <Button variant="default" type="submit" className="shadow-2xl">
+          <Button variant="default" type="submit" className="h-9 w-full shadow-2xl sm:w-auto">
             保存
           </Button>
         </div>

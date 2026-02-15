@@ -52,12 +52,12 @@ export default function ThemeSettings() {
                 }}
                 onClick={() => handleModeChange(option.value)}
                 className={cn(
-                  'relative z-10 flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition-colors',
+                  'relative z-10 flex min-w-0 flex-1 items-center justify-center gap-1 rounded-full px-2 py-1.5 text-xs font-medium transition-colors sm:gap-1.5 sm:px-3 sm:text-sm',
                   isActive ? 'text-primary' : 'text-muted-foreground hover:text-primary/80',
                 )}
               >
-                <Icon className="size-3.5" />
-                <span>{option.label}</span>
+                <Icon className="size-3.5 shrink-0" />
+                <span className="whitespace-nowrap leading-none">{option.label}</span>
                 {isActive ? (
                   <motion.span
                     layoutId="theme-mode-indicator"

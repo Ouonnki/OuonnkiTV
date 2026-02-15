@@ -3,7 +3,7 @@ import SearchSettings from '../components/SearchSettings'
 import ThemeSettings from '../components/ThemeSettings'
 import { useSettingStore } from '@/shared/store/settingStore'
 import { Switch } from '@/shared/components/ui/switch'
-import { BellRing, Cog } from 'lucide-react'
+import { Cog } from 'lucide-react'
 import { SettingsItem, SettingsPageShell, SettingsSection } from '../components/common'
 
 /**
@@ -31,14 +31,12 @@ export default function SystemSettings() {
         <SettingsItem
           title="自动显示更新日志"
           description="检测到新版本时自动弹出更新说明窗口。"
+          controlClassName="self-end mt-1"
           control={
-            <div className="flex items-center gap-2">
-              <BellRing className="text-muted-foreground size-4" />
-              <Switch
-                checked={system.isUpdateLogEnabled}
-                onCheckedChange={checked => setSystemSettings({ isUpdateLogEnabled: checked })}
-              />
-            </div>
+            <Switch
+              checked={system.isUpdateLogEnabled}
+              onCheckedChange={checked => setSystemSettings({ isUpdateLogEnabled: checked })}
+            />
           }
         />
       </SettingsSection>
