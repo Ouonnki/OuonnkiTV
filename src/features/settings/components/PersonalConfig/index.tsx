@@ -35,6 +35,7 @@ export default function PersonalConfig() {
         title="配置管理"
         description="支持文件、URL、文本三种导入方式与两种导出方式。"
         icon={<Settings2 className="size-4" />}
+        tone="amber"
         action={
           <ActionDropdown
             label="配置操作"

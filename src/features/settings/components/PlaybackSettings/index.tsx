@@ -25,6 +25,7 @@ export default function PlaybackSettings() {
         title="播放行为"
         description="控制自动续播、观看记录和广告片段过滤。"
         icon={<PlaySquare className="size-4" />}
+        tone="violet"
       >
         <SettingsItem
           title="开启观看记录"
@@ -72,6 +73,7 @@ export default function PlaybackSettings() {
         title="剧集展示"
         description="定义详情页剧集列表排序与信息呈现方式。"
         icon={<ListFilter className="size-4" />}
+        tone="amber"
       >
         <SettingsItem
           title="剧集默认显示顺序"

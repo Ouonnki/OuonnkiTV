@@ -26,6 +26,7 @@ export default function SystemSettings() {
         title="系统行为"
         description="控制系统级交互与提示策略。"
         icon={<Cog className="size-4" />}
+        tone="cyan"
       >
         <SettingsItem
           title="自动显示更新日志"

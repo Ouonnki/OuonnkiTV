@@ -26,6 +26,7 @@ export default function ThemeSettings() {
       title="主题设置"
       description="选择你偏好的显示模式，支持跟随系统与动画切换。"
       icon={<Palette className="size-4" />}
+      tone="rose"
       action={
         <Badge variant="secondary">
           当前：{mode === 'system' ? '系统' : mode === 'light' ? '亮色' : '暗色'}

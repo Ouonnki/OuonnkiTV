@@ -34,30 +34,30 @@ export default function AboutProject() {
 
             <div className="flex flex-wrap gap-2">
               <Badge variant="outline">当前版本 v{currentVersion}</Badge>
-              <Badge variant="outline">累计 {updateHistory.length} 次迭代</Badge>
+              <Badge variant="outline">累计发布 {updateHistory.length} 个版本</Badge>
             </div>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="bg-muted/35 rounded-xl px-4 py-3">
               <p className="text-muted-foreground text-xs">最近版本</p>
-              <p className="mt-1 text-base font-semibold">v{currentVersion}</p>
-            </div>
-            <div className="bg-muted/35 rounded-xl px-4 py-3">
-              <p className="text-muted-foreground text-xs">版本迭代</p>
-              <p className="mt-1 text-base font-semibold">{updateHistory.length} 次</p>
-            </div>
-            <div className="bg-muted/35 rounded-xl px-4 py-3">
-              <p className="text-muted-foreground text-xs">最新主题</p>
               <p className="mt-1 truncate text-sm font-semibold">
-                {latestUpdate?.title ?? '版本更新'}
+                {latestUpdate ? `v${currentVersion} · ${latestUpdate.title}` : `v${currentVersion}`}
               </p>
+            </div>
+            <div className="bg-muted/35 rounded-xl px-4 py-3">
+              <p className="text-muted-foreground text-xs">累计发布版本</p>
+              <p className="mt-1 text-base font-semibold">{updateHistory.length} 个版本</p>
+            </div>
+            <div className="bg-muted/35 rounded-xl px-4 py-3">
+              <p className="text-muted-foreground text-xs">最近更新日期</p>
+              <p className="mt-1 text-base font-semibold">{latestUpdate?.date ?? '-'}</p>
             </div>
           </div>
         </div>
       </section>
 
-      <SettingsSection title="项目资源" description="查看仓库代码与版本更新记录。">
+      <SettingsSection title="项目资源" description="查看仓库代码与版本更新记录。" tone="violet">
         <div className="grid gap-3 md:grid-cols-2">
           <a
             href="https://github.com/ouonnki/OuonnkiTV"
@@ -71,7 +71,7 @@ export default function AboutProject() {
               </div>
               <div className="space-y-0.5">
                 <p className="text-sm font-semibold">项目仓库</p>
-                <p className="text-muted-foreground text-xs">查看源码与开发进展</p>
+                <p className="text-muted-foreground text-xs">查看源码与开发进展，欢迎点个 Star 支持</p>
               </div>
             </div>
           </a>
@@ -94,14 +94,14 @@ export default function AboutProject() {
         </div>
       </SettingsSection>
 
-      <SettingsSection title="项目理念" description="统一体验、稳定播放、可持续扩展。">
+      <SettingsSection title="项目理念" description="高效交互、美观界面与稳定播放并重。" tone="cyan">
         <div className="bg-muted/30 rounded-xl p-4">
           <div className="mb-2 flex items-center gap-2">
             <Sparkles className="text-muted-foreground size-4" />
             <p className="text-sm font-medium">设计方向</p>
           </div>
           <p className="text-muted-foreground text-sm leading-6">
-            持续围绕“聚合优先、播放优先、模块优先”三条主线迭代，确保功能扩展时仍保持一致交互和清晰信息层级。
+            项目持续围绕高效的 UX 交互、美观一致的 UI 设计与稳定流畅的播放体验迭代，确保功能扩展时依然保持易用、清晰和可靠。
           </p>
         </div>
       </SettingsSection>

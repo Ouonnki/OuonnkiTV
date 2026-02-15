@@ -11,6 +11,7 @@ export default function NetworkSettings() {
       title="网络设置"
       description="配置全局请求超时与失败重试策略。"
       icon={<CloudLightning className="size-4" />}
+      tone="sky"
     >
       <SettingsItem
         title="默认超时时间（ms）"

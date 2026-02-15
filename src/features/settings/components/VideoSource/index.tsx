@@ -164,6 +164,7 @@ export default function VideoSource() {
         title="视频源列表"
         description="在这里添加、编辑、导入、导出并控制视频源启用状态。"
         variant="flat"
+        tone="sky"
         action={
           <ActionDropdown
             label="添加源"
@@ -209,10 +210,15 @@ export default function VideoSource() {
         }
       >
         <div className="mb-2 flex flex-wrap items-center gap-2">
-          <Badge variant="secondary">
+          <Badge variant="secondary" className="bg-sky-500/14 text-sky-700 dark:text-sky-300">
             已启用 {getSelectedAPIs().length}/{videoAPIs.length}
           </Badge>
-          <Badge variant="outline">支持文件 / URL / 文本导入</Badge>
+          <Badge
+            variant="outline"
+            className="border-cyan-500/35 bg-cyan-500/8 text-cyan-700 dark:text-cyan-300"
+          >
+            支持文件 / URL / 文本导入
+          </Badge>
         </div>
 
         <div className="flex flex-col gap-4 md:flex-row">

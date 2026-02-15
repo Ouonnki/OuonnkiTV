@@ -15,6 +15,9 @@ const settingsModules = [
     path: '/settings/source',
     description: '管理站点可用视频源，支持导入、导出、启停与参数编辑。',
     badges: ['源列表', '导入导出', '启用策略'],
+    dotClass: 'bg-sky-500',
+    iconClass: 'text-sky-700 dark:text-sky-300',
+    badgeClass: 'border-sky-500/28 text-sky-700 dark:text-sky-300',
   },
   {
     id: 'playback',
@@ -23,6 +26,9 @@ const settingsModules = [
     path: '/settings/playback',
     description: '按你的观看习惯组合播放行为与剧集展示方式。',
     badges: ['播放行为', '剧集排序', '体验优化'],
+    dotClass: 'bg-violet-500',
+    iconClass: 'text-violet-700 dark:text-violet-300',
+    badgeClass: 'border-violet-500/28 text-violet-700 dark:text-violet-300',
   },
   {
     id: 'system',
@@ -31,6 +37,9 @@ const settingsModules = [
     path: '/settings/system',
     description: '组合网络、搜索、主题与系统行为，统一管理应用偏好。',
     badges: ['网络', '搜索', '主题', '系统行为'],
+    dotClass: 'bg-emerald-500',
+    iconClass: 'text-emerald-700 dark:text-emerald-300',
+    badgeClass: 'border-emerald-500/28 text-emerald-700 dark:text-emerald-300',
   },
   {
     id: 'profile',
@@ -39,6 +48,9 @@ const settingsModules = [
     path: '/settings/profile',
     description: '管理个人配置快照，支持导入、导出与一键恢复默认状态。',
     badges: ['配置快照', '导入导出', '恢复默认'],
+    dotClass: 'bg-amber-500',
+    iconClass: 'text-amber-700 dark:text-amber-300',
+    badgeClass: 'border-amber-500/28 text-amber-700 dark:text-amber-300',
   },
   {
     id: 'about',
@@ -48,6 +60,9 @@ const settingsModules = [
     description: '查看项目概览、资源入口与版本迭代信息。',
     badges: ['项目概览', '版本信息', '资源入口'],
     showGuide: false,
+    dotClass: 'bg-rose-500',
+    iconClass: 'text-rose-700 dark:text-rose-300',
+    badgeClass: 'border-rose-500/28 text-rose-700 dark:text-rose-300',
   },
 ]
 
@@ -80,7 +95,8 @@ export default function SettingsLayout() {
               isActive ? 'text-primary' : 'text-muted-foreground hover:text-primary/80',
             )}
           >
-            <module.icon className="size-3.5" />
+            <module.icon className={cn('size-3.5', isActive ? module.iconClass : '')} />
+            <span className={cn('inline-block size-1.5 rounded-full', module.dotClass)} />
             <span>{module.name}</span>
             {isActive ? (
               <motion.div
@@ -126,7 +142,7 @@ export default function SettingsLayout() {
           <section className="from-muted/35 to-muted/20 border-border/70 mb-4 rounded-xl border border-dashed bg-gradient-to-r px-4 py-3">
             <div className="flex items-start gap-3">
               <div className="bg-background text-muted-foreground flex size-8 shrink-0 items-center justify-center rounded-lg border">
-                <Compass className="size-4" />
+                <Compass className={cn('size-4', activeModule.iconClass)} />
               </div>
 
               <div className="space-y-2">
@@ -137,7 +153,11 @@ export default function SettingsLayout() {
                 <p className="text-muted-foreground text-sm">{activeModule.description}</p>
                 <div className="flex flex-wrap gap-1.5">
                   {activeModule.badges.map(label => (
-                    <Badge key={label} variant="outline" className="font-normal">
+                    <Badge
+                      key={label}
+                      variant="outline"
+                      className={cn('font-normal', activeModule.badgeClass)}
+                    >
                       {label}
                     </Badge>
                   ))}

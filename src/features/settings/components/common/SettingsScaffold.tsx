@@ -18,6 +18,7 @@ interface SettingsSectionProps {
   children: ReactNode
   className?: string
   variant?: 'card' | 'flat'
+  tone?: 'slate' | 'sky' | 'emerald' | 'violet' | 'amber' | 'rose' | 'cyan'
 }
 
 interface SettingsItemProps {
@@ -65,15 +66,73 @@ export function SettingsSection({
   children,
   className,
   variant = 'card',
+  tone = 'slate',
 }: SettingsSectionProps) {
+  const toneStyles = {
+    slate: {
+      section: '',
+      line: 'from-zinc-400/28 to-transparent',
+      icon: 'bg-muted/70 text-muted-foreground ring-zinc-400/20',
+    },
+    sky: {
+      section: '',
+      line: 'from-sky-500/30 to-transparent',
+      icon: 'bg-muted/70 text-sky-700 dark:text-sky-300 ring-sky-500/25',
+    },
+    emerald: {
+      section: '',
+      line: 'from-emerald-500/30 to-transparent',
+      icon: 'bg-muted/70 text-emerald-700 dark:text-emerald-300 ring-emerald-500/25',
+    },
+    violet: {
+      section: '',
+      line: 'from-violet-500/30 to-transparent',
+      icon: 'bg-muted/70 text-violet-700 dark:text-violet-300 ring-violet-500/25',
+    },
+    amber: {
+      section: '',
+      line: 'from-amber-500/32 to-transparent',
+      icon: 'bg-muted/70 text-amber-700 dark:text-amber-300 ring-amber-500/25',
+    },
+    rose: {
+      section: '',
+      line: 'from-rose-500/30 to-transparent',
+      icon: 'bg-muted/70 text-rose-700 dark:text-rose-300 ring-rose-500/25',
+    },
+    cyan: {
+      section: '',
+      line: 'from-cyan-500/30 to-transparent',
+      icon: 'bg-muted/70 text-cyan-700 dark:text-cyan-300 ring-cyan-500/25',
+    },
+  }[tone]
+
   return (
     <section
-      className={cn(variant === 'card' ? 'bg-card/70 rounded-xl p-4 md:p-5' : 'p-0', className)}
+      className={cn(
+        variant === 'card'
+          ? 'bg-card/70 relative overflow-hidden rounded-xl p-4 md:p-5'
+          : 'relative p-0',
+        variant === 'card' ? toneStyles.section : '',
+        className,
+      )}
     >
+      {variant === 'card' ? (
+        <span
+          className={cn(
+            'pointer-events-none absolute inset-x-4 top-0 h-px bg-gradient-to-r md:inset-x-5',
+            toneStyles.line,
+          )}
+        />
+      ) : null}
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-start gap-3">
           {icon ? (
-            <div className="bg-muted text-muted-foreground mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg">
+            <div
+              className={cn(
+                'mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg ring-1',
+                toneStyles.icon,
+              )}
+            >
               {icon}
             </div>
           ) : null}

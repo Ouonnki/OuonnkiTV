@@ -11,6 +11,7 @@ export default function SearchSettings() {
       title="搜索设置"
       description="管理关键词历史记录与搜索入口体验。"
       icon={<Search className="size-4" />}
+      tone="emerald"
     >
       <SettingsItem
         title="开启搜索历史"
