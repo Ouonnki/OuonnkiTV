@@ -12,6 +12,7 @@ import {
 import { ChevronDown } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
 import { type ReactNode } from 'react'
+import { cn } from '@/shared/lib'
 
 export interface DropdownItem {
   label: string
@@ -25,9 +26,17 @@ interface ActionDropdownProps {
   label: string | ReactNode
   items: DropdownItem[]
   align?: 'start' | 'end' | 'center'
+  buttonSize?: 'default' | 'sm' | 'lg' | 'icon' | 'xs'
+  buttonClassName?: string
 }
 
-export default function ActionDropdown({ label, items, align = 'end' }: ActionDropdownProps) {
+export default function ActionDropdown({
+  label,
+  items,
+  align = 'end',
+  buttonSize = 'default',
+  buttonClassName,
+}: ActionDropdownProps) {
   const renderItem = (item: DropdownItem, index: number) => {
     if (item.type === 'sub' && item.children) {
       return (
@@ -36,7 +45,7 @@ export default function ActionDropdown({ label, items, align = 'end' }: ActionDr
             {item.label}
           </DropdownMenuSubTrigger>
           <DropdownMenuPortal>
-            <DropdownMenuSubContent className="bg-white/10 backdrop-blur-lg">
+            <DropdownMenuSubContent>
               {item.children.map((child, childIndex) => renderItem(child, childIndex))}
             </DropdownMenuSubContent>
           </DropdownMenuPortal>
@@ -58,11 +67,11 @@ export default function ActionDropdown({ label, items, align = 'end' }: ActionDr
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" className="bg-white/40 backdrop-blur-xl hover:bg-gray-100/50">
+        <Button variant="outline" size={buttonSize} className={cn(buttonClassName)}>
           {label} <ChevronDown className="ml-2 h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-40 bg-white/10 backdrop-blur-lg" align={align}>
+      <DropdownMenuContent className="w-44" align={align}>
         <DropdownMenuGroup>{items.map((item, index) => renderItem(item, index))}</DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>

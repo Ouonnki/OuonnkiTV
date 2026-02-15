@@ -20,6 +20,9 @@ const TmdbDetailView = lazy(() => import('@/features/media/views/TmdbDetailView'
 const SourceSettings = lazy(() => import('@/features/settings/views/SourceSettings'))
 const PlaybackSettings = lazy(() => import('@/features/settings/views/PlaybackSettings'))
 const SystemSettings = lazy(() => import('@/features/settings/views/SystemSettings'))
+const PersonalConfigSettings = lazy(
+  () => import('@/features/settings/views/PersonalConfigSettings'),
+)
 const AboutSettings = lazy(() => import('@/features/settings/views/AboutSettings'))
 
 // Player views
@@ -138,6 +141,14 @@ const router = createBrowserRouter([
             element: (
               <SuspenseWrapper>
                 <SystemSettings />
+              </SuspenseWrapper>
+            ),
+          },
+          {
+            path: 'profile',
+            element: (
+              <SuspenseWrapper>
+                <PersonalConfigSettings />
               </SuspenseWrapper>
             ),
           },

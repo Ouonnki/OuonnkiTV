@@ -1,42 +1,57 @@
 import { Input } from '@/shared/components/ui/input'
-import { Label } from '@/shared/components/ui/label'
+import { CloudLightning, RefreshCw, Timer } from 'lucide-react'
 import { useSettingStore } from '@/shared/store/settingStore'
+import { SettingsItem, SettingsSection } from '../common'
 
 export default function NetworkSettings() {
   const { network, setNetworkSettings } = useSettingStore()
 
   return (
-    <div className="flex flex-col gap-6 px-4 md:px-0">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-xl font-semibold text-gray-800">网络设置</h1>
-        <p className="text-xs text-gray-500">配置全局的网络请求默认参数</p>
-      </div>
-
-      <div className="rounded-lg border border-gray-200 bg-white/40 p-4 backdrop-blur-md md:p-6">
-        <div className="flex flex-col gap-6">
-          <div className="grid w-full max-w-sm items-center gap-1.5">
-            <Label htmlFor="timeout">默认超时时间 (ms)</Label>
+    <SettingsSection
+      title="网络设置"
+      description="配置全局请求超时与失败重试策略。"
+      icon={<CloudLightning className="size-4" />}
+    >
+      <SettingsItem
+        title="默认超时时间（ms）"
+        description="未单独配置超时的视频源将使用此值。"
+        control={
+          <div className="relative w-full sm:w-48">
+            <Timer className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
             <Input
               type="number"
               id="timeout"
+              min={300}
+              step={100}
+              className="pl-9"
               value={network.defaultTimeout}
-              onChange={e => setNetworkSettings({ defaultTimeout: parseInt(e.target.value) || 0 })}
+              onChange={e =>
+                setNetworkSettings({ defaultTimeout: Number.parseInt(e.target.value, 10) || 0 })
+              }
             />
-            <p className="text-xs text-gray-500">所有没有单独设置超时时间的视频源将使用此默认值</p>
           </div>
-
-          <div className="grid w-full max-w-sm items-center gap-1.5">
-            <Label htmlFor="retry">默认重试次数</Label>
+        }
+      />
+      <SettingsItem
+        title="默认重试次数"
+        description="请求失败后自动重试的最大次数。"
+        control={
+          <div className="relative w-full sm:w-48">
+            <RefreshCw className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
             <Input
               type="number"
               id="retry"
+              min={0}
+              max={10}
+              className="pl-9"
               value={network.defaultRetry}
-              onChange={e => setNetworkSettings({ defaultRetry: parseInt(e.target.value) || 0 })}
+              onChange={e =>
+                setNetworkSettings({ defaultRetry: Number.parseInt(e.target.value, 10) || 0 })
+              }
             />
-            <p className="text-xs text-gray-500">请求失败时的自动重试次数</p>
           </div>
-        </div>
-      </div>
-    </div>
+        }
+      />
+    </SettingsSection>
   )
 }

@@ -10,6 +10,7 @@ import {
 import { Button } from '@/shared/components/ui/button'
 import { Label } from '@/shared/components/ui/label'
 import { Input } from '@/shared/components/ui/input'
+import { Textarea } from '@/shared/components/ui/textarea'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -17,6 +18,7 @@ import { useState } from 'react'
 import { useApiStore } from '@/shared/store/apiStore'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
+import { cn } from '@/shared/lib'
 
 export function URLSourceModal({
   open,
@@ -26,7 +28,7 @@ export function URLSourceModal({
   onOpenChange: (open: boolean) => void
 }) {
   const urlSchema = z.object({
-    url: z.string().regex(/^(http|https):\/\/.*\.json$/, '请输入有效的URL,且以.json结尾'),
+    url: z.string().regex(/^(http|https):\/\/.*\.json$/, '请输入有效的 URL，且以 .json 结尾'),
   })
 
   type URLSchema = z.infer<typeof urlSchema>
@@ -41,7 +43,6 @@ export function URLSourceModal({
     resolver: zodResolver(urlSchema),
   })
 
-  // 提交
   const onSubmit = async (data: URLSchema) => {
     setIsLoading(true)
     try {
@@ -68,27 +69,30 @@ export function URLSourceModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="h-fit bg-white/20 backdrop-blur-md"
-        overlayClassName="bg-white/40 backdrop-blur-xs"
-      >
+      <DialogContent className="h-fit sm:max-w-md">
         <DialogHeader>
           <DialogTitle>从 URL 导入视频源</DialogTitle>
-          <DialogDescription>请输入有效的 URL，即 JSON 文件的直链 URL</DialogDescription>
+          <DialogDescription>请输入有效的 URL，即 JSON 文件的直链地址。</DialogDescription>
         </DialogHeader>
+
         <form onSubmit={handleSubmit(onSubmit)}>
-          <div className="grid gap-4 pb-6">
-            <div className="grid gap-3">
-              <Label htmlFor="url">URL</Label>
+          <div className="grid gap-4 py-1">
+            <div className="grid gap-2">
+              <Label htmlFor="url">URL 地址</Label>
               <Input
                 id="url"
                 {...register('url')}
                 placeholder="https://example.com/source.json"
-                className={errors.url ? 'border-red-500' : ''}
+                className={cn(errors.url && 'border-destructive focus-visible:ring-destructive/30')}
               />
-              {errors.url && <p className="text-sm text-red-500">{errors.url.message}</p>}
+              {errors.url && <p className="text-destructive text-sm">{errors.url.message}</p>}
+            </div>
+
+            <div className="text-muted-foreground bg-muted/30 rounded-md border border-dashed px-3 py-2 text-xs">
+              导入后会自动进行字段校验，并跳过重复数据。
             </div>
           </div>
+
           <DialogFooter>
             <DialogClose asChild>
               <Button type="button" variant="outline" onClick={() => reset()}>
@@ -96,7 +100,7 @@ export function URLSourceModal({
               </Button>
             </DialogClose>
             <Button type="submit" disabled={isLoading}>
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isLoading && <Loader2 className="mr-2 size-4 animate-spin" />}
               导入
             </Button>
           </DialogFooter>
@@ -105,8 +109,6 @@ export function URLSourceModal({
     </Dialog>
   )
 }
-
-import { Textarea } from '@/shared/components/ui/textarea'
 
 export function TextSourceModal({
   open,
@@ -158,27 +160,31 @@ export function TextSourceModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="h-fit bg-white/20 backdrop-blur-md"
-        overlayClassName="bg-white/40 backdrop-blur-xs"
-      >
+      <DialogContent className="h-fit max-h-[85vh] sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>从文本导入视频源</DialogTitle>
-          <DialogDescription>请粘贴 JSON 格式的视频源配置数组</DialogDescription>
+          <DialogDescription>请粘贴 JSON 数组格式的视频源配置内容。</DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <div className="grid gap-4 pb-6">
-            <div className="grid gap-3">
+
+        <form onSubmit={handleSubmit(onSubmit)} className="flex min-h-0 flex-col">
+          <div className="grid min-h-0 gap-4 overflow-y-auto py-2 pr-1">
+            <div className="grid gap-2">
               <Label htmlFor="content">JSON 内容</Label>
               <Textarea
                 id="content"
                 {...register('content')}
-                placeholder='[{"name": "example", "url": "..."}]'
-                className={`max-h-50 min-h-50 md:max-h-100 ${errors.content ? 'border-red-500' : ''}`}
+                placeholder='[{"name": "示例源", "url": "https://example.com"}]'
+                className={cn(
+                  'h-[38vh] max-h-[52vh] min-h-[220px] font-mono text-xs leading-5',
+                  errors.content && 'border-destructive focus-visible:ring-destructive/30',
+                )}
               />
-              {errors.content && <p className="text-sm text-red-500">{errors.content.message}</p>}
+              {errors.content && (
+                <p className="text-destructive text-sm">{errors.content.message}</p>
+              )}
             </div>
           </div>
+
           <DialogFooter>
             <DialogClose asChild>
               <Button type="button" variant="outline" onClick={() => reset()}>

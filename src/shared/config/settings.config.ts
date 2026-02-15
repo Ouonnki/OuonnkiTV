@@ -31,6 +31,7 @@ export const DEFAULT_SETTINGS = {
       import.meta.env.VITE_AD_FILTERING_ENABLED !== 'false',
   },
   system: {
-    isUpdateLogEnabled: envSettings?.system?.isUpdateLogEnabled ?? true,
+    isUpdateLogEnabled:
+      envSettings?.system?.isUpdateLogEnabled ?? import.meta.env.VITE_UPDATE_LOG_ENABLED === 'true',
   },
 }

@@ -1,4 +1,8 @@
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/shared/components/ui/collapsible'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/shared/components/ui/collapsible'
 import {
   Field,
   FieldDescription,
@@ -314,10 +318,7 @@ export default function VideoSourceForm({ sourceInfo }: { sourceInfo: VideoApi }
                 删除本视频源
               </span>
             </AlertDialogTrigger>
-            <AlertDialogContent
-              className="h-fit bg-white/20 backdrop-blur-md"
-              overlayClassName="bg-white/40 backdrop-blur-xs"
-            >
+            <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle>确定要删除本视频源吗？</AlertDialogTitle>
                 <AlertDialogDescription>
@@ -326,12 +327,10 @@ export default function VideoSourceForm({ sourceInfo }: { sourceInfo: VideoApi }
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel className="border-0 bg-transparent shadow-none outline-0 hover:bg-transparent hover:text-gray-600">
-                  取消
-                </AlertDialogCancel>
+                <AlertDialogCancel>取消</AlertDialogCancel>
                 <AlertDialogAction
+                  variant="destructive"
                   onClick={() => handleDelete(sourceInfo.id)}
-                  className="bg-red-600 hover:bg-red-500"
                 >
                   确定删除
                 </AlertDialogAction>

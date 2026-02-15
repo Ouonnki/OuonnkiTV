@@ -86,12 +86,25 @@ export const useApiStore = create<ApiStore>()(
         addAndUpdateVideoAPI: (api: VideoSource) => {
           set(state => {
             const store = toSourceStore(state)
+            const isExisting = store.sources.some(
+              s => s.id === api.id || (s.name === api.name && s.url === api.url),
+            )
             // addSource会自动处理添加或更新
             const newStore = addSource(store, {
               ...api,
               updatedAt: new Date(),
             })
-            state.videoAPIs = fromSourceStore(newStore)
+            const nextSources = fromSourceStore(newStore)
+
+            // 新增源默认置顶；更新源保持原有顺序
+            if (!isExisting) {
+              const inserted = nextSources.find(source => source.id === api.id)
+              state.videoAPIs = inserted
+                ? [inserted, ...nextSources.filter(source => source.id !== inserted.id)]
+                : nextSources
+            } else {
+              state.videoAPIs = nextSources
+            }
           })
         },
 

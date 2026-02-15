@@ -8,6 +8,7 @@ import { toast } from 'sonner'
 import { useApiStore } from '@/shared/store/apiStore'
 import { useSettingStore } from '@/shared/store/settingStore'
 import dayjs from 'dayjs'
+import { Badge } from '@/shared/components/ui/badge'
 import ActionDropdown from '@/shared/components/common/ActionDropdown'
 import VideoSourceForm from './VideoSourceForm'
 import {
@@ -19,6 +20,7 @@ import {
 } from '@/shared/components/ui/dialog'
 import { v4 as uuidv4 } from 'uuid'
 import { URLSourceModal, TextSourceModal } from './ImportSourceModal'
+import { SettingsSection } from '../common'
 
 export default function VideoSource() {
   // 视频源
@@ -59,8 +61,7 @@ export default function VideoSource() {
 
   // 添加视频源
   const addVideoSource = () => {
-    setShowVideoAPIs([
-      ...showVideoAPIs,
+    setShowVideoAPIs(prev => [
       {
         id: uuidv4(),
         name: '新增源',
@@ -71,8 +72,9 @@ export default function VideoSource() {
         isEnabled: true,
         updatedAt: new Date(),
       },
+      ...prev,
     ])
-    setSelectedIndex(showVideoAPIs.length)
+    setSelectedIndex(0)
   }
   // 导入 input ref
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -158,14 +160,11 @@ export default function VideoSource() {
     <>
       <URLSourceModal open={urlSourceModalOpen} onOpenChange={setUrlSourceModalOpen} />
       <TextSourceModal open={textSourceModalOpen} onOpenChange={setTextSourceModalOpen} />
-      <div className="flex flex-col gap-2">
-        <div className="flex items-end justify-between gap-5 px-4 md:px-0">
-          <div className="flex flex-col gap-1 md:pl-2">
-            <h1 className="text-md font-semibold text-gray-700">视频源列表</h1>
-            <p className="text-xs text-gray-400">
-              您可以在下列视频源中添加、删除、编辑和启用视频源
-            </p>
-          </div>
+      <SettingsSection
+        title="视频源列表"
+        description="在这里添加、编辑、导入、导出并控制视频源启用状态。"
+        variant="flat"
+        action={
           <ActionDropdown
             label="添加源"
             items={[
@@ -207,36 +206,42 @@ export default function VideoSource() {
               },
             ]}
           />
+        }
+      >
+        <div className="mb-2 flex flex-wrap items-center gap-2">
+          <Badge variant="secondary">
+            已启用 {getSelectedAPIs().length}/{videoAPIs.length}
+          </Badge>
+          <Badge variant="outline">支持文件 / URL / 文本导入</Badge>
         </div>
-        <div className="flex flex-col md:flex-row">
+
+        <div className="flex flex-col gap-4 md:flex-row">
           {/* Desktop: Sidebar List */}
-          <div className="hidden w-60 flex-col md:flex">
-            <div className="flex items-center justify-between px-4 py-2">
-              <p className="text-sm text-gray-500">
-                已启用 {getSelectedAPIs().length}/{videoAPIs.length}
-              </p>
+          <div className="bg-card/70 hidden w-64 flex-col rounded-xl p-3 md:flex md:self-stretch">
+            <div className="flex items-center justify-between px-1 py-2">
+              <p className="text-muted-foreground text-sm">源列表 ({showVideoAPIs.length})</p>
               <Button
                 onClick={handleToggleAll}
                 variant="ghost"
+                size="sm"
                 disabled={showVideoAPIs.length === 0}
-                className="hover:bg-white/40 hover:backdrop-blur-xl"
               >
                 {isAllSelected ? <CircleX /> : <CircleCheckBig />}
                 {isAllSelected ? '全部停用' : '全部启用'}
               </Button>
             </div>
-            <ScrollArea className="border-t border-gray-300/40 py-4 pr-3">
-              <div className="flex max-h-155 flex-col gap-2 text-gray-700">
+            <ScrollArea className="border-border flex-1 border-t py-3 pr-2">
+              <div className="flex flex-col gap-2">
                 {showVideoAPIs.length === 0 && (
-                  <div className="flex h-full items-center justify-center">
+                  <div className="text-muted-foreground flex h-24 items-center justify-center text-sm">
                     <p>暂无视频源</p>
                   </div>
                 )}
                 {showVideoAPIs.map((source, index) => (
                   <div
                     className={cn(
-                      'flex h-10 items-center justify-between rounded-md p-4 hover:cursor-pointer hover:bg-white/20 hover:backdrop-blur-xl',
-                      selectedSource?.id === source.id ? 'bg-white/40 backdrop-blur-xl' : '',
+                      'hover:bg-accent flex h-10 items-center justify-between rounded-md px-3 text-sm transition-colors',
+                      selectedSource?.id === source.id ? 'bg-accent text-accent-foreground' : '',
                     )}
                     key={source.id}
                     onClick={() => setSelectedIndex(index)}
@@ -253,13 +258,13 @@ export default function VideoSource() {
             </ScrollArea>
           </div>
 
-          <div className="flex h-full flex-1 flex-col border-t border-gray-300/40 p-4 backdrop-blur-xl md:border-t-0 md:border-l">
+          <div className="bg-card/70 flex flex-1 flex-col rounded-xl p-4">
             {selectedSource ? (
               <>
-                <div className="flex items-center justify-between border-b border-gray-300/40 pb-2">
+                <div className="border-border flex items-center justify-between border-b pb-3">
                   <div className="flex flex-col gap-1">
-                    <h1 className="text-xl font-semibold text-gray-800">{selectedSource.name}</h1>
-                    <p className="text-xs text-gray-500">
+                    <h3 className="text-lg font-semibold">{selectedSource.name}</h3>
+                    <p className="text-muted-foreground text-xs">
                       最后更新时间：
                       {dayjs(selectedSource.updatedAt).format('YYYY-MM-DD HH:mm:ss')}
                     </p>
@@ -268,17 +273,17 @@ export default function VideoSource() {
                   <div className="md:hidden">
                     <Dialog>
                       <DialogTrigger asChild>
-                        <Button variant="ghost" size="sm" className="bg-white/40 backdrop-blur-xl">
+                        <Button variant="outline" size="sm">
                           切换视频源
                           <ChevronRight />
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="flex max-h-[80vh] flex-col">
+                      <DialogContent>
                         <DialogHeader>
                           <DialogTitle>选择视频源</DialogTitle>
                         </DialogHeader>
                         <div className="flex items-center justify-between py-2">
-                          <p className="text-sm text-gray-500">
+                          <p className="text-muted-foreground text-sm">
                             已启用 {getSelectedAPIs().length}/{videoAPIs.length}
                           </p>
                           <Button
@@ -290,15 +295,15 @@ export default function VideoSource() {
                             {isAllSelected ? '全部停用' : '全部启用'}
                           </Button>
                         </div>
-                        <ScrollArea className="flex-1 rounded-md pr-2">
-                          <div className="flex h-100 flex-col gap-2 rounded-md">
+                        <ScrollArea className="h-[24rem] rounded-md pr-2">
+                          <div className="flex flex-col gap-2 rounded-md">
                             {showVideoAPIs.map((source, index) => (
                               <div
                                 className={cn(
-                                  'flex h-12 items-center justify-between rounded-md border border-transparent px-4 py-2 transition-colors hover:cursor-pointer',
+                                  'flex h-12 items-center justify-between rounded-md border border-transparent px-4 py-2 text-sm transition-colors hover:cursor-pointer',
                                   selectedSource?.id === source.id
-                                    ? 'border-gray-200 bg-gray-100'
-                                    : 'hover:bg-gray-50',
+                                    ? 'border-border bg-accent'
+                                    : 'hover:bg-accent/60',
                                 )}
                                 key={source.id}
                                 onClick={() => setSelectedIndex(index)}
@@ -306,9 +311,7 @@ export default function VideoSource() {
                                 <p
                                   className={cn(
                                     'font-medium',
-                                    selectedSource?.id === source.id
-                                      ? 'text-primary'
-                                      : 'text-gray-700',
+                                    selectedSource?.id === source.id ? 'text-primary' : '',
                                   )}
                                 >
                                   {source.name}
@@ -328,10 +331,12 @@ export default function VideoSource() {
                     </Dialog>
                   </div>
                 </div>
-                <VideoSourceForm sourceInfo={selectedSource} />
+                <div className="mt-3">
+                  <VideoSourceForm sourceInfo={selectedSource} />
+                </div>
               </>
             ) : (
-              <div className="flex h-full items-center justify-center text-gray-500">
+              <div className="text-muted-foreground flex flex-1 items-center justify-center text-sm">
                 请选择或点击右上角添加视频源
               </div>
             )}
@@ -344,7 +349,7 @@ export default function VideoSource() {
           accept=".json"
           onChange={handleFileChange}
         />
-      </div>
+      </SettingsSection>
     </>
   )
 }

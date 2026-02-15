@@ -1,89 +1,154 @@
-import { NavLink, useNavigate } from 'react-router'
-import { useState } from 'react'
+import { NavLink, useLocation, useNavigate } from 'react-router'
 import { cn } from '@/shared/lib'
+import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
-import { ArrowLeft, Menu, ListVideo, Play, Settings, Info } from 'lucide-react'
+import { ArrowLeft, Compass, FolderCog, Info, ListVideo, Play, Settings2 } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { CustomAnimatedOutlet } from '@/shared/components/AnimatedOutlet'
 import { animationPresets } from '@/shared/lib/animationVariants'
 
 const settingsModules = [
-  { id: 'source', name: '视频源管理', icon: ListVideo, path: '/settings/source' },
-  { id: 'playback', name: '播放设置', icon: Play, path: '/settings/playback' },
-  { id: 'system', name: '系统设置', icon: Settings, path: '/settings/system' },
-  { id: 'about', name: '关于', icon: Info, path: '/settings/about' },
+  {
+    id: 'source',
+    name: '视频源管理',
+    icon: ListVideo,
+    path: '/settings/source',
+    description: '管理站点可用视频源，支持导入、导出、启停与参数编辑。',
+    badges: ['源列表', '导入导出', '启用策略'],
+  },
+  {
+    id: 'playback',
+    name: '播放设置',
+    icon: Play,
+    path: '/settings/playback',
+    description: '按你的观看习惯组合播放行为与剧集展示方式。',
+    badges: ['播放行为', '剧集排序', '体验优化'],
+  },
+  {
+    id: 'system',
+    name: '系统设置',
+    icon: Settings2,
+    path: '/settings/system',
+    description: '组合网络、搜索、主题与系统行为，统一管理应用偏好。',
+    badges: ['网络', '搜索', '主题', '系统行为'],
+  },
+  {
+    id: 'profile',
+    name: '个人配置',
+    icon: FolderCog,
+    path: '/settings/profile',
+    description: '管理个人配置快照，支持导入、导出与一键恢复默认状态。',
+    badges: ['配置快照', '导入导出', '恢复默认'],
+  },
+  {
+    id: 'about',
+    name: '关于项目',
+    icon: Info,
+    path: '/settings/about',
+    description: '查看项目概览、资源入口与版本迭代信息。',
+    badges: ['项目概览', '版本信息', '资源入口'],
+    showGuide: false,
+  },
 ]
 
 /**
  * SettingsLayout - 设置页面布局
- * 带侧边栏导航的子路由布局
+ * 带粘性页头与模块导航的子路由布局
  */
 export default function SettingsLayout() {
   const navigate = useNavigate()
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const location = useLocation()
+  const activeModule =
+    settingsModules.find(module => location.pathname.startsWith(module.path)) || settingsModules[0]
+
+  const renderTabs = (className?: string) => (
+    <div
+      className={cn(
+        'bg-muted relative inline-flex min-w-max items-center rounded-full p-1',
+        className,
+      )}
+    >
+      {settingsModules.map(module => {
+        const isActive = module.id === activeModule.id
+
+        return (
+          <NavLink
+            key={module.id}
+            to={module.path}
+            className={cn(
+              'relative z-10 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition-colors',
+              isActive ? 'text-primary' : 'text-muted-foreground hover:text-primary/80',
+            )}
+          >
+            <module.icon className="size-3.5" />
+            <span>{module.name}</span>
+            {isActive ? (
+              <motion.div
+                layoutId="settings-tab-indicator"
+                className="bg-background absolute inset-0 -z-10 rounded-full shadow-sm"
+                transition={{
+                  type: 'spring',
+                  stiffness: 400,
+                  damping: 30,
+                }}
+              />
+            ) : null}
+          </NavLink>
+        )
+      })}
+    </div>
+  )
 
   return (
-    <div className="min-h-[90vh] pt-3 pb-20">
-      {/* 顶部返回按钮 */}
-      <div className="flex items-center justify-between px-1 pr-2 md:px-0">
-        <Button
-          variant="ghost"
-          className="hover:bg-white/20 hover:backdrop-blur-xl"
-          onClick={() => navigate('/')}
-        >
-          <ArrowLeft /> 返回
-        </Button>
-        {/* 移动端菜单按钮 */}
-        <div className="flex items-center gap-0 md:hidden">
-          <Button
-            variant="ghost"
-            className="hover:bg-white/20 hover:backdrop-blur-xl"
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          >
-            <Menu />
-          </Button>
-        </div>
-      </div>
+    <div className="min-h-[90vh] pb-8">
+      <header className="border-border bg-sidebar/80 sticky top-0 z-20 border-b backdrop-blur-md">
+        <div className="py-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="ghost" size="sm" className="shrink-0" onClick={() => navigate('/')}>
+              <ArrowLeft />
+              返回
+            </Button>
 
-      <div className="mt-2 flex flex-col gap-4 md:flex-row md:gap-8">
-        {/* 侧边栏 */}
-        <div
-          className={cn(
-            'transition-all duration-400 ease-in md:block md:min-h-[80vh] md:w-70 md:opacity-100',
-            isSidebarOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0 md:max-h-none',
-          )}
-        >
-          <div className="px-5 md:px-0">
-            <nav className="w-full border-r-0 border-gray-300/70 pb-2 md:w-full md:border-r md:pt-4 md:pr-8 md:pb-15 md:pl-2">
-              <ul className="space-y-1">
-                {settingsModules.map(module => (
-                  <li key={module.id}>
-                    <NavLink
-                      to={module.path}
-                      onClick={() => setIsSidebarOpen(false)}
-                      className={({ isActive }) =>
-                        cn(
-                          'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                          isActive
-                            ? 'bg-gray-200/50 text-gray-900 dark:bg-gray-800/50 dark:text-gray-100'
-                            : 'text-gray-600 hover:bg-gray-100/50 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800/30 dark:hover:text-gray-100',
-                        )
-                      }
-                    >
-                      <module.icon className="h-5 w-5" />
-                      {module.name}
-                    </NavLink>
-                  </li>
-                ))}
-              </ul>
-            </nav>
+            <div className="min-w-0">
+              <h1 className="truncate text-base font-bold md:text-lg">设置中心</h1>
+              <p className="text-muted-foreground text-xs">管理播放与系统偏好</p>
+            </div>
+
+            <div className="order-3 w-full overflow-x-auto pb-0.5 md:order-none md:ml-auto md:w-auto md:overflow-visible md:pb-0">
+              {renderTabs()}
+            </div>
           </div>
         </div>
+      </header>
 
-        {/* 内容区域 */}
-        <div className="flex-1 px-4 md:px-0">
-          <CustomAnimatedOutlet variants={animationPresets.slideX} />
-        </div>
-      </div>
+      <main className="w-full px-3 pt-4 md:px-4">
+        {activeModule.showGuide !== false ? (
+          <section className="from-muted/35 to-muted/20 border-border/70 mb-4 rounded-xl border border-dashed bg-gradient-to-r px-4 py-3">
+            <div className="flex items-start gap-3">
+              <div className="bg-background text-muted-foreground flex size-8 shrink-0 items-center justify-center rounded-lg border">
+                <Compass className="size-4" />
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-muted-foreground text-[11px] font-medium tracking-wide uppercase">
+                  模块导览
+                </p>
+                <h2 className="text-base font-semibold md:text-lg">{activeModule.name}</h2>
+                <p className="text-muted-foreground text-sm">{activeModule.description}</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {activeModule.badges.map(label => (
+                    <Badge key={label} variant="outline" className="font-normal">
+                      {label}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </section>
+        ) : null}
+
+        <CustomAnimatedOutlet variants={animationPresets.slideX} />
+      </main>
     </div>
   )
 }

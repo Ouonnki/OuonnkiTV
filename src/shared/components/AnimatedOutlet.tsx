@@ -46,16 +46,21 @@ interface CustomAnimatedOutletProps {
   className?: string
   /** 是否启用动画，默认 true */
   enabled?: boolean
+  /** 自定义路由动画 key，用于控制哪些路径共享同一动画容器 */
+  routeKey?: string | ((pathname: string) => string)
 }
 
 export function CustomAnimatedOutlet({
   variants = pageVariants,
   className = 'h-full',
   enabled = true,
+  routeKey,
 }: CustomAnimatedOutletProps) {
   const location = useLocation()
   const outlet = useOutlet()
   const outletRef = useRef(outlet)
+  const animationKey =
+    typeof routeKey === 'function' ? routeKey(location.pathname) : (routeKey ?? location.pathname)
 
   if (outlet) {
     outletRef.current = outlet
@@ -69,7 +74,7 @@ export function CustomAnimatedOutlet({
   return (
     <AnimatePresence mode="wait" initial={false}>
       <motion.div
-        key={location.pathname}
+        key={animationKey}
         variants={variants}
         initial="initial"
         animate="animate"

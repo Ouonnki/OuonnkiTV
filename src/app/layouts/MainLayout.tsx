@@ -2,7 +2,7 @@ import Navigation from '@/shared/components/Navigation'
 import { SidebarProvider, SidebarInset } from '@/shared/components/ui/sidebar'
 import SideBar from '@/shared/components/SideBar'
 import { ScrollArea } from '@/shared/components/ui/scroll-area'
-import AnimatedOutlet from '@/shared/components/AnimatedOutlet'
+import { CustomAnimatedOutlet } from '@/shared/components/AnimatedOutlet'
 import BackToTopButton from '@/shared/components/BackToTopButton'
 import { lazy, Suspense, useEffect } from 'react'
 import { useVersionStore } from '@/shared/store/versionStore'
@@ -49,7 +49,13 @@ export default function MainLayout() {
           <div className="h-full p-2 md:pl-1">
             <div className="border-border bg-sidebar relative h-full rounded-lg border py-2 shadow-sm">
               <ScrollArea data-main-scroll-area className="h-full rounded-lg px-2">
-                <AnimatedOutlet />
+                <CustomAnimatedOutlet
+                  routeKey={pathname =>
+                    pathname === '/settings' || pathname.startsWith('/settings/')
+                      ? '/settings'
+                      : pathname
+                  }
+                />
                 <Suspense fallback={null}>
                   <UpdateModal />
                 </Suspense>

@@ -1,20 +1,20 @@
-import { Button } from '@/shared/components/ui/button'
 import { useTheme } from '@/shared/components/theme'
 import { useRef } from 'react'
 import { Palette, Sun, Moon, Monitor } from 'lucide-react'
+import { Badge } from '@/shared/components/ui/badge'
+import { motion } from 'framer-motion'
+import { cn } from '@/shared/lib'
+import { SettingsItem, SettingsSection } from '../common'
 
 export default function ThemeSettings() {
-  const { mode } = useTheme()
-  const { changeMode } = useTheme()
-  // Ensure we are using the store's mode if needed, but useTheme hook returns mode as well (from next-themes usually, but here our hook combines them).
-  // Actually, looking at useTheme hook: it returns mode from store.
-  // Wait, let's check useThemeControl return values again.
-  // It returns { mode, theme, resolvedTheme, systemTheme, isDark, changeMode, toggleDarkMode, resetTheme }
-  // The original code destructured { isDark, changeMode, mode } from useTheme().
-  // references: line 23: const { isDark, changeMode, mode } = useTheme()
-  // So I can keep that.
+  const { mode, changeMode } = useTheme()
 
   const lastClickEvent = useRef<MouseEvent | null>(null)
+  const modeOptions = [
+    { value: 'light' as const, label: '亮色', icon: Sun },
+    { value: 'dark' as const, label: '暗色', icon: Moon },
+    { value: 'system' as const, label: '系统', icon: Monitor },
+  ]
 
   const handleModeChange = (newMode: 'light' | 'dark' | 'system') => {
     changeMode(newMode, lastClickEvent.current ?? undefined)
@@ -22,57 +22,57 @@ export default function ThemeSettings() {
   }
 
   return (
-    <div className="flex flex-col gap-6 px-4 md:px-8">
-      {/* Header */}
-      <div className="flex items-center gap-3 py-4">
-        <div className="bg-primary/10 flex h-12 w-12 items-center justify-center rounded-full">
-          <Palette className="text-primary h-6 w-6" />
-        </div>
-        <div>
-          <h1 className="text-xl font-bold text-gray-800 dark:text-gray-100">主题设置</h1>
-          <p className="text-sm text-gray-500">自定义应用外观</p>
-        </div>
-      </div>
+    <SettingsSection
+      title="主题设置"
+      description="选择你偏好的显示模式，支持跟随系统与动画切换。"
+      icon={<Palette className="size-4" />}
+      action={
+        <Badge variant="secondary">
+          当前：{mode === 'system' ? '系统' : mode === 'light' ? '亮色' : '暗色'}
+        </Badge>
+      }
+    >
+      <SettingsItem
+        title="主题模式"
+        description="支持亮色、暗色与跟随系统。"
+        className="items-start sm:items-center"
+      >
+        <div className="bg-muted relative inline-flex w-full max-w-sm items-center rounded-full p-1">
+          {modeOptions.map(option => {
+            const isActive = mode === option.value
+            const Icon = option.icon
 
-      {/* 主题模式 */}
-      <div className="flex flex-col gap-4 rounded-xl border border-gray-200 bg-white/40 p-6 backdrop-blur-xl dark:border-gray-700 dark:bg-gray-800/40">
-        <h2 className="text-base font-semibold text-gray-700 dark:text-gray-200">主题模式</h2>
-        <div className="grid grid-cols-3 gap-3">
-          <Button
-            variant={mode === 'light' ? 'default' : 'outline'}
-            onPointerDown={e => {
-              lastClickEvent.current = e.nativeEvent as unknown as MouseEvent
-            }}
-            onClick={() => handleModeChange('light')}
-            className="flex h-auto flex-col gap-1 py-4"
-          >
-            <Sun size={20} />
-            <span className="text-xs">亮色</span>
-          </Button>
-          <Button
-            variant={mode === 'dark' ? 'default' : 'outline'}
-            onPointerDown={e => {
-              lastClickEvent.current = e.nativeEvent as unknown as MouseEvent
-            }}
-            onClick={() => handleModeChange('dark')}
-            className="flex h-auto flex-col gap-1 py-4"
-          >
-            <Moon size={20} />
-            <span className="text-xs">暗色</span>
-          </Button>
-          <Button
-            variant={mode === 'system' ? 'default' : 'outline'}
-            onPointerDown={e => {
-              lastClickEvent.current = e.nativeEvent as unknown as MouseEvent
-            }}
-            onClick={() => handleModeChange('system')}
-            className="flex h-auto flex-col gap-1 py-4"
-          >
-            <Monitor size={20} />
-            <span className="text-xs">跟随系统</span>
-          </Button>
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onPointerDown={e => {
+                  lastClickEvent.current = e.nativeEvent as unknown as MouseEvent
+                }}
+                onClick={() => handleModeChange(option.value)}
+                className={cn(
+                  'relative z-10 flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition-colors',
+                  isActive ? 'text-primary' : 'text-muted-foreground hover:text-primary/80',
+                )}
+              >
+                <Icon className="size-3.5" />
+                <span>{option.label}</span>
+                {isActive ? (
+                  <motion.span
+                    layoutId="theme-mode-indicator"
+                    className="bg-background absolute inset-0 -z-10 rounded-full shadow-sm"
+                    transition={{
+                      type: 'spring',
+                      stiffness: 400,
+                      damping: 30,
+                    }}
+                  />
+                ) : null}
+              </button>
+            )
+          })}
         </div>
-      </div>
-    </div>
+      </SettingsItem>
+    </SettingsSection>
   )
 }
