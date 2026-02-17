@@ -3,6 +3,8 @@ interface SettingsConfig {
     defaultTimeout?: number
     defaultRetry?: number
     concurrencyLimit?: number
+    isProxyEnabled?: boolean
+    proxyUrl?: string
   }
   search?: {
     isSearchHistoryEnabled?: boolean

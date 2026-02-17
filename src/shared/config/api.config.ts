@@ -19,9 +19,30 @@ export const API_CONFIG = {
   },
 }
 
-// 统一使用内置代理
-export const PROXY_URL = '/proxy?url='
+// 代理地址前缀（可在设置页被覆盖）
+export const DEFAULT_PROXY_URL = '/proxy?url='
+export const PROXY_URL = DEFAULT_PROXY_URL
 export const M3U8_PATTERN = /\$https?:\/\/[^"'\s]+?\.m3u8/g
+
+export const normalizeProxyPrefix = (proxyUrl?: string | null): string => {
+  const value = typeof proxyUrl === 'string' ? proxyUrl.trim() : ''
+  const base = value || DEFAULT_PROXY_URL
+
+  if (base.includes('{url}')) return base
+  if (/[?&]url=$/i.test(base)) return base
+  if (/[?&]url=[^&]*$/i.test(base)) {
+    return base.replace(/([?&]url=)[^&]*$/i, '$1')
+  }
+  return base.includes('?') ? `${base}&url=` : `${base}?url=`
+}
+
+export const buildProxyRequestUrl = (targetUrl: string, proxyUrl?: string | null): string => {
+  const normalized = normalizeProxyPrefix(proxyUrl)
+  if (normalized.includes('{url}')) {
+    return normalized.split('{url}').join(encodeURIComponent(targetUrl))
+  }
+  return normalized + encodeURIComponent(targetUrl)
+}
 
 import type { VideoApi } from '@/shared/types/video'
 import { INITIAL_CONFIG } from './initialConfig'
@@ -41,7 +62,7 @@ export const getInitialVideoSources = async (): Promise<VideoApi[]> => {
   // 验证url
   try {
     new URL(envSources.trim())
-    const response = await fetch(PROXY_URL + envSources.trim())
+    const response = await fetch(buildProxyRequestUrl(envSources.trim()))
     if (!response.ok) {
       console.error(`无法获取视频源，HTTP状态: ${response.status}`)
       return []

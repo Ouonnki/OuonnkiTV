@@ -8,8 +8,58 @@ interface Context {
   params: unknown
 }
 
+const DEFAULT_PROXY_TIMEOUT_MS = 15000
+const MIN_PROXY_TIMEOUT_MS = 1000
+const MAX_PROXY_TIMEOUT_MS = 120000
+
+function getProxyTimeoutMs(env: unknown): number {
+  const envObj = env && typeof env === 'object' ? (env as Record<string, unknown>) : {}
+  const rawTimeout = envObj.PROXY_TIMEOUT_MS
+  const parsed = Number(rawTimeout)
+
+  if (!Number.isFinite(parsed)) {
+    return DEFAULT_PROXY_TIMEOUT_MS
+  }
+  return Math.min(MAX_PROXY_TIMEOUT_MS, Math.max(MIN_PROXY_TIMEOUT_MS, Math.floor(parsed)))
+}
+
+function parseProxyError(error: unknown): {
+  message: string
+  cause?: { name?: string; code?: string; message?: string }
+} {
+  const typedError = error as Error & { cause?: unknown }
+  const payload: {
+    message: string
+    cause?: { name?: string; code?: string; message?: string }
+  } = {
+    message: typedError instanceof Error ? typedError.message : 'Unknown error',
+  }
+
+  if (!(typedError instanceof Error) || !typedError.cause || typeof typedError.cause !== 'object') {
+    return payload
+  }
+
+  const cause = typedError.cause as { name?: unknown; code?: unknown; message?: unknown }
+  const parsedCause: { name?: string; code?: string; message?: string } = {}
+
+  if (typeof cause.name === 'string') {
+    parsedCause.name = cause.name
+  }
+  if (typeof cause.code === 'string' || typeof cause.code === 'number') {
+    parsedCause.code = String(cause.code)
+  }
+  if (typeof cause.message === 'string') {
+    parsedCause.message = cause.message
+  }
+
+  if (Object.keys(parsedCause).length > 0) {
+    payload.cause = parsedCause
+  }
+  return payload
+}
+
 // 内联核心代理逻辑（Cloudflare Workers 环境限制）
-async function handleProxyRequest(targetUrl: string): Promise<Response> {
+async function handleProxyRequest(targetUrl: string, timeoutMs: number): Promise<Response> {
   try {
     new URL(targetUrl)
   } catch {
@@ -22,6 +72,7 @@ async function handleProxyRequest(targetUrl: string): Promise<Response> {
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
       Accept: 'application/json, text/plain, */*',
     },
+    signal: AbortSignal.timeout(timeoutMs),
   })
 
   return response
@@ -56,7 +107,8 @@ export const onRequest = async (context: Context) => {
   }
 
   try {
-    const response = await handleProxyRequest(targetUrl)
+    const timeoutMs = getProxyTimeoutMs(context.env)
+    const response = await handleProxyRequest(targetUrl, timeoutMs)
 
     // Create a new response with the body from the fetch
     const newResponse = new Response(response.body, response)
@@ -68,8 +120,9 @@ export const onRequest = async (context: Context) => {
 
     return newResponse
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error'
-    return new Response(JSON.stringify({ error: 'Proxy request failed', message }), {
+    const timeoutMs = getProxyTimeoutMs(context.env)
+    const { message, cause } = parseProxyError(error)
+    return new Response(JSON.stringify({ error: 'Proxy request failed', message, cause, timeoutMs }), {
       status: 500,
       headers: {
         'Content-Type': 'application/json',

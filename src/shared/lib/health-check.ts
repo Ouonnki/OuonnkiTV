@@ -1,7 +1,7 @@
 import { createConcurrencyLimiter } from '@ouonnki/cms-core'
 import type { VideoSource } from '@ouonnki/cms-core'
 import type { VideoSourceSubscription } from '@/shared/types/subscription'
-import { PROXY_URL } from '@/shared/config/api.config'
+import { buildProxyRequestUrl } from '@/shared/config/api.config'
 import { useSettingStore } from '@/shared/store/settingStore'
 import { useHealthStore, type HealthResult } from '@/shared/store/healthStore'
 
@@ -16,20 +16,20 @@ const DEFAULT_RESULT: HealthResult = {
 export type OnProgressCallback = (completed: number, total: number) => void
 
 /**
- * 视频源测速 — 通过代理请求 source.url，记录响应时间。
+ * 视频源测速 — 按网络设置决定是否走代理，记录响应时间。
  * 不使用重试，测速需要反映真实首次响应时间。
  */
 async function checkVideoSource(source: VideoSource): Promise<HealthResult> {
-  const { defaultTimeout } = useSettingStore.getState().network
+  const { defaultTimeout, isProxyEnabled, proxyUrl } = useSettingStore.getState().network
   const timeout = source.timeout || defaultTimeout
 
-  const proxyUrl = PROXY_URL + encodeURIComponent(source.url)
+  const requestUrl = isProxyEnabled ? buildProxyRequestUrl(source.url, proxyUrl) : source.url
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort('timeout'), timeout)
 
   const startTime = performance.now()
   try {
-    const response = await fetch(proxyUrl, {
+    const response = await fetch(requestUrl, {
       signal: controller.signal,
       headers: { Accept: 'application/json, text/plain, */*' },
     })

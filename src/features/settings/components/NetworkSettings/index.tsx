@@ -1,5 +1,6 @@
 import { Input } from '@/shared/components/ui/input'
-import { CloudLightning, Layers, RefreshCw, Timer } from 'lucide-react'
+import { Switch } from '@/shared/components/ui/switch'
+import { CloudLightning, Layers, Link, RefreshCw, Timer } from 'lucide-react'
 import { useSettingStore } from '@/shared/store/settingStore'
 import { SettingsItem, SettingsSection } from '../common'
 
@@ -9,10 +10,38 @@ export default function NetworkSettings() {
   return (
     <SettingsSection
       title="网络设置"
-      description="配置全局请求超时与失败重试策略。"
+      description="配置全局请求超时、重试、并发与代理策略。"
       icon={<CloudLightning className="size-4" />}
       tone="sky"
     >
+      <SettingsItem
+        title="启用请求代理"
+        description="关闭后视频源搜索、详情与测速将直接请求源站。"
+        controlClassName="self-end mt-1"
+        control={
+          <Switch
+            checked={network.isProxyEnabled}
+            onCheckedChange={checked => setNetworkSettings({ isProxyEnabled: checked })}
+          />
+        }
+      />
+      <SettingsItem
+        title="代理地址"
+        description="支持 /proxy?url=、完整地址，或使用 {url} 占位符。"
+        control={
+          <div className="relative w-full sm:w-[340px]">
+            <Link className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+            <Input
+              type="text"
+              id="proxyUrl"
+              className="pl-9"
+              value={network.proxyUrl}
+              placeholder="/proxy?url="
+              onChange={e => setNetworkSettings({ proxyUrl: e.target.value })}
+            />
+          </div>
+        }
+      />
       <SettingsItem
         title="默认超时时间（ms）"
         description="未单独配置超时的视频源将使用此值。"

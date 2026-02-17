@@ -1,1 +1,6 @@
-export { handleProxyRequest, getTargetUrl } from '../../../shared/proxy-core.js'
+export {
+  handleProxyRequest,
+  getTargetUrl,
+  getProxyTimeoutMs,
+  parseProxyError,
+} from '../../../shared/proxy-core.js'

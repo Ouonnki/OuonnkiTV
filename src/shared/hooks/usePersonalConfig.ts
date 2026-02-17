@@ -38,6 +38,8 @@ const personalConfigSchema = z.object({
         defaultTimeout: z.number().min(300).optional(),
         defaultRetry: z.number().min(0).max(10).optional(),
         concurrencyLimit: z.number().min(1).max(10).optional(),
+        isProxyEnabled: z.boolean().optional(),
+        proxyUrl: z.string().optional(),
       })
       .optional(),
     search: z
@@ -160,8 +162,7 @@ export const usePersonalConfig = () => {
     if (config.settings.network) settingStore.setNetworkSettings(config.settings.network)
     if (config.settings.search) settingStore.setSearchSettings(config.settings.search)
     if (config.settings.playback) {
-      const { adFilteringEnabled: _, ...playbackSettings } = config.settings.playback
-      settingStore.setPlaybackSettings(playbackSettings)
+      settingStore.setPlaybackSettings(config.settings.playback)
     }
     if (config.settings.system) settingStore.setSystemSettings(config.settings.system)
 

@@ -12,6 +12,9 @@ export const DEFAULT_SETTINGS = {
     concurrencyLimit:
       envSettings?.network?.concurrencyLimit ??
       (Number(import.meta.env.VITE_CONCURRENCY_LIMIT) || 3),
+    isProxyEnabled:
+      envSettings?.network?.isProxyEnabled ?? import.meta.env.VITE_PROXY_ENABLED !== 'false',
+    proxyUrl: envSettings?.network?.proxyUrl ?? (import.meta.env.VITE_PROXY_URL || '/proxy?url='),
   },
   search: {
     isSearchHistoryEnabled:

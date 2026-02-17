@@ -1,5 +1,10 @@
 import type { Plugin } from 'vite'
-import { handleProxyRequest, getTargetUrl } from '../shared/lib/proxy'
+import {
+  handleProxyRequest,
+  getProxyTimeoutMs,
+  getTargetUrl,
+  parseProxyError,
+} from '../shared/lib/proxy'
 
 export function proxyMiddleware(): Plugin {
   return {
@@ -21,9 +26,10 @@ export function proxyMiddleware(): Plugin {
           res.writeHead(response.status)
           res.end(text)
         } catch (error) {
-          const message = error instanceof Error ? error.message : 'Unknown error'
+          const { message, cause } = parseProxyError(error)
+          const timeoutMs = getProxyTimeoutMs()
           res.writeHead(500, { 'Content-Type': 'application/json' })
-          res.end(JSON.stringify({ error: 'Proxy request failed', message }))
+          res.end(JSON.stringify({ error: 'Proxy request failed', message, cause, timeoutMs }))
         }
       })
     },

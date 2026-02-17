@@ -7,6 +7,8 @@ interface NetworkSettings {
   defaultTimeout: number
   defaultRetry: number
   concurrencyLimit: number
+  isProxyEnabled: boolean
+  proxyUrl: string
 }
 
 interface SearchSettings {
@@ -105,7 +107,7 @@ export const useSettingStore = create<SettingStore>()(
       })),
       {
         name: 'ouonnki-tv-setting-store',
-        version: 4,
+        version: 5,
         migrate: (persistedState: unknown, version: number) => {
           const state = persistedState as Record<string, unknown>
           if (version < 2 && state.playback) {
@@ -139,6 +141,12 @@ export const useSettingStore = create<SettingStore>()(
             playback.isAutoMiniEnabled ??= DEFAULT_SETTINGS.playback.isAutoMiniEnabled
             playback.isScreenshotEnabled ??= DEFAULT_SETTINGS.playback.isScreenshotEnabled
             state.playback = playback
+          }
+          if (version < 5) {
+            const network = (state.network ?? {}) as Record<string, unknown>
+            network.isProxyEnabled ??= DEFAULT_SETTINGS.network.isProxyEnabled
+            network.proxyUrl ??= DEFAULT_SETTINGS.network.proxyUrl
+            state.network = network
           }
           return state
         },

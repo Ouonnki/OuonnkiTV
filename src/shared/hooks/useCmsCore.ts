@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState, useCallback, useMemo } from 'react'
 import {
   createCmsClient,
+  createDirectStrategy,
   createUrlPrefixProxyStrategy,
   type CmsClient,
   type VideoSource,
@@ -12,23 +13,33 @@ import {
   type SearchErrorEvent,
 } from '@ouonnki/cms-core'
 import { useSettingStore } from '@/shared/store/settingStore'
-import { PROXY_URL } from '@/shared/config/api.config'
+import { normalizeProxyPrefix } from '@/shared/config/api.config'
 
 let globalClient: CmsClient | null = null
-let globalConcurrencyLimit: number | null = null
+let globalNetworkKey: string | null = null
 
 function getCmsClient(config?: CmsClientConfig): CmsClient {
-  const settingLimit = useSettingStore.getState().network.concurrencyLimit
-  // 当 concurrencyLimit 变化时重建单例
-  if (globalClient && globalConcurrencyLimit !== settingLimit) {
+  const { network } = useSettingStore.getState()
+  const normalizedProxyUrl = normalizeProxyPrefix(network.proxyUrl)
+  const networkKey = [
+    network.concurrencyLimit,
+    network.isProxyEnabled ? 'proxy' : 'direct',
+    network.isProxyEnabled ? normalizedProxyUrl : '',
+  ].join('|')
+
+  // 当网络设置变化时重建单例
+  if (globalClient && globalNetworkKey !== networkKey) {
     globalClient.destroy()
     globalClient = null
   }
+
   if (!globalClient) {
-    globalConcurrencyLimit = settingLimit
+    globalNetworkKey = networkKey
     globalClient = createCmsClient({
-      proxyStrategy: createUrlPrefixProxyStrategy(PROXY_URL),
-      concurrencyLimit: settingLimit,
+      proxyStrategy: network.isProxyEnabled
+        ? createUrlPrefixProxyStrategy(normalizedProxyUrl)
+        : createDirectStrategy(),
+      concurrencyLimit: network.concurrencyLimit,
       ...config,
     })
   }
@@ -42,6 +53,7 @@ export function destroyCmsClient(): void {
   if (globalClient) {
     globalClient.destroy()
     globalClient = null
+    globalNetworkKey = null
   }
 }
 
@@ -79,7 +91,14 @@ export interface UseAggregatedSearchReturn extends AggregatedSearchState {
  * @param config 可选的客户端配置
  */
 export function useAggregatedSearch(config?: CmsClientConfig): UseAggregatedSearchReturn {
-  const client = useMemo(() => getCmsClient(config), [config])
+  const networkKey = useSettingStore(
+    state =>
+      `${state.network.concurrencyLimit}|${state.network.isProxyEnabled}|${state.network.proxyUrl}`,
+  )
+  const client = useMemo(() => {
+    void networkKey
+    return getCmsClient(config)
+  }, [config, networkKey])
   const abortRef = useRef<AbortController | null>(null)
 
   const [state, setState] = useState<AggregatedSearchState>({
@@ -199,7 +218,14 @@ export interface UseVideoDetailReturn extends VideoDetailState {
  * @param config 可选的客户端配置
  */
 export function useVideoDetail(config?: CmsClientConfig): UseVideoDetailReturn {
-  const client = useMemo(() => getCmsClient(config), [config])
+  const networkKey = useSettingStore(
+    state =>
+      `${state.network.concurrencyLimit}|${state.network.isProxyEnabled}|${state.network.proxyUrl}`,
+  )
+  const client = useMemo(() => {
+    void networkKey
+    return getCmsClient(config)
+  }, [config, networkKey])
 
   const [state, setState] = useState<VideoDetailState>({
     detail: null,
@@ -258,5 +284,12 @@ export function useVideoDetail(config?: CmsClientConfig): UseVideoDetailReturn {
  * @param config 可选的客户端配置
  */
 export function useCmsClient(config?: CmsClientConfig): CmsClient {
-  return useMemo(() => getCmsClient(config), [config])
+  const networkKey = useSettingStore(
+    state =>
+      `${state.network.concurrencyLimit}|${state.network.isProxyEnabled}|${state.network.proxyUrl}`,
+  )
+  return useMemo(() => {
+    void networkKey
+    return getCmsClient(config)
+  }, [config, networkKey])
 }
