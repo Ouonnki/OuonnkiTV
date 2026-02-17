@@ -70,9 +70,9 @@ export function PlayerInfoAndRecommendations({
         </div>
 
         <div className="space-y-3.5 md:space-y-4">
-          <div className="grid grid-cols-[96px_minmax(0,1fr)] gap-3 md:grid-cols-[180px_minmax(0,1fr)] md:gap-4">
+          <div className="flex flex-col gap-3 md:grid md:grid-cols-[180px_minmax(0,1fr)] md:gap-4">
             <div className="w-full">
-              <div className="relative aspect-[2/3] overflow-hidden rounded-lg border border-border/50 bg-muted/35">
+              <div className="relative mx-auto aspect-[2/3] w-32 overflow-hidden rounded-lg border border-border/50 bg-muted/35 md:mx-0 md:w-full">
                 {infoPoster ? (
                   <img
                     src={infoPoster}
@@ -84,53 +84,85 @@ export function PlayerInfoAndRecommendations({
                   <div className="text-muted-foreground flex h-full items-center justify-center text-sm">暂无海报</div>
                 )}
               </div>
+
+              <div className="mt-2.5 flex flex-wrap items-center justify-center gap-1.5 md:hidden">
+                <Badge variant="secondary" className="h-6 rounded-full px-2 text-[11px]">
+                  {sourceName}
+                </Badge>
+                <Badge variant="outline" className="h-6 rounded-full px-2 text-[11px]">
+                  {modeLabel}
+                </Badge>
+                {tmdbMediaType && (
+                  <Badge variant="outline" className="h-6 rounded-full px-2 text-[11px]">
+                    {tmdbMediaType === 'tv' ? '剧集内容' : '电影内容'}
+                  </Badge>
+                )}
+                {releaseDate && (
+                  <Badge variant="outline" className="h-6 rounded-full px-2 text-[11px]">
+                    <CalendarDays className="size-3.5" />
+                    {releaseDate.slice(0, 10)}
+                  </Badge>
+                )}
+                {rating && rating > 0 ? (
+                  <Badge variant="outline" className="h-6 rounded-full px-2 text-[11px]">
+                    <Star className="size-3.5 text-amber-400" />
+                    {rating.toFixed(1)}
+                  </Badge>
+                ) : null}
+                {tmdbMediaType === 'tv' && seasonCount && episodeCount ? (
+                  <Badge variant="outline" className="h-6 rounded-full px-2 text-[11px]">
+                    <Tv className="size-3.5" />
+                    共 {seasonCount} 季 / {episodeCount} 集
+                  </Badge>
+                ) : null}
+              </div>
             </div>
 
             <div className="flex min-w-0 flex-col gap-2.5 md:gap-3">
-            <div className="space-y-1">
-              <h2 className="line-clamp-2 text-lg font-semibold md:text-2xl">{title}</h2>
-              {originalTitle && originalTitle !== title && (
-                <p className="text-muted-foreground line-clamp-1 text-xs md:text-sm">{originalTitle}</p>
-              )}
-            </div>
+              <div className="space-y-1 text-center md:text-left">
+                <h2 className="line-clamp-2 text-lg font-semibold md:text-2xl">{title}</h2>
+                {originalTitle && originalTitle !== title && (
+                  <p className="text-muted-foreground line-clamp-1 text-xs md:text-sm">{originalTitle}</p>
+                )}
+              </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="secondary" className="h-6 rounded-full px-2 text-[11px] md:h-auto md:px-2.5 md:text-xs">
-                {sourceName}
-              </Badge>
-              <Badge variant="outline" className="h-6 rounded-full px-2 text-[11px] md:h-auto md:px-2.5 md:text-xs">
-                {modeLabel}
-              </Badge>
-              {tmdbMediaType && (
-                <Badge variant="outline" className="h-6 rounded-full px-2 text-[11px] md:h-auto md:px-2.5 md:text-xs">
-                  {tmdbMediaType === 'tv' ? '剧集内容' : '电影内容'}
+              <div className="hidden flex-wrap items-center gap-2 md:flex">
+                <Badge variant="secondary" className="px-2.5 text-xs">
+                  {sourceName}
                 </Badge>
-              )}
-              {releaseDate && (
-                <Badge variant="outline" className="h-6 rounded-full px-2 text-[11px] md:h-auto md:px-2.5 md:text-xs">
-                  <CalendarDays className="size-3.5" />
-                  {releaseDate.slice(0, 10)}
+                <Badge variant="outline" className="px-2.5 text-xs">
+                  {modeLabel}
                 </Badge>
-              )}
-              {rating && rating > 0 ? (
-                <Badge variant="outline" className="h-6 rounded-full px-2 text-[11px] md:h-auto md:px-2.5 md:text-xs">
-                  <Star className="size-3.5 text-amber-400" />
-                  {rating.toFixed(1)}
-                </Badge>
-              ) : null}
-              {tmdbMediaType === 'tv' && seasonCount && episodeCount ? (
-                <Badge variant="outline" className="h-6 rounded-full px-2 text-[11px] md:h-auto md:px-2.5 md:text-xs">
-                  <Tv className="size-3.5" />
-                  共 {seasonCount} 季 / {episodeCount} 集
-                </Badge>
-              ) : null}
-            </div>
-            </div>
-          </div>
+                {tmdbMediaType && (
+                  <Badge variant="outline" className="px-2.5 text-xs">
+                    {tmdbMediaType === 'tv' ? '剧集内容' : '电影内容'}
+                  </Badge>
+                )}
+                {releaseDate && (
+                  <Badge variant="outline" className="px-2.5 text-xs">
+                    <CalendarDays className="size-3.5" />
+                    {releaseDate.slice(0, 10)}
+                  </Badge>
+                )}
+                {rating && rating > 0 ? (
+                  <Badge variant="outline" className="px-2.5 text-xs">
+                    <Star className="size-3.5 text-amber-400" />
+                    {rating.toFixed(1)}
+                  </Badge>
+                ) : null}
+                {tmdbMediaType === 'tv' && seasonCount && episodeCount ? (
+                  <Badge variant="outline" className="px-2.5 text-xs">
+                    <Tv className="size-3.5" />
+                    共 {seasonCount} 季 / {episodeCount} 集
+                  </Badge>
+                ) : null}
+              </div>
 
-          <div className="space-y-1.5">
-            <h3 className="text-sm font-semibold">剧情介绍</h3>
-            <p className="text-muted-foreground text-sm leading-6">{overview || '暂无剧情介绍'}</p>
+              <div className="space-y-1">
+                <h3 className="text-sm font-semibold">剧情介绍</h3>
+                <p className="text-muted-foreground line-clamp-4 text-sm leading-6 md:line-clamp-6">{overview || '暂无剧情介绍'}</p>
+              </div>
+            </div>
           </div>
 
           {detailLink ? (
