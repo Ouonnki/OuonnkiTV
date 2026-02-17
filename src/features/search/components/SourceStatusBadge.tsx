@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Badge } from '@/shared/components/ui/badge'
+import { badgeVariants } from '@/shared/components/ui/badge'
 import { cn } from '@/shared/lib/utils'
 
 interface SourceStatusBadgeProps {
@@ -52,9 +52,10 @@ export function SourceStatusBadge({
   return (
     <>
       <div className="relative ml-auto group">
-        <Badge
-          variant="outline"
+        <button
+          type="button"
           className={cn(
+            badgeVariants({ variant: 'outline' }),
             'gap-1.5 transition-colors cursor-pointer select-none',
             loading && completed < total && 'animate-pulse'
           )}
@@ -64,6 +65,8 @@ export function SourceStatusBadge({
               setShowTooltip(!showTooltip)
             }
           }}
+          aria-expanded={isCompleted ? showTooltip : undefined}
+          aria-label={`已请求 ${completed}/${total} 个源`}
           title={`已请求 ${completed}/${total} 个源`}
         >
           {/* 状态指示器 - 根据完成状态显示不同颜色 */}
@@ -75,7 +78,7 @@ export function SourceStatusBadge({
             <span className={cn('h-1.5 w-1.5 rounded-full', indicatorColor)} />
           )}
           {completed}/{total} 源
-        </Badge>
+        </button>
 
         {/* Tooltip：桌面端 hover 显示，移动端/平板点击显示 */}
         {isCompleted && (

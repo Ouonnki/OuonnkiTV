@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/shared/lib/utils'
+import { Button } from '@/shared/components/ui/button'
 import type { TmdbFilterOptions, TmdbGenre, TmdbCountry } from '@/shared/types/tmdb'
 import {
   MediaTypeFilter,
@@ -44,6 +45,7 @@ export function CategoryFilterSection({
   years,
   filterOptions,
   onFilterChange,
+  onClear,
   isLoading = false,
   className,
 }: CategoryFilterSectionProps) {
@@ -105,7 +107,18 @@ export function CategoryFilterSection({
       </AnimatePresence>
 
       {/* 展开/收起按钮 */}
-      <ExpandToggle isExpanded={isExpanded} onToggle={() => setIsExpanded(!isExpanded)} />
+      <div className="flex items-center justify-center gap-3 pt-1">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-8 rounded-full px-4"
+          onClick={onClear}
+        >
+          清空筛选
+        </Button>
+        <ExpandToggle isExpanded={isExpanded} onToggle={() => setIsExpanded(!isExpanded)} />
+      </div>
     </div>
   )
 }

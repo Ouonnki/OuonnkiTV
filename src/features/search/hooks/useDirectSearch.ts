@@ -264,20 +264,39 @@ export function useDirectSearch() {
     // 移除toast提示
   }, [selectedAPIs, cmsClient])
 
+  const abortDirectSearch = useCallback(() => {
+    abortCtrlRef.current?.abort()
+    abortCtrlRef.current = null
+    if (timeOutTimer.current) {
+      clearTimeout(timeOutTimer.current)
+      timeOutTimer.current = null
+    }
+    setDirectLoading(false)
+  }, [])
+
+  const clearDirectSearchState = useCallback(() => {
+    setDirectResults([])
+    setSearchProgress({ completed: 0, total: 0 })
+    setCmsPagination({
+      page: 1,
+      totalPages: 0,
+      totalResults: 0,
+    })
+    setHasMore(true)
+    setCompletedSourcesInCurrentPage(new Set())
+    setSuccessfulSourcesInCurrentPage(new Set())
+    sourcesToFetchRef.current = []
+    sourcePaginationCacheRef.current.clear()
+  }, [])
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      abortCtrlRef.current?.abort()
-      if (timeOutTimer.current) {
-        clearTimeout(timeOutTimer.current)
-        timeOutTimer.current = null
-      }
-      // Reset state to prevent memory leaks
-      setCompletedSourcesInCurrentPage(new Set())
-      sourcesToFetchRef.current = []
+      abortDirectSearch()
+      clearDirectSearchState()
       requestVersionRef.current = 0
     }
-  }, [])
+  }, [abortDirectSearch, clearDirectSearchState])
 
   // 计算当前页是否已完成（所有源都已返回）
   const isCurrentPageComplete = useMemo(() => {
@@ -299,6 +318,8 @@ export function useDirectSearch() {
     canLoadMore,
     successfulSourcesInCurrentPage,
     startDirectSearch: fetchDirectSearch,
+    abortDirectSearch,
+    clearDirectSearchState,
     setDirectResults,
   }
 }

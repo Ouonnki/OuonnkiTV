@@ -194,7 +194,7 @@ export function SearchResultsGrid({
           </div>
         ) : hasResults ? (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8">
-            {results.map((item, index) => {
+            {results.map(item => {
               if (!item.source_code || !item.vod_id) {
                 return null
               }
@@ -205,7 +205,7 @@ export function SearchResultsGrid({
                 : undefined
 
               return (
-                <div key={`${item.source_code}-${item.vod_id}-${index}`}>
+                <div key={`${item.source_code}-${item.vod_id}`}>
                   <MediaPosterCard
                     to={buildCmsPlayPath(item.source_code, item.vod_id)}
                     posterUrl={item.vod_pic || null}

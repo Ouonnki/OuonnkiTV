@@ -6,6 +6,8 @@ import { v4 as uuidv4 } from 'uuid'
 
 import { useSettingStore } from './settingStore'
 
+const normalizeSearchContent = (content: string) => content.trim().replace(/\s+/g, ' ')
+
 interface SearchState {
   // 当前搜索查询
   query: string
@@ -50,6 +52,9 @@ export const useSearchStore = create<SearchStore>()(
         },
 
         addSearchHistoryItem: (content: string) => {
+          const normalizedContent = normalizeSearchContent(content)
+          if (!normalizedContent) return
+
           // 检查是否开启了搜索历史记录
           if (!useSettingStore.getState().search.isSearchHistoryEnabled) {
             return
@@ -57,7 +62,7 @@ export const useSearchStore = create<SearchStore>()(
 
           set(state => {
             const existingItem = state.searchHistory.find(
-              (item: SearchHistoryItem) => item.content === content,
+              (item: SearchHistoryItem) => item.content === normalizedContent,
             )
 
             if (existingItem) {
@@ -67,7 +72,7 @@ export const useSearchStore = create<SearchStore>()(
               // 添加新项到历史记录开头
               const newItem: SearchHistoryItem = {
                 id: uuidv4(),
-                content,
+                content: normalizedContent,
                 createdAt: Date.now(),
                 updatedAt: Date.now(),
               }

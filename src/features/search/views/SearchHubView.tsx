@@ -39,13 +39,8 @@ export default function SearchHubView() {
     }
   }, [mode, query])
 
-  // Sync query to search history
+  // 搜索历史写入收敛到显式搜索动作，避免 URL 被动同步导致冗余写入
   const { addSearchHistoryItem } = useSearchStore()
-  useEffect(() => {
-    if (query.trim()) {
-      addSearchHistoryItem(query.trim())
-    }
-  }, [query, addSearchHistoryItem])
 
   // 归一化 URL 中的 mode，避免非法值污染后续行为
   useEffect(() => {
@@ -55,16 +50,11 @@ export default function SearchHubView() {
       const params = new URLSearchParams(prev)
       params.set('mode', 'tmdb')
       return params
-    })
+    }, { replace: true })
   }, [modeParam, setSearchParams])
 
   // Trending Hook（只用于热搜词展示，仍然保留在顶层）
-  const { trending, refreshTrending } = useTmdbNowPlaying()
-
-  // 初始化时获取热搜数据
-  useEffect(() => {
-    refreshTrending()
-  }, [refreshTrending])
+  const { trending } = useTmdbNowPlaying()
 
   // 动态更新页面标题
   useDocumentTitle(query ? `${query} - 搜索` : '搜索中心')
@@ -84,17 +74,20 @@ export default function SearchHubView() {
   // 处理搜索
   const handleSearch = useCallback(
     (searchQuery: string) => {
-      if (!searchQuery.trim()) return
+      const normalizedQuery = searchQuery.trim().replace(/\s+/g, ' ')
+      if (!normalizedQuery) return
+
+      addSearchHistoryItem(normalizedQuery)
 
       // 更新 URL
       setSearchParams(prev => {
         const params = new URLSearchParams(prev)
-        params.set('q', searchQuery)
+        params.set('q', normalizedQuery)
         params.set('mode', mode)
         return params
       })
     },
-    [mode, setSearchParams],
+    [addSearchHistoryItem, mode, setSearchParams],
   )
 
   // 处理清除搜索

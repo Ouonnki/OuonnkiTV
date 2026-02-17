@@ -36,6 +36,15 @@ export default function SearchBox({ onMobileSearchChange }: SearchBoxProps) {
   const shouldShowDropdown =
     isDropdownOpen && (hasContent ? hasSuggestions || isLoading : hasHistory)
 
+  const handleInteractiveItemKeyDown = (
+    event: React.KeyboardEvent<HTMLDivElement>,
+    action: () => void,
+  ) => {
+    if (event.key !== 'Enter' && event.key !== ' ') return
+    event.preventDefault()
+    action()
+  }
+
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === 'Enter') {
       searchMovie(inputContent)
@@ -142,6 +151,9 @@ export default function SearchBox({ onMobileSearchChange }: SearchBoxProps) {
                 key={item.id}
                 className="hover:bg-accent group flex cursor-pointer items-center rounded-lg px-3 py-2 transition-colors"
                 onClick={() => handleHistoryItemClick(item.content)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={e => handleInteractiveItemKeyDown(e, () => handleHistoryItemClick(item.content))}
               >
                 <History className="text-muted-foreground mr-3 size-4 shrink-0" />
                 <span className="flex-1 truncate">{item.content}</span>
@@ -151,6 +163,7 @@ export default function SearchBox({ onMobileSearchChange }: SearchBoxProps) {
                     isMobile ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
                   }`}
                   onMouseDown={e => e.preventDefault()}
+                  onKeyDown={e => e.stopPropagation()}
                   onClick={e => handleHistoryItemDelete(e, item.id)}
                 >
                   <Trash2 className="size-4" />
@@ -169,6 +182,9 @@ export default function SearchBox({ onMobileSearchChange }: SearchBoxProps) {
                   key={`${item.mediaType}-${item.id}`}
                   className="hover:bg-accent flex cursor-pointer items-center rounded-lg px-3 py-2 transition-colors"
                   onClick={() => handleSuggestionClick(item.title)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={e => handleInteractiveItemKeyDown(e, () => handleSuggestionClick(item.title))}
                 >
                   <Search className="text-muted-foreground mr-3 size-4 shrink-0" />
                   <span className="flex-1 truncate">{item.title}</span>

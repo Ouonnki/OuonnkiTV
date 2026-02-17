@@ -19,16 +19,23 @@ export function SearchDirectSection({ query }: SearchDirectSectionProps) {
     canLoadMore,
     cmsPagination,
     successfulSourcesInCurrentPage,
-    startDirectSearch
+    startDirectSearch,
+    abortDirectSearch,
+    clearDirectSearchState,
   } = useDirectSearch()
 
   // 监听 query 变化触发搜索
   useEffect(() => {
-    if (query) {
+    if (!query) {
       setCurrentPage(1)
-      startDirectSearch(query, 1)
+      abortDirectSearch()
+      clearDirectSearchState()
+      return
     }
-  }, [query, startDirectSearch])
+
+    setCurrentPage(1)
+    startDirectSearch(query, 1)
+  }, [query, startDirectSearch, abortDirectSearch, clearDirectSearchState])
 
   // 加载下一页
   const handleLoadMore = useCallback(async () => {

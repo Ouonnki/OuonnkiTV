@@ -9,22 +9,23 @@ export const useSearch = () => {
   const { query: search, setQuery: setSearch, addSearchHistoryItem, clearQuery } = useSearchStore()
 
   const searchMovie = (query: string, isNavigating: boolean = true) => {
-    if (query.trim().length > 0) {
+    const normalizedQuery = query.trim().replace(/\s+/g, ' ')
+    if (normalizedQuery.length > 0) {
       // 设置当前搜索查询
-      setSearch(query)
+      setSearch(normalizedQuery)
 
       // 添加到搜索历史
-      addSearchHistoryItem(query)
+      addSearchHistoryItem(normalizedQuery)
 
       // 跟踪搜索事件
       trackEvent('search', {
-        query: query,
+        query: normalizedQuery,
         timestamp: new Date().toISOString(),
       })
 
       // 导航到搜索页面
       if (isNavigating) {
-        navigate(`/search?q=${encodeURIComponent(query)}`)
+        navigate(`/search?q=${encodeURIComponent(normalizedQuery)}`)
       }
     }
   }
