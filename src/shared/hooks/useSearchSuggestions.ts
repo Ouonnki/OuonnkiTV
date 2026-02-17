@@ -3,6 +3,9 @@ import { getTmdbClient, normalizeToMediaItem } from '@/shared/lib/tmdb'
 import { useSettingStore } from '@/shared/store/settingStore'
 import type { TmdbMediaItem } from '@/shared/types/tmdb'
 
+type TmdbSearchMultiParams = Parameters<ReturnType<typeof getTmdbClient>['search']['multi']>[0]
+type TmdbSearchLanguage = NonNullable<TmdbSearchMultiParams['language']>
+
 // 搜索建议最大数量
 const MAX_SUGGESTIONS = 9
 // 防抖延迟时间 (毫秒)
@@ -52,7 +55,7 @@ export function useSearchSuggestions(): UseSearchSuggestionsReturn {
         const res = await client.search.multi({
           query: query.trim(),
           page: 1,
-          language: useSettingStore.getState().system.tmdbLanguage as any,
+          language: useSettingStore.getState().system.tmdbLanguage as TmdbSearchLanguage,
           include_adult: false,
         })
 

@@ -107,6 +107,9 @@ const INITIAL_FILTER: TmdbFilterOptions = {
   // sortBy 默认为 undefined，表示按 TMDB 返回顺序不做排序
 }
 
+// 仅允许最新一次 TMDB 搜索写回结果，避免竞态导致旧结果覆盖新结果
+let latestSearchRequestId = 0
+
 export const useTmdbStore = create<TmdbState & TmdbActions>()(
   devtools(
     immer((set, get) => ({
@@ -197,6 +200,7 @@ export const useTmdbStore = create<TmdbState & TmdbActions>()(
       },
 
       search: async (query: string, page = 1) => {
+        const requestId = ++latestSearchRequestId
         const client = getTmdbClient()
         set(state => {
           state.searchQuery = query
@@ -218,6 +222,10 @@ export const useTmdbStore = create<TmdbState & TmdbActions>()(
               normalizeToMediaItem(item as unknown as Record<string, unknown>, item.media_type),
             )
 
+          if (requestId !== latestSearchRequestId) {
+            return
+          }
+
           set(state => {
             state.searchResults = page > 1 ? [...state.searchResults, ...results] : results
             state.searchPagination = {
@@ -232,6 +240,10 @@ export const useTmdbStore = create<TmdbState & TmdbActions>()(
           get()._updateAvailableYears()
           get()._applyFilters()
         } catch (err: unknown) {
+          if (requestId !== latestSearchRequestId) {
+            return
+          }
+
           set(state => {
             state.error = (err as Error).message || 'Search failed'
             state.loading.search = false

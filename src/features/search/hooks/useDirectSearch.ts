@@ -53,7 +53,6 @@ export function useDirectSearch() {
     currentPageRef.current = page
 
     setDirectLoading(true)
-    setSearchProgress({ completed: 0, total: selectedAPIs.length })
 
     // 第1页时清空现有结果
     if (page === 1) {
@@ -66,6 +65,29 @@ export function useDirectSearch() {
       setCompletedSourcesInCurrentPage(new Set())
       setSuccessfulSourcesInCurrentPage(new Set())
     }
+
+    // 根据缓存判断哪些源需要跳过
+    const cachedSources = sourcePaginationCacheRef.current
+    const sourcesToFetch = selectedAPIs.filter(source => {
+      const cached = cachedSources.get(source.id)
+      if (!cached) return true // 没有缓存信息，需要请求
+      return page <= cached.totalPages // 有缓存但页码未超出，需要请求
+    })
+    const totalRequestedSources = sourcesToFetch.length
+
+    // 保存当前页需要请求的源列表
+    sourcesToFetchRef.current = sourcesToFetch
+    if (sourcesToFetch.length === 0) {
+      setDirectLoading(false)
+      setSearchProgress({ completed: selectedAPIs.length, total: selectedAPIs.length })
+      setHasMore(false)
+      if (timeOutTimer.current) {
+        clearTimeout(timeOutTimer.current)
+        timeOutTimer.current = null
+      }
+      return
+    }
+    setSearchProgress({ completed: 0, total: totalRequestedSources })
 
     if (timeOutTimer.current) {
       clearTimeout(timeOutTimer.current)
@@ -83,30 +105,13 @@ export function useDirectSearch() {
           })
           return newSet
         })
+        setSearchProgress({
+          completed: totalRequestedSources,
+          total: totalRequestedSources,
+        })
       }
       timeOutTimer.current = null
     }, PaginationConfig.maxRequestTimeout)
-
-    // 根据缓存判断哪些源需要跳过
-    const cachedSources = sourcePaginationCacheRef.current
-    const sourcesToFetch = selectedAPIs.filter(source => {
-      const cached = cachedSources.get(source.id)
-      if (!cached) return true // 没有缓存信息，需要请求
-      return page <= cached.totalPages // 有缓存但页码未超出，需要请求
-    })
-
-    // 保存当前页需要请求的源列表
-    sourcesToFetchRef.current = sourcesToFetch
-    if (sourcesToFetch.length === 0) {
-      setDirectLoading(false)
-      setSearchProgress({ completed: selectedAPIs.length, total: selectedAPIs.length })
-      setHasMore(false)
-      if (timeOutTimer.current) {
-        clearTimeout(timeOutTimer.current)
-        timeOutTimer.current = null
-      }
-      return
-    }
 
     // 用于累积分页信息
     const paginationMap = new Map<string, Pagination>()
@@ -127,7 +132,7 @@ export function useDirectSearch() {
             // 实时更新搜索进度
             setSearchProgress({
               completed: newSet.size,
-              total: selectedAPIs.length,
+              total: totalRequestedSources,
             })
             return newSet
           })
@@ -219,8 +224,8 @@ export function useDirectSearch() {
 
         // Progress update
         setSearchProgress({
-          completed: selectedAPIs.length - (selectedAPIs.length - sourcesToFetch.length),
-          total: selectedAPIs.length,
+          completed: totalRequestedSources,
+          total: totalRequestedSources,
         })
 
         if (allResults.length === 0 && page === 1) {
@@ -240,6 +245,10 @@ export function useDirectSearch() {
             newSet.add(source.id)
           })
           return newSet
+        })
+        setSearchProgress({
+          completed: totalRequestedSources,
+          total: totalRequestedSources,
         })
 
         unsubResult()

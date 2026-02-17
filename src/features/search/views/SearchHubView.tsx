@@ -21,10 +21,10 @@ import {
 export default function SearchHubView() {
   const [searchParams, setSearchParams] = useSearchParams()
   const query = searchParams.get('q') || ''
-  const modeParam = searchParams.get('mode') as SearchMode | null
+  const modeParam = searchParams.get('mode')
 
   // 搜索模式状态 - 直接从 URL 获取，作为 Single Source of Truth
-  const mode: SearchMode = (modeParam || 'tmdb') as SearchMode
+  const mode: SearchMode = modeParam === 'direct' ? 'direct' : 'tmdb'
 
   const [isDirectCentered, setIsDirectCentered] = useState(false)
 
@@ -46,6 +46,17 @@ export default function SearchHubView() {
       addSearchHistoryItem(query.trim())
     }
   }, [query, addSearchHistoryItem])
+
+  // 归一化 URL 中的 mode，避免非法值污染后续行为
+  useEffect(() => {
+    if (modeParam === 'tmdb' || modeParam === 'direct') return
+
+    setSearchParams(prev => {
+      const params = new URLSearchParams(prev)
+      params.set('mode', 'tmdb')
+      return params
+    })
+  }, [modeParam, setSearchParams])
 
   // Trending Hook（只用于热搜词展示，仍然保留在顶层）
   const { trending, refreshTrending } = useTmdbNowPlaying()

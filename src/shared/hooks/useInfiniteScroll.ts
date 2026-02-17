@@ -29,11 +29,24 @@ export function useInfiniteScroll({
 }: UseInfiniteScrollOptions) {
   const sentinelRef = useRef<HTMLDivElement | null>(null)
   const isLoadingRef = useRef(false)
+  const triggerLockRef = useRef(false)
 
   // 同步加载状态到 ref
   useEffect(() => {
     isLoadingRef.current = isLoading
+    if (!isLoading) {
+      triggerLockRef.current = false
+    }
   }, [isLoading])
+
+  const tryLoadMore = useCallback(() => {
+    if (disabled || !hasMore || !canLoadMore || isLoadingRef.current || triggerLockRef.current) {
+      return
+    }
+
+    triggerLockRef.current = true
+    onLoadMore()
+  }, [disabled, hasMore, canLoadMore, onLoadMore])
 
   // IntersectionObserver 实现（更精确）
   useEffect(() => {
@@ -46,8 +59,8 @@ export function useInfiniteScroll({
       (entries) => {
         const [entry] = entries
         // 哨兵元素进入视口，且允许加载，且未在加载中
-        if (entry.isIntersecting && canLoadMore && !isLoadingRef.current) {
-          onLoadMore()
+        if (entry.isIntersecting) {
+          tryLoadMore()
         }
       },
       {
@@ -58,11 +71,11 @@ export function useInfiniteScroll({
 
     observer.observe(sentinel)
     return () => observer.disconnect()
-  }, [disabled, hasMore, canLoadMore, onLoadMore, threshold])
+  }, [disabled, hasMore, threshold, tryLoadMore])
 
   // 备用：滚动事件监听（兼容性更好）
   const handleScroll = useCallback(() => {
-    if (disabled || !hasMore || !canLoadMore || isLoadingRef.current) {
+    if (disabled || !hasMore || !canLoadMore) {
       return
     }
 
@@ -72,9 +85,9 @@ export function useInfiniteScroll({
     const clientHeight = window.innerHeight
 
     if (scrollHeight - scrollTop - clientHeight < threshold) {
-      onLoadMore()
+      tryLoadMore()
     }
-  }, [disabled, hasMore, canLoadMore, onLoadMore, threshold])
+  }, [disabled, hasMore, canLoadMore, threshold, tryLoadMore])
 
   useEffect(() => {
     window.addEventListener('scroll', handleScroll, { passive: true })

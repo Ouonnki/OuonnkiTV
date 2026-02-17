@@ -64,14 +64,6 @@ export function SearchTmdbSection({ query }: SearchTmdbSectionProps) {
     }
   }, [filterOptions, query, fetchDiscover])
 
-  // 无搜索词时加载 discover 数据
-  useEffect(() => {
-    if (!query) {
-      setCurrentPage(1)
-      fetchDiscover(1)
-    }
-  }, [query, fetchDiscover])
-
   // 执行搜索 - 检测新查询
   useEffect(() => {
     if (query) {
