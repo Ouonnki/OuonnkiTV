@@ -130,6 +130,8 @@ export function MediaCarousel({ title, items, loading = false, linkTo }: MediaCa
                   to={buildTmdbDetailPath(item.mediaType, item.id)}
                   posterUrl={getPosterUrl(item.posterPath, 'w342')}
                   title={item.title}
+                  year={item.releaseDate ? item.releaseDate.split('-')[0] : undefined}
+                  rating={item.voteAverage}
                 />
               </CarouselItem>
             ))}

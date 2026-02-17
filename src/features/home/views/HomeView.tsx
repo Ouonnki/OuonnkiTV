@@ -4,14 +4,18 @@ import {
   useTmdbTvLists,
   useTmdbRecommendations,
 } from '@/shared/hooks/useTmdb'
+import { useFavoritesStore } from '@/features/favorites/store/favoritesStore'
+import type { TmdbFavoriteItem } from '@/features/favorites/types/favorites'
 import { FeaturedCarousel } from '../components/FeaturedCarousel'
 import { ContinueWatching } from '../components/ContinueWatching'
 import { MediaCarousel } from '../components/MediaCarousel'
+import { useMemo } from 'react'
 
 /**
  * HomeView - 首页视图
  */
 export default function HomeView() {
+  const favorites = useFavoritesStore(state => state.favorites)
   const { trending, loading } = useTmdbNowPlaying()
   const {
     nowPlaying,
@@ -26,7 +30,25 @@ export default function HomeView() {
     topRated: topRatedTv,
     loading: tvLoading,
   } = useTmdbTvLists()
-  const { recommendations, loading: recommendationsLoading } = useTmdbRecommendations()
+  const favoriteRecommendationSource = useMemo(() => {
+    const tmdbFavorites = favorites.filter(
+      (item): item is TmdbFavoriteItem => item.sourceType === 'tmdb',
+    )
+
+    if (tmdbFavorites.length === 0) {
+      return null
+    }
+    const latestTmdbFavorite = tmdbFavorites.reduce((latest, item) =>
+      item.updatedAt > latest.updatedAt ? item : latest,
+    )
+
+    return {
+      id: latestTmdbFavorite.media.id,
+      mediaType: latestTmdbFavorite.media.mediaType,
+    }
+  }, [favorites])
+  const { recommendations, loading: recommendationsLoading } =
+    useTmdbRecommendations(favoriteRecommendationSource)
 
   return (
     <div className="flex flex-col gap-6">

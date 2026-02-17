@@ -92,6 +92,14 @@ const router = createBrowserRouter([
         ),
       },
       {
+        path: 'continue-watching',
+        element: (
+          <SuspenseWrapper>
+            <HistoryView />
+          </SuspenseWrapper>
+        ),
+      },
+      {
         path: 'media/:type/:tmdbId',
         element: (
           <SuspenseWrapper>

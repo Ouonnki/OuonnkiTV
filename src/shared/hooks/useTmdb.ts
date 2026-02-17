@@ -173,26 +173,44 @@ export function useTmdbTvLists() {
  * 按优先级顺序获取推荐来源：收藏夹第一个 -> 观看记录第一个 -> 待看清单第一个 -> trending 第一个
  * 目前收藏夹和待看清单未实现，预留位置
  */
-export function useTmdbRecommendations() {
+export function useTmdbRecommendations(
+  preferredSource?: { id: number; mediaType: TmdbMediaType } | null,
+) {
   const recommendations = useTmdbStore(s => s.recommendations)
   const loading = useTmdbStore(s => s.loading.recommendations)
   const trending = useTmdbStore(s => s.trending)
+  const preferredSourceId = preferredSource?.id
+  const preferredSourceMediaType = preferredSource?.mediaType
 
   const fetchRecommendations = useTmdbStore(s => s.fetchRecommendations)
 
   useEffect(() => {
     // TODO: 未来实现优先级：
-    // 1. 收藏夹第一个 (未实现)
+    // 1. 收藏夹第一个 (已实现，优先使用 preferredSource)
     // 2. 观看记录第一个 - 目前观看记录使用的是非 TMDB ID，暂时无法使用
     // 3. 待看清单第一个 (未实现)
     // 4. trending 第一个 (当前使用)
 
-    // 当前逻辑：使用 trending 第一个作为推荐来源
-    if (trending.length > 0 && recommendations.length === 0) {
+    if (recommendations.length > 0) return
+
+    // 优先使用调用方传入的推荐来源（例如：收藏夹中最近的 TMDB 项）
+    if (preferredSourceId && preferredSourceMediaType) {
+      fetchRecommendations(preferredSourceId, preferredSourceMediaType)
+      return
+    }
+
+    // 回退逻辑：使用 trending 第一个作为推荐来源
+    if (trending.length > 0) {
       const firstItem = trending[0]
       fetchRecommendations(firstItem.id, firstItem.mediaType)
     }
-  }, [trending, recommendations.length, fetchRecommendations])
+  }, [
+    trending,
+    recommendations.length,
+    fetchRecommendations,
+    preferredSourceId,
+    preferredSourceMediaType,
+  ])
 
   return {
     recommendations,

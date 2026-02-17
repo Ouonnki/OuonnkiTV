@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import { Play, Info } from 'lucide-react'
 import Autoplay from 'embla-carousel-autoplay'
+import { NavLink } from 'react-router'
 
 import { getBackdropUrl, getLogoUrl } from '@/shared/lib/tmdb'
+import { buildTmdbDetailPath, buildTmdbPlayPath } from '@/shared/lib/routes'
 import { Button } from '@/shared/components/ui/button'
 import {
   Carousel,
@@ -81,24 +83,38 @@ export function FeaturedCarousel({
   }, [api])
 
   // 骨架屏
-  if (loading || items.length === 0) {
+  if (loading) {
     return (
       <div>
         <AspectRatio ratio={getAspectRatio()} className="bg-muted overflow-hidden rounded-lg">
           <Skeleton className="h-full w-full rounded-lg" />
-          {/* 骨架屏遮罩层 - Netflix风格从左到右渐变 */}
-          <div className="absolute inset-0 flex flex-col justify-center rounded-lg bg-gradient-to-r from-black/90 via-black/50 via-60% to-transparent px-8 py-5 md:px-16 md:py-12">
-            <Skeleton className="mb-4 h-12 w-1/4 md:h-16 lg:h-24" />
-            <Skeleton className="mb-2 h-3 w-2/3 max-w-2xl md:mb-4 md:h-4" />
-            <Skeleton className="mb-2 h-3 w-1/2 max-w-xl md:h-4" />
-            <div className="mt-4 flex gap-3">
-              <Skeleton className="h-9 w-24 md:h-10 md:w-28" />
-              <Skeleton className="h-9 w-24 md:h-10 md:w-28" />
+          {/* 骨架屏遮罩层 - 移动端/平板 */}
+          <div className="absolute inset-0 flex min-h-0 flex-col justify-end rounded-lg bg-gradient-to-t from-black/90 via-black/50 via-60% to-transparent px-5 pt-4 pb-6 md:px-8 md:pb-8 lg:hidden">
+            <Skeleton className="mb-3 h-8 w-36 md:mb-4 md:h-10 md:w-48" />
+            <Skeleton className="mb-2 h-3 w-2/3 md:h-4" />
+            <Skeleton className="mb-3 h-3 w-1/2 md:mb-4 md:h-4" />
+            <div className="flex gap-2 md:gap-3">
+              <Skeleton className="h-8 w-20 md:h-9 md:w-24" />
+              <Skeleton className="h-8 w-20 md:h-9 md:w-24" />
+            </div>
+          </div>
+          {/* 骨架屏遮罩层 - 桌面端 */}
+          <div className="absolute inset-0 hidden flex-col justify-end rounded-lg bg-gradient-to-r from-black/90 via-black/50 via-40% to-transparent px-16 py-25 lg:flex">
+            <Skeleton className="mb-8 h-20 w-80 xl:h-24 xl:w-96" />
+            <Skeleton className="mb-2 h-4 w-2/3 max-w-2xl" />
+            <Skeleton className="mb-5 h-4 w-1/2 max-w-xl" />
+            <div className="flex gap-3">
+              <Skeleton className="h-10 w-28" />
+              <Skeleton className="h-10 w-28" />
             </div>
           </div>
         </AspectRatio>
       </div>
     )
+  }
+
+  if (items.length === 0) {
+    return null
   }
 
   return (
@@ -121,9 +137,11 @@ export function FeaturedCarousel({
         <CarouselContent>
           {items.map((item, index) => {
             const isActive = index === activeIndex
+            const playPath = buildTmdbPlayPath(item.mediaType, item.id)
+            const detailPath = buildTmdbDetailPath(item.mediaType, item.id)
 
             return (
-              <CarouselItem key={item.id} className="h-fit rounded-lg">
+              <CarouselItem key={`${item.mediaType}-${item.id}`} className="h-fit rounded-lg">
                 <AspectRatio
                   ratio={getAspectRatio()}
                   className="bg-muted overflow-hidden rounded-lg"
@@ -166,19 +184,25 @@ export function FeaturedCarousel({
                       className={`flex shrink-0 gap-2 transition-all delay-200 duration-500 ease-out md:gap-3 ${isActive ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'} `}
                     >
                       <Button
+                        asChild
                         size="sm"
                         className="h-8 gap-1.5 bg-white px-3 font-semibold text-black hover:bg-white/90 md:h-9 md:gap-2 md:px-4 md:text-sm"
                       >
-                        <Play className="size-3.5 fill-current md:size-4" />
-                        立即播放
+                        <NavLink to={playPath}>
+                          <Play className="size-3.5 fill-current md:size-4" />
+                          立即播放
+                        </NavLink>
                       </Button>
                       <Button
+                        asChild
                         size="sm"
                         variant="secondary"
                         className="h-8 gap-1.5 bg-white/30 px-3 font-semibold text-white hover:bg-white/40 md:h-9 md:gap-2 md:px-4 md:text-sm"
                       >
-                        <Info className="size-3.5 md:size-4" />
-                        视频详情
+                        <NavLink to={detailPath}>
+                          <Info className="size-3.5 md:size-4" />
+                          查看详情
+                        </NavLink>
                       </Button>
                     </div>
                   </div>
@@ -216,19 +240,25 @@ export function FeaturedCarousel({
                       className={`flex gap-3 transition-all delay-200 duration-500 ease-out ${isActive ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'} `}
                     >
                       <Button
+                        asChild
                         size="lg"
                         className="gap-2 bg-white font-semibold text-black hover:bg-white/90"
                       >
-                        <Play className="size-5 fill-current" />
-                        立即播放
+                        <NavLink to={playPath}>
+                          <Play className="size-5 fill-current" />
+                          立即播放
+                        </NavLink>
                       </Button>
                       <Button
+                        asChild
                         size="lg"
                         variant="secondary"
                         className="gap-2 bg-white/30 font-semibold text-white hover:bg-white/40"
                       >
-                        <Info className="size-5" />
-                        视频详情
+                        <NavLink to={detailPath}>
+                          <Info className="size-5" />
+                          查看详情
+                        </NavLink>
                       </Button>
                     </div>
                   </div>
