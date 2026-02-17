@@ -2,6 +2,7 @@ interface SettingsConfig {
   network?: {
     defaultTimeout?: number
     defaultRetry?: number
+    concurrencyLimit?: number
   }
   search?: {
     isSearchHistoryEnabled?: boolean
@@ -12,10 +13,14 @@ interface SettingsConfig {
     isViewingHistoryVisible?: boolean
     isAutoPlayEnabled?: boolean
     defaultEpisodeOrder?: 'asc' | 'desc'
-    adFilteringEnabled?: boolean
+    defaultVolume?: number
+    playerThemeColor?: string
+    maxViewingHistoryCount?: number
   }
   system?: {
     isUpdateLogEnabled?: boolean
+    tmdbLanguage?: string
+    tmdbImageQuality?: 'low' | 'medium' | 'high'
   }
 }
 

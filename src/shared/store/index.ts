@@ -1,4 +1,5 @@
 export { useSearchStore } from './searchStore'
 export { useApiStore } from './apiStore'
+export { useSettingStore } from './settingStore'
 export { useViewingHistoryStore } from './viewingHistoryStore'
 export { useVersionStore } from './versionStore'

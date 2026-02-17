@@ -59,8 +59,9 @@ export const useViewingHistoryStore = create<ViewingHistoryStore>()(
             }
 
             // 限制历史记录数量
-            if (state.viewingHistory.length > 50) {
-              state.viewingHistory.splice(50)
+            const maxCount = useSettingStore.getState().playback.maxViewingHistoryCount
+            if (state.viewingHistory.length > maxCount) {
+              state.viewingHistory.splice(maxCount)
             }
           })
         },

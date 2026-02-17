@@ -1,4 +1,5 @@
 import { TMDB } from 'tmdb-ts'
+import { useSettingStore } from '@/shared/store/settingStore'
 import type { TmdbMediaItem, TmdbMediaType } from '../types/tmdb'
 
 // 单例客户端
@@ -17,12 +18,21 @@ export function getTmdbClient(): TMDB {
 
 export const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/'
 
-export function getPosterUrl(path: string | null, size = 'w500'): string {
-  return path ? `${TMDB_IMAGE_BASE}${size}${path}` : ''
+const POSTER_SIZE_MAP = { low: 'w342', medium: 'w500', high: 'w780' } as const
+const BACKDROP_SIZE_MAP = { low: 'w780', medium: 'w1280', high: 'original' } as const
+
+function getImageQuality(): 'low' | 'medium' | 'high' {
+  return useSettingStore.getState().system.tmdbImageQuality
 }
 
-export function getBackdropUrl(path: string | null, size = 'original'): string {
-  return path ? `${TMDB_IMAGE_BASE}${size}${path}` : ''
+export function getPosterUrl(path: string | null, size?: string): string {
+  const resolvedSize = size ?? POSTER_SIZE_MAP[getImageQuality()]
+  return path ? `${TMDB_IMAGE_BASE}${resolvedSize}${path}` : ''
+}
+
+export function getBackdropUrl(path: string | null, size?: string): string {
+  const resolvedSize = size ?? BACKDROP_SIZE_MAP[getImageQuality()]
+  return path ? `${TMDB_IMAGE_BASE}${resolvedSize}${path}` : ''
 }
 
 export function getLogoUrl(path: string | null, size = 'w500'): string {

@@ -30,6 +30,8 @@ interface PlayerEpisodePanelProps {
   fillHeight?: boolean
   hideHeader?: boolean
   className?: string
+  /** 集数播放进度映射：episodeIndex → 进度百分比(0-100)，null 或 undefined 表示不显示 */
+  episodeProgressMap?: Map<number, number> | null
 }
 
 export function PlayerEpisodePanel({
@@ -46,6 +48,7 @@ export function PlayerEpisodePanel({
   fillHeight = false,
   hideHeader = false,
   className,
+  episodeProgressMap,
 }: PlayerEpisodePanelProps) {
   const sectionClassName = fillHeight
     ? 'h-full space-y-3 rounded-lg border border-border/60 bg-card/50 p-3 md:flex md:flex-col md:space-y-3 md:p-4'
@@ -117,16 +120,25 @@ export function PlayerEpisodePanel({
       <div className={`${listClassName} ${fillHeight ? 'md:flex-1 md:content-start' : ''}`}>
         {episodes.map(episode => {
           const active = selectedEpisode === episode.actualIndex
+          const progress = episodeProgressMap?.get(episode.actualIndex)
+          const hasProgress = progress !== undefined && progress > 0
+
           return (
             <Button
               key={`${episode.actualIndex}-${episode.name}`}
               variant={active ? 'default' : 'secondary'}
-              className="justify-start rounded-md"
+              className="relative justify-start overflow-hidden rounded-md"
               onClick={() => onEpisodeSelect(episode.displayIndex)}
             >
               <span className="line-clamp-1 text-left text-xs sm:text-sm">
                 {episode.name || `第 ${episode.actualIndex + 1} 集`}
               </span>
+              {hasProgress && !active && (
+                <span
+                  className="absolute inset-x-0 bottom-0 h-0.5 bg-primary/60"
+                  style={{ width: `${Math.min(100, progress)}%` }}
+                />
+              )}
             </Button>
           )
         })}

@@ -375,6 +375,21 @@ export default function UnifiedPlayer() {
     defaultDescOrder: playback.defaultEpisodeOrder === 'desc',
   })
 
+  const episodeProgressMap = useMemo(() => {
+    if (!playback.isViewingHistoryVisible || !resolvedSourceCode || !resolvedVodId) return null
+    const map = new Map<number, number>()
+    for (const item of viewingHistory) {
+      if (item.sourceCode === resolvedSourceCode && item.vodId === resolvedVodId) {
+        const progress =
+          item.duration > 0
+            ? Math.min(100, Math.max(0, (item.playbackPosition / item.duration) * 100))
+            : 0
+        map.set(item.episodeIndex, progress)
+      }
+    }
+    return map
+  }, [playback.isViewingHistoryVisible, resolvedSourceCode, resolvedVodId, viewingHistory])
+
   const playerRef = useRef<Artplayer | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -400,7 +415,7 @@ export default function UnifiedPlayer() {
     const art = new Artplayer({
       container: containerRef.current,
       url: detail.episodes[selectedEpisode],
-      volume: 0.7,
+      volume: playbackRef.current.defaultVolume,
       isLive: false,
       muted: false,
       autoplay: false,
@@ -421,7 +436,7 @@ export default function UnifiedPlayer() {
       backdrop: true,
       playsInline: true,
       airplay: !isMobileViewport,
-      theme: '#ef4444',
+      theme: playbackRef.current.playerThemeColor,
       lang: 'zh-cn',
       moreVideoAttr: {
         crossOrigin: 'anonymous',
@@ -865,6 +880,7 @@ export default function UnifiedPlayer() {
                 onPageRangeChange={episodePagination.setCurrentPageRange}
                 episodes={episodePagination.currentPageEpisodes}
                 onEpisodeSelect={handleEpisodeChange}
+                episodeProgressMap={episodeProgressMap}
                 compact
                 fillHeight
                 hideHeader
@@ -1005,6 +1021,7 @@ export default function UnifiedPlayer() {
                         onPageRangeChange={episodePagination.setCurrentPageRange}
                         episodes={episodePagination.currentPageEpisodes}
                         onEpisodeSelect={handleEpisodeChange}
+                        episodeProgressMap={episodeProgressMap}
                         compact
                         fillHeight={activeRightPanel === 'episode'}
                         hideHeader

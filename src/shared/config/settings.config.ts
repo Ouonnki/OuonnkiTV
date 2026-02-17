@@ -9,6 +9,9 @@ export const DEFAULT_SETTINGS = {
       (Number(import.meta.env.VITE_DEFAULT_TIMEOUT) || 3000),
     defaultRetry:
       envSettings?.network?.defaultRetry ?? (Number(import.meta.env.VITE_DEFAULT_RETRY) || 3),
+    concurrencyLimit:
+      envSettings?.network?.concurrencyLimit ??
+      (Number(import.meta.env.VITE_CONCURRENCY_LIMIT) || 3),
   },
   search: {
     isSearchHistoryEnabled:
@@ -26,12 +29,24 @@ export const DEFAULT_SETTINGS = {
     defaultEpisodeOrder:
       envSettings?.playback?.defaultEpisodeOrder ??
       ((import.meta.env.VITE_DEFAULT_EPISODE_ORDER as 'asc' | 'desc') || 'asc'),
-    adFilteringEnabled:
-      envSettings?.playback?.adFilteringEnabled ??
-      import.meta.env.VITE_AD_FILTERING_ENABLED !== 'false',
+    defaultVolume:
+      envSettings?.playback?.defaultVolume ??
+      (Number(import.meta.env.VITE_DEFAULT_VOLUME) || 0.7),
+    playerThemeColor:
+      envSettings?.playback?.playerThemeColor ??
+      (import.meta.env.VITE_PLAYER_THEME_COLOR || '#ef4444'),
+    maxViewingHistoryCount:
+      envSettings?.playback?.maxViewingHistoryCount ??
+      (Number(import.meta.env.VITE_MAX_VIEWING_HISTORY_COUNT) || 50),
   },
   system: {
     isUpdateLogEnabled:
       envSettings?.system?.isUpdateLogEnabled ?? import.meta.env.VITE_UPDATE_LOG_ENABLED === 'true',
+    tmdbLanguage:
+      envSettings?.system?.tmdbLanguage ??
+      (import.meta.env.VITE_TMDB_LANGUAGE || 'zh-CN'),
+    tmdbImageQuality:
+      (envSettings?.system?.tmdbImageQuality ??
+      (import.meta.env.VITE_TMDB_IMAGE_QUALITY || 'medium')) as 'low' | 'medium' | 'high',
   },
 }

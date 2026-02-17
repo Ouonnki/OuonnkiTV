@@ -2,19 +2,83 @@ import { useSettingStore } from '@/shared/store/settingStore'
 import { useApiStore } from '@/shared/store/apiStore'
 import { toast } from 'sonner'
 import dayjs from 'dayjs'
-import { type VideoApi } from '@/shared/types'
+import { z } from 'zod'
 
-interface PersonalConfig {
-  settings: {
-    network: ReturnType<typeof useSettingStore.getState>['network']
-    search: ReturnType<typeof useSettingStore.getState>['search']
-    playback: ReturnType<typeof useSettingStore.getState>['playback']
-    system: ReturnType<typeof useSettingStore.getState>['system']
-  }
-  videoSources: VideoApi[]
-  meta: {
-    version: string
-    exportDate: string
+const videoSourceSchema = z.object({
+  id: z.string().optional(),
+  name: z.string(),
+  url: z.string(),
+  detailUrl: z.string().optional(),
+  isEnabled: z.boolean().optional(),
+  timeout: z.number().optional(),
+  retry: z.number().optional(),
+  updatedAt: z.union([z.string(), z.date()]).optional(),
+})
+
+const personalConfigSchema = z.object({
+  settings: z.object({
+    network: z
+      .object({
+        defaultTimeout: z.number().min(300).optional(),
+        defaultRetry: z.number().min(0).max(10).optional(),
+        concurrencyLimit: z.number().min(1).max(10).optional(),
+      })
+      .optional(),
+    search: z
+      .object({
+        isSearchHistoryEnabled: z.boolean().optional(),
+        isSearchHistoryVisible: z.boolean().optional(),
+      })
+      .optional(),
+    playback: z
+      .object({
+        isViewingHistoryEnabled: z.boolean().optional(),
+        isViewingHistoryVisible: z.boolean().optional(),
+        isAutoPlayEnabled: z.boolean().optional(),
+        defaultEpisodeOrder: z.enum(['asc', 'desc']).optional(),
+        defaultVolume: z.number().min(0).max(1).optional(),
+        playerThemeColor: z.string().optional(),
+        maxViewingHistoryCount: z.number().min(10).max(500).optional(),
+        // 向后兼容：旧版配置可能在 playback 中包含 adFilteringEnabled
+        adFilteringEnabled: z.boolean().optional(),
+      })
+      .optional(),
+    system: z
+      .object({
+        isUpdateLogEnabled: z.boolean().optional(),
+        tmdbLanguage: z.string().optional(),
+        tmdbImageQuality: z.enum(['low', 'medium', 'high']).optional(),
+      })
+      .optional(),
+  }),
+  videoSources: z.array(videoSourceSchema),
+  // 新版配置中 adFilteringEnabled 独立于 settings
+  adFilteringEnabled: z.boolean().optional(),
+  meta: z
+    .object({
+      version: z.string(),
+      exportDate: z.string(),
+    })
+    .optional(),
+})
+
+function buildExportPayload() {
+  const settingState = useSettingStore.getState()
+  const apiState = useApiStore.getState()
+
+  return {
+    settings: {
+      network: settingState.network,
+      search: settingState.search,
+      playback: settingState.playback,
+      system: settingState.system,
+    },
+    videoSources: apiState.videoAPIs,
+    adFilteringEnabled: apiState.adFilteringEnabled,
+    meta: {
+      version: '2.0',
+      exportDate: new Date().toISOString(),
+    },
   }
 }
 
@@ -24,20 +88,7 @@ export const usePersonalConfig = () => {
 
   const exportConfig = () => {
     try {
-      const config: PersonalConfig = {
-        settings: {
-          network: settingStore.network,
-          search: settingStore.search,
-          playback: settingStore.playback,
-          system: settingStore.system,
-        },
-        videoSources: apiStore.videoAPIs,
-        meta: {
-          version: '1.0',
-          exportDate: new Date().toISOString(),
-        },
-      }
-
+      const config = buildExportPayload()
       const data = JSON.stringify(config, null, 2)
       const blob = new Blob([data], { type: 'application/json' })
       const url = URL.createObjectURL(blob)
@@ -57,20 +108,7 @@ export const usePersonalConfig = () => {
 
   const exportConfigToText = async () => {
     try {
-      const config: PersonalConfig = {
-        settings: {
-          network: settingStore.network,
-          search: settingStore.search,
-          playback: settingStore.playback,
-          system: settingStore.system,
-        },
-        videoSources: apiStore.videoAPIs,
-        meta: {
-          version: '1.0',
-          exportDate: new Date().toISOString(),
-        },
-      }
-
+      const config = buildExportPayload()
       const data = JSON.stringify(config, null, 2)
       await navigator.clipboard.writeText(data)
       toast.success('配置已复制到剪贴板')
@@ -80,22 +118,39 @@ export const usePersonalConfig = () => {
     }
   }
 
-  const validateAndRestore = (config: PersonalConfig) => {
-    // Basic validation
-    if (!config.settings || !config.videoSources) {
-      throw new Error('Invalid config format')
+  const validateAndRestore = (rawConfig: unknown) => {
+    const result = personalConfigSchema.safeParse(rawConfig)
+    if (!result.success) {
+      const errorMessages = result.error.issues
+        .slice(0, 3)
+        .map(issue => `${issue.path.join('.')}: ${issue.message}`)
+        .join('；')
+      throw new Error(`配置格式错误：${errorMessages}`)
     }
 
-    // Restore settings
+    const config = result.data
+
+    // 恢复设置
     if (config.settings.network) settingStore.setNetworkSettings(config.settings.network)
     if (config.settings.search) settingStore.setSearchSettings(config.settings.search)
-    if (config.settings.playback) settingStore.setPlaybackSettings(config.settings.playback)
+    if (config.settings.playback) {
+      // 提取 adFilteringEnabled 后传入 settingStore（settingStore 已移除该字段，多余字段会被忽略）
+      const { adFilteringEnabled: _, ...playbackSettings } = config.settings.playback
+      settingStore.setPlaybackSettings(playbackSettings)
+    }
     if (config.settings.system) settingStore.setSystemSettings(config.settings.system)
 
-    // Restore video sources
-    apiStore.importVideoAPIs(config.videoSources)
+    // 恢复广告过滤设置：优先使用顶层字段，向后兼容旧版 playback 中的值
+    const adFilteringValue =
+      config.adFilteringEnabled ?? config.settings.playback?.adFilteringEnabled
+    if (typeof adFilteringValue === 'boolean') {
+      apiStore.setAdFilteringEnabled(adFilteringValue)
+    }
 
-    toast.success(`配置导入成功`)
+    // 恢复视频源（importVideoAPIs 内部会为缺少 id 的源生成 UUID）
+    apiStore.importVideoAPIs(config.videoSources as Parameters<typeof apiStore.importVideoAPIs>[0])
+
+    toast.success('配置导入成功')
   }
 
   const importConfig = async (file: File) => {
@@ -103,11 +158,15 @@ export const usePersonalConfig = () => {
     reader.onload = e => {
       try {
         const content = e.target?.result as string
-        const config = JSON.parse(content) as PersonalConfig
-        validateAndRestore(config)
+        const rawConfig = JSON.parse(content)
+        validateAndRestore(rawConfig)
       } catch (error) {
         console.error('Import config error:', error)
-        toast.error('配置导入失败：文件格式错误')
+        if (error instanceof Error) {
+          toast.error(`配置导入失败：${error.message}`)
+        } else {
+          toast.error('配置导入失败：文件格式错误')
+        }
       }
     }
     reader.readAsText(file)
@@ -115,12 +174,16 @@ export const usePersonalConfig = () => {
 
   const importConfigFromText = (text: string) => {
     try {
-      const config = JSON.parse(text) as PersonalConfig
-      validateAndRestore(config)
+      const rawConfig = JSON.parse(text)
+      validateAndRestore(rawConfig)
       return true
     } catch (error) {
       console.error('Import text config error:', error)
-      toast.error('配置导入失败：JSON 格式错误')
+      if (error instanceof Error) {
+        toast.error(`配置导入失败：${error.message}`)
+      } else {
+        toast.error('配置导入失败：JSON 格式错误')
+      }
       return false
     }
   }
@@ -131,12 +194,16 @@ export const usePersonalConfig = () => {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
-      const config = (await response.json()) as PersonalConfig
-      validateAndRestore(config)
+      const rawConfig = await response.json()
+      validateAndRestore(rawConfig)
       return true
     } catch (error) {
       console.error('Import url config error:', error)
-      toast.error('配置导入失败：网络请求或解析错误')
+      if (error instanceof Error) {
+        toast.error(`配置导入失败：${error.message}`)
+      } else {
+        toast.error('配置导入失败：网络请求或解析错误')
+      }
       return false
     }
   }

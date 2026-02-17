@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { devtools } from 'zustand/middleware'
 import { immer } from 'zustand/middleware/immer'
 import { getTmdbClient, normalizeToMediaItem } from '../lib/tmdb'
+import { useSettingStore } from './settingStore'
 import type {
   TmdbMediaItem,
   TmdbFilterOptions,
@@ -9,6 +10,12 @@ import type {
   TmdbPagination,
   TmdbGenre,
 } from '../types/tmdb'
+
+// tmdb-ts 的 language 参数要求特定字面量联合类型，这里用类型断言兼容动态值
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getTmdbLanguage(): any {
+  return useSettingStore.getState().system.tmdbLanguage
+}
 
 interface TmdbState {
   // 搜索相关
@@ -44,6 +51,7 @@ interface TmdbState {
   // 缓存数据
   movieGenres: TmdbGenre[]
   tvGenres: TmdbGenre[]
+  genresLanguage: string | null // 缓存 genres 时使用的语言
 
   // 加载状态
   loading: {
@@ -134,6 +142,7 @@ export const useTmdbStore = create<TmdbState & TmdbActions>()(
 
       movieGenres: [],
       tvGenres: [],
+      genresLanguage: null,
 
       loading: {
         search: false,
@@ -154,21 +163,24 @@ export const useTmdbStore = create<TmdbState & TmdbActions>()(
       // Actions
       fetchGenresAndCountries: async () => {
         const client = getTmdbClient()
-        if (get().movieGenres.length > 0) return // 已缓存
+        const currentLang = getTmdbLanguage()
+        // 仅在语言未变且已缓存时跳过
+        if (get().movieGenres.length > 0 && get().genresLanguage === currentLang) return
 
         set(state => {
           state.loading.genres = true
         })
         try {
           const [movieGenres, tvGenres, countries] = await Promise.all([
-            client.genres.movies({ language: 'zh-CN' }),
-            client.genres.tvShows({ language: 'zh-CN' }),
+            client.genres.movies({ language: getTmdbLanguage() }),
+            client.genres.tvShows({ language: getTmdbLanguage() }),
             client.configuration.getCountries(),
           ])
 
           set(state => {
             state.movieGenres = movieGenres.genres
             state.tvGenres = tvGenres.genres
+            state.genresLanguage = currentLang
             state.availableFilterOptions.genres = [
               ...movieGenres.genres,
               ...tvGenres.genres,
@@ -196,7 +208,7 @@ export const useTmdbStore = create<TmdbState & TmdbActions>()(
           const res = await client.search.multi({
             query,
             page,
-            language: 'zh-CN',
+            language: getTmdbLanguage(),
             include_adult: false,
           })
 
@@ -254,7 +266,7 @@ export const useTmdbStore = create<TmdbState & TmdbActions>()(
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const discoverParams: any = {
             page,
-            language: 'zh-CN',
+            language: getTmdbLanguage(),
             sort_by: sortByValue,
           }
 
@@ -351,8 +363,8 @@ export const useTmdbStore = create<TmdbState & TmdbActions>()(
         try {
           // 并行获取电影热映和剧集热门
           const [moviesRes, tvRes] = await Promise.all([
-            client.movies.nowPlaying({ language: 'zh-CN' }),
-            client.tvShows.popular({ language: 'zh-CN' }),
+            client.movies.nowPlaying({ language: getTmdbLanguage() }),
+            client.tvShows.popular({ language: getTmdbLanguage() }),
           ])
 
           set(state => {
@@ -380,7 +392,7 @@ export const useTmdbStore = create<TmdbState & TmdbActions>()(
         })
 
         try {
-          const res = await client.movies.popular({ language: 'zh-CN' })
+          const res = await client.movies.popular({ language: getTmdbLanguage() })
           set(state => {
             state.popularMovies = res.results.map(i =>
               normalizeToMediaItem(i as unknown as Record<string, unknown>, 'movie'),
@@ -403,7 +415,7 @@ export const useTmdbStore = create<TmdbState & TmdbActions>()(
         })
 
         try {
-          const res = await client.movies.topRated({ language: 'zh-CN' })
+          const res = await client.movies.topRated({ language: getTmdbLanguage() })
           set(state => {
             state.topRatedMovies = res.results.map(i =>
               normalizeToMediaItem(i as unknown as Record<string, unknown>, 'movie'),
@@ -426,7 +438,7 @@ export const useTmdbStore = create<TmdbState & TmdbActions>()(
         })
 
         try {
-          const res = await client.movies.upcoming({ language: 'zh-CN' })
+          const res = await client.movies.upcoming({ language: getTmdbLanguage() })
           set(state => {
             state.upcomingMovies = res.results.map(i =>
               normalizeToMediaItem(i as unknown as Record<string, unknown>, 'movie'),
@@ -449,7 +461,7 @@ export const useTmdbStore = create<TmdbState & TmdbActions>()(
         })
 
         try {
-          const res = await client.tvShows.popular({ language: 'zh-CN' })
+          const res = await client.tvShows.popular({ language: getTmdbLanguage() })
           set(state => {
             state.popularTv = res.results.map(i =>
               normalizeToMediaItem(i as unknown as Record<string, unknown>, 'tv'),
@@ -472,7 +484,7 @@ export const useTmdbStore = create<TmdbState & TmdbActions>()(
         })
 
         try {
-          const res = await client.tvShows.topRated({ language: 'zh-CN' })
+          const res = await client.tvShows.topRated({ language: getTmdbLanguage() })
           set(state => {
             state.topRatedTv = res.results.map(i =>
               normalizeToMediaItem(i as unknown as Record<string, unknown>, 'tv'),
@@ -495,7 +507,7 @@ export const useTmdbStore = create<TmdbState & TmdbActions>()(
         })
 
         try {
-          const res = await client.tvShows.airingToday({ language: 'zh-CN' })
+          const res = await client.tvShows.airingToday({ language: getTmdbLanguage() })
           set(state => {
             state.airingTodayTv = res.results.map(i =>
               normalizeToMediaItem(i as unknown as Record<string, unknown>, 'tv'),
@@ -518,7 +530,7 @@ export const useTmdbStore = create<TmdbState & TmdbActions>()(
 
         try {
           const res = await client.trending.trending('all', timeWindow as 'day' | 'week', {
-            language: 'zh-CN',
+            language: getTmdbLanguage(),
           })
 
           const baseResults = res.results
@@ -587,8 +599,8 @@ export const useTmdbStore = create<TmdbState & TmdbActions>()(
         try {
           const res =
             mediaType === 'movie'
-              ? await client.movies.recommendations(id, { language: 'zh-CN' })
-              : await client.tvShows.recommendations(id, { language: 'zh-CN' })
+              ? await client.movies.recommendations(id, { language: getTmdbLanguage() })
+              : await client.tvShows.recommendations(id, { language: getTmdbLanguage() })
 
           set(state => {
             state.recommendations = res.results.map(i =>

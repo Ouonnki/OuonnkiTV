@@ -6,6 +6,7 @@ import { DEFAULT_SETTINGS } from '@/shared/config/settings.config'
 interface NetworkSettings {
   defaultTimeout: number
   defaultRetry: number
+  concurrencyLimit: number
 }
 
 interface SearchSettings {
@@ -18,11 +19,15 @@ interface PlaybackSettings {
   isViewingHistoryVisible: boolean
   isAutoPlayEnabled: boolean
   defaultEpisodeOrder: 'asc' | 'desc'
-  adFilteringEnabled: boolean
+  defaultVolume: number
+  playerThemeColor: string
+  maxViewingHistoryCount: number
 }
 
 interface SystemSettings {
   isUpdateLogEnabled: boolean
+  tmdbLanguage: string
+  tmdbImageQuality: 'low' | 'medium' | 'high'
 }
 
 interface SettingState {
@@ -95,7 +100,32 @@ export const useSettingStore = create<SettingStore>()(
       })),
       {
         name: 'ouonnki-tv-setting-store',
-        version: 1,
+        version: 3,
+        migrate: (persistedState: unknown, version: number) => {
+          const state = persistedState as Record<string, unknown>
+          if (version < 2 && state.playback) {
+            // v1→v2: 移除已废弃的 adFilteringEnabled 字段，统一使用 apiStore
+            delete (state.playback as Record<string, unknown>).adFilteringEnabled
+          }
+          if (version < 3) {
+            // v2→v3: 为新增字段补充默认值
+            const playback = (state.playback ?? {}) as Record<string, unknown>
+            playback.defaultVolume ??= DEFAULT_SETTINGS.playback.defaultVolume
+            playback.playerThemeColor ??= DEFAULT_SETTINGS.playback.playerThemeColor
+            playback.maxViewingHistoryCount ??= DEFAULT_SETTINGS.playback.maxViewingHistoryCount
+            state.playback = playback
+
+            const network = (state.network ?? {}) as Record<string, unknown>
+            network.concurrencyLimit ??= DEFAULT_SETTINGS.network.concurrencyLimit
+            state.network = network
+
+            const system = (state.system ?? {}) as Record<string, unknown>
+            system.tmdbLanguage ??= DEFAULT_SETTINGS.system.tmdbLanguage
+            system.tmdbImageQuality ??= DEFAULT_SETTINGS.system.tmdbImageQuality
+            state.system = system
+          }
+          return state
+        },
       },
     ),
     {
