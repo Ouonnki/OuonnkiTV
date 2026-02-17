@@ -133,8 +133,8 @@ export function TextConfigModal({
     resolver: zodResolver(textSchema),
   })
 
-  const onSubmit = (data: TextSchema) => {
-    const success = importConfigFromText(data.content)
+  const onSubmit = async (data: TextSchema) => {
+    const success = await importConfigFromText(data.content)
     if (success) {
       onOpenChange(false)
       reset()

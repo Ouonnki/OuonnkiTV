@@ -1,5 +1,9 @@
 import { useSettingStore } from '@/shared/store/settingStore'
 import { useApiStore } from '@/shared/store/apiStore'
+import {
+  useSubscriptionStore,
+  isSubscriptionSource,
+} from '@/shared/store/subscriptionStore'
 import { toast } from 'sonner'
 import dayjs from 'dayjs'
 import { z } from 'zod'
@@ -13,6 +17,18 @@ const videoSourceSchema = z.object({
   timeout: z.number().optional(),
   retry: z.number().optional(),
   updatedAt: z.union([z.string(), z.date()]).optional(),
+})
+
+const subscriptionSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  url: z.string(),
+  sourceCount: z.number().optional(),
+  lastRefreshedAt: z.union([z.string(), z.date()]).nullable().optional(),
+  lastRefreshSuccess: z.boolean().optional(),
+  lastRefreshError: z.string().nullable().optional(),
+  refreshInterval: z.number().optional(),
+  createdAt: z.union([z.string(), z.date()]).optional(),
 })
 
 const personalConfigSchema = z.object({
@@ -57,6 +73,8 @@ const personalConfigSchema = z.object({
       .optional(),
   }),
   videoSources: z.array(videoSourceSchema),
+  // 订阅数据
+  subscriptions: z.array(subscriptionSchema).optional(),
   // 新版配置中 adFilteringEnabled 独立于 settings
   adFilteringEnabled: z.boolean().optional(),
   meta: z
@@ -70,6 +88,7 @@ const personalConfigSchema = z.object({
 function buildExportPayload() {
   const settingState = useSettingStore.getState()
   const apiState = useApiStore.getState()
+  const subscriptionState = useSubscriptionStore.getState()
 
   return {
     settings: {
@@ -78,10 +97,12 @@ function buildExportPayload() {
       playback: settingState.playback,
       system: settingState.system,
     },
-    videoSources: apiState.videoAPIs,
+    // 导出时过滤掉订阅源，仅保留手动维护的视频源
+    videoSources: apiState.videoAPIs.filter(s => !isSubscriptionSource(s.id)),
+    subscriptions: subscriptionState.subscriptions,
     adFilteringEnabled: apiState.adFilteringEnabled,
     meta: {
-      version: '2.0',
+      version: '3.0',
       exportDate: new Date().toISOString(),
     },
   }
@@ -123,7 +144,7 @@ export const usePersonalConfig = () => {
     }
   }
 
-  const validateAndRestore = (rawConfig: unknown) => {
+  const validateAndRestore = async (rawConfig: unknown) => {
     const result = personalConfigSchema.safeParse(rawConfig)
     if (!result.success) {
       const errorMessages = result.error.issues
@@ -139,7 +160,6 @@ export const usePersonalConfig = () => {
     if (config.settings.network) settingStore.setNetworkSettings(config.settings.network)
     if (config.settings.search) settingStore.setSearchSettings(config.settings.search)
     if (config.settings.playback) {
-      // 提取 adFilteringEnabled 后传入 settingStore（settingStore 已移除该字段，多余字段会被忽略）
       const { adFilteringEnabled: _, ...playbackSettings } = config.settings.playback
       settingStore.setPlaybackSettings(playbackSettings)
     }
@@ -155,16 +175,33 @@ export const usePersonalConfig = () => {
     // 恢复视频源（importVideoAPIs 内部会为缺少 id 的源生成 UUID）
     apiStore.importVideoAPIs(config.videoSources as Parameters<typeof apiStore.importVideoAPIs>[0])
 
+    // 恢复订阅：清空现有订阅后逐一重建（addSubscription 会自动拉取最新数据）
+    if (config.subscriptions && config.subscriptions.length > 0) {
+      const subscriptionStore = useSubscriptionStore.getState()
+      // 清空现有订阅
+      for (const existing of subscriptionStore.subscriptions) {
+        subscriptionStore.removeSubscription(existing.id)
+      }
+      // 逐一添加导入的订阅
+      for (const sub of config.subscriptions) {
+        await subscriptionStore.addSubscription(
+          sub.url,
+          sub.name,
+          sub.refreshInterval ?? 60,
+        )
+      }
+    }
+
     toast.success('配置导入成功')
   }
 
   const importConfig = async (file: File) => {
     const reader = new FileReader()
-    reader.onload = e => {
+    reader.onload = async e => {
       try {
         const content = e.target?.result as string
         const rawConfig = JSON.parse(content)
-        validateAndRestore(rawConfig)
+        await validateAndRestore(rawConfig)
       } catch (error) {
         console.error('Import config error:', error)
         if (error instanceof Error) {
@@ -177,10 +214,10 @@ export const usePersonalConfig = () => {
     reader.readAsText(file)
   }
 
-  const importConfigFromText = (text: string) => {
+  const importConfigFromText = async (text: string) => {
     try {
       const rawConfig = JSON.parse(text)
-      validateAndRestore(rawConfig)
+      await validateAndRestore(rawConfig)
       return true
     } catch (error) {
       console.error('Import text config error:', error)
@@ -200,7 +237,7 @@ export const usePersonalConfig = () => {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
       const rawConfig = await response.json()
-      validateAndRestore(rawConfig)
+      await validateAndRestore(rawConfig)
       return true
     } catch (error) {
       console.error('Import url config error:', error)
@@ -217,6 +254,11 @@ export const usePersonalConfig = () => {
     try {
       settingStore.resetSettings()
       await apiStore.resetVideoSources()
+      // 清空所有订阅
+      const subscriptionStore = useSubscriptionStore.getState()
+      for (const sub of [...subscriptionStore.subscriptions]) {
+        subscriptionStore.removeSubscription(sub.id)
+      }
       toast.success('已恢复默认配置')
     } catch (error) {
       console.error('Restore default error:', error)

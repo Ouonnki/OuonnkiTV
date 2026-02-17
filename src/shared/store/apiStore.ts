@@ -47,6 +47,10 @@ interface ApiActions {
   getSelectedAPIs: () => VideoSource[]
   // 重置视频源
   resetVideoSources: () => Promise<void>
+  // 替换指定订阅的所有视频源（保留用户之前的 isEnabled 设置）
+  replaceSubscriptionSources: (subscriptionId: string, sources: VideoSource[]) => void
+  // 移除指定订阅的所有视频源
+  removeSubscriptionSources: (subscriptionId: string) => void
 }
 
 type ApiStore = ApiState & ApiActions
@@ -183,10 +187,46 @@ export const useApiStore = create<ApiStore>()(
           })
           await get().initializeEnvSources()
         },
+
+        replaceSubscriptionSources: (subscriptionId: string, sources: VideoSource[]) => {
+          set(state => {
+            const prefix = `sub:${subscriptionId}:`
+            // 记录旧源的 isEnabled 状态（按 name+url 匹配，因为 index 可能变化）
+            const oldEnabledMap = new Map<string, boolean>()
+            state.videoAPIs
+              .filter(s => s.id.startsWith(prefix))
+              .forEach(s => {
+                oldEnabledMap.set(`${s.name}||${s.url}`, s.isEnabled)
+              })
+
+            // 移除旧的订阅源
+            const nonSubscriptionSources = state.videoAPIs.filter(s => !s.id.startsWith(prefix))
+
+            // 对新源应用之前的 isEnabled 设置
+            const newSources = sources.map(s => {
+              const key = `${s.name}||${s.url}`
+              const prevEnabled = oldEnabledMap.get(key)
+              return {
+                ...s,
+                isEnabled: prevEnabled !== undefined ? prevEnabled : s.isEnabled,
+              }
+            })
+
+            // 手动源在前，订阅源追加到末尾
+            state.videoAPIs = [...nonSubscriptionSources, ...newSources]
+          })
+        },
+
+        removeSubscriptionSources: (subscriptionId: string) => {
+          set(state => {
+            const prefix = `sub:${subscriptionId}:`
+            state.videoAPIs = state.videoAPIs.filter(s => !s.id.startsWith(prefix))
+          })
+        },
       })),
       {
-        name: 'ouonnki-tv-api-store', // 持久化存储的键名
-        version: 5, // 保持版本号不变以兼容现有数据
+        name: 'ouonnki-tv-api-store',
+        version: 6,
         migrate: (persistedState: unknown, version: number) => {
           const state = persistedState as Partial<ApiState>
 

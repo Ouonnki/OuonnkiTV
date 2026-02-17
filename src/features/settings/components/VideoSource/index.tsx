@@ -1,16 +1,18 @@
 import { Button } from '@/shared/components/ui/button'
 import { ScrollArea } from '@/shared/components/ui/scroll-area'
-import { CircleX, CircleCheckBig } from 'lucide-react'
+import { CircleX, CircleCheckBig, Rss } from 'lucide-react'
 import { Switch } from '@/shared/components/ui/switch'
 import { cn } from '@/shared/lib'
 import { useRef, useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { useApiStore } from '@/shared/store/apiStore'
+import { isSubscriptionSource } from '@/shared/store/subscriptionStore'
 import { useSettingStore } from '@/shared/store/settingStore'
 import dayjs from 'dayjs'
 import { Badge } from '@/shared/components/ui/badge'
 import ActionDropdown from '@/shared/components/common/ActionDropdown'
 import VideoSourceForm from './VideoSourceForm'
+import SubscriptionSourceDetail from './SubscriptionSourceDetail'
 import {
   Select,
   SelectContent,
@@ -130,10 +132,11 @@ export default function VideoSource() {
     setTextSourceModalOpen(true)
   }
 
-  // 导出为文件
+  // 导出为文件（排除订阅源）
   const handleExportToFile = () => {
     try {
-      const data = JSON.stringify(videoAPIs, null, 2)
+      const manualAPIs = videoAPIs.filter(s => !isSubscriptionSource(s.id))
+      const data = JSON.stringify(manualAPIs, null, 2)
       const blob = new Blob([data], { type: 'application/json' })
       const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
@@ -150,10 +153,11 @@ export default function VideoSource() {
     }
   }
 
-  // 导出为文本
+  // 导出为文本（排除订阅源）
   const handleExportToText = async () => {
     try {
-      const data = JSON.stringify(videoAPIs, null, 2)
+      const manualAPIs = videoAPIs.filter(s => !isSubscriptionSource(s.id))
+      const data = JSON.stringify(manualAPIs, null, 2)
       await navigator.clipboard.writeText(data)
       toast.success('已复制到剪贴板')
     } catch (error) {
@@ -244,6 +248,9 @@ export default function VideoSource() {
                 {showVideoAPIs.map(source => (
                   <SelectItem key={source.id} value={source.id}>
                     <div className="flex min-w-0 items-center gap-2">
+                      {isSubscriptionSource(source.id) && (
+                        <Rss className="size-3 shrink-0 text-violet-500" />
+                      )}
                       <span className="max-w-52 truncate">{source.name}</span>
                       <span
                         className={cn(
@@ -304,12 +311,17 @@ export default function VideoSource() {
                     key={source.id}
                     onClick={() => setSelectedIndex(index)}
                   >
-                    <p className="truncate">{source.name}</p>
+                    <div className="flex min-w-0 items-center gap-1.5">
+                      {isSubscriptionSource(source.id) && (
+                        <Rss className="size-3 shrink-0 text-violet-500" />
+                      )}
+                      <p className="truncate">{source.name}</p>
+                    </div>
                     <Switch
                       onClick={e => e.stopPropagation()}
                       onCheckedChange={() => setApiEnabled(source.id, !source.isEnabled)}
                       checked={source.isEnabled}
-                    ></Switch>
+                    />
                   </div>
                 ))}
               </div>
@@ -318,25 +330,29 @@ export default function VideoSource() {
 
           <div className="bg-card/70 flex flex-1 flex-col rounded-xl p-4">
             {selectedSource ? (
-              <>
-                <div className="border-border flex items-start justify-between gap-3 border-b pb-3">
-                  <div className="min-w-0 flex flex-col gap-1">
-                    <h3 className="truncate text-base font-semibold md:text-lg">
-                      {selectedSource.name}
-                    </h3>
-                    <p className="text-muted-foreground text-xs">
-                      更新于 {dayjs(selectedSource.updatedAt).format('YYYY-MM-DD HH:mm')}
-                    </p>
+              isSubscriptionSource(selectedSource.id) ? (
+                <SubscriptionSourceDetail source={selectedSource} />
+              ) : (
+                <>
+                  <div className="border-border flex items-start justify-between gap-3 border-b pb-3">
+                    <div className="min-w-0 flex flex-col gap-1">
+                      <h3 className="truncate text-base font-semibold md:text-lg">
+                        {selectedSource.name}
+                      </h3>
+                      <p className="text-muted-foreground text-xs">
+                        更新于 {dayjs(selectedSource.updatedAt).format('YYYY-MM-DD HH:mm')}
+                      </p>
+                    </div>
+                    <Switch
+                      checked={selectedSource.isEnabled}
+                      onCheckedChange={checked => setApiEnabled(selectedSource.id, checked)}
+                    />
                   </div>
-                  <Switch
-                    checked={selectedSource.isEnabled}
-                    onCheckedChange={checked => setApiEnabled(selectedSource.id, checked)}
-                  />
-                </div>
-                <div className="mt-3">
-                  <VideoSourceForm sourceInfo={selectedSource} />
-                </div>
-              </>
+                  <div className="mt-3">
+                    <VideoSourceForm sourceInfo={selectedSource} />
+                  </div>
+                </>
+              )
             ) : (
               <div className="text-muted-foreground flex flex-1 items-center justify-center text-sm">
                 请选择或点击右上角添加视频源

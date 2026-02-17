@@ -8,6 +8,7 @@ import { lazy, Suspense, useEffect } from 'react'
 import { useVersionStore } from '@/shared/store/versionStore'
 import { useSettingStore } from '@/shared/store/settingStore'
 import { useApiStore } from '@/shared/store/apiStore'
+import { useSubscriptionAutoRefresh } from '@/shared/hooks/useSubscriptionAutoRefresh'
 
 const UpdateModal = lazy(() => import('@/shared/components/UpdateModal'))
 
@@ -15,6 +16,9 @@ export default function MainLayout() {
   const { hasNewVersion, setShowUpdateModal } = useVersionStore()
   const { system } = useSettingStore()
   const { initializeEnvSources } = useApiStore()
+
+  // 订阅源自动刷新
+  useSubscriptionAutoRefresh()
 
   // 初始化逻辑 (从 MyRouter 迁移)
   useEffect(() => {

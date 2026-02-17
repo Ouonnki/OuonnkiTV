@@ -1,4 +1,5 @@
 import VideoSource from '../components/VideoSource'
+import SubscriptionManager from '../components/VideoSource/SubscriptionManager'
 import { SettingsPageShell } from '../components/common'
 
 /**
@@ -11,6 +12,7 @@ export default function SourceSettings() {
       description="管理站点可用视频源，支持导入、导出、启停与参数编辑。"
       showHeader={false}
     >
+      <SubscriptionManager />
       <VideoSource />
     </SettingsPageShell>
   )
