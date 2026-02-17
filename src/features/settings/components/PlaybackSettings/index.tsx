@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select'
-import { Gauge, ListFilter, Monitor, Palette, PlaySquare, Timer, Volume2 } from 'lucide-react'
+import { Gauge, ListFilter, Monitor, Palette, PlaySquare, Settings2, Timer, Volume2 } from 'lucide-react'
 import { SettingsItem, SettingsPageShell, SettingsSection } from '../common'
 
 export default function PlaybackSettings() {
@@ -137,6 +137,58 @@ export default function PlaybackSettings() {
                 }
               />
             </div>
+          }
+        />
+      </SettingsSection>
+
+      <SettingsSection
+        title="播放器功能"
+        description="控制播放器内置功能的启用状态，修改后下次打开播放页生效。"
+        icon={<Settings2 className="size-4" />}
+        tone="rose"
+      >
+        <SettingsItem
+          title="循环播放"
+          description="单集播放完毕后自动重头开始。"
+          controlClassName="self-end mt-1"
+          control={
+            <Switch
+              checked={playback.isLoopEnabled}
+              onCheckedChange={checked => setPlaybackSettings({ isLoopEnabled: checked })}
+            />
+          }
+        />
+        <SettingsItem
+          title="画中画"
+          description="允许将视频以悬浮小窗形式播放。"
+          controlClassName="self-end mt-1"
+          control={
+            <Switch
+              checked={playback.isPipEnabled}
+              onCheckedChange={checked => setPlaybackSettings({ isPipEnabled: checked })}
+            />
+          }
+        />
+        <SettingsItem
+          title="自动迷你播放器"
+          description="页面滚动时自动将视频缩小为迷你播放器。"
+          controlClassName="self-end mt-1"
+          control={
+            <Switch
+              checked={playback.isAutoMiniEnabled}
+              onCheckedChange={checked => setPlaybackSettings({ isAutoMiniEnabled: checked })}
+            />
+          }
+        />
+        <SettingsItem
+          title="截图"
+          description="在播放器中显示截图按钮。"
+          controlClassName="self-end mt-1"
+          control={
+            <Switch
+              checked={playback.isScreenshotEnabled}
+              onCheckedChange={checked => setPlaybackSettings({ isScreenshotEnabled: checked })}
+            />
           }
         />
       </SettingsSection>

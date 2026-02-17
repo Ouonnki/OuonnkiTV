@@ -419,12 +419,12 @@ export default function UnifiedPlayer() {
       isLive: false,
       muted: false,
       autoplay: false,
-      pip: true,
+      pip: playbackRef.current.isPipEnabled,
       autoSize: false,
-      autoMini: true,
-      screenshot: true,
+      autoMini: false, // 内置 autoMini 监听 window.scroll，在 ScrollArea 布局下失效，改用手动实现
+      screenshot: playbackRef.current.isScreenshotEnabled,
       setting: true,
-      loop: false,
+      loop: playbackRef.current.isLoopEnabled,
       flip: true,
       playbackRate: true,
       aspectRatio: true,
@@ -542,7 +542,98 @@ export default function UnifiedPlayer() {
     const throttledTimeUpdate = _.throttle(timeUpdateHandler, TIME_UPDATE_INTERVAL)
     art.on('video:timeupdate', throttledTimeUpdate)
 
+    // 手动实现 autoMini：Artplayer 内置 autoMini 监听 window.scroll，
+    // 但应用使用 Radix ScrollArea 管理滚动，window.scroll 永远不触发。
+    // 这里监听 ScrollArea viewport 的 scroll 事件，手动切换 art.mini。
+    let miniCleanup: (() => void) | undefined
+    if (playbackRef.current.isAutoMiniEnabled && containerRef.current) {
+      const scrollViewport = document.querySelector(
+        '[data-main-scroll-area] [data-slot="scroll-area-viewport"]',
+      ) as HTMLElement | null
+      const playerSection = containerRef.current.closest('section')
+
+      if (scrollViewport && playerSection) {
+        let isMini = false
+        let hasSetInitialPosition = false
+        const VISIBILITY_GAP = 50
+
+        const checkVisibility = _.throttle(() => {
+          if (!playerRef.current) return
+
+          const scrollRect = scrollViewport.getBoundingClientRect()
+          const sectionRect = playerSection.getBoundingClientRect()
+
+          // section 底部在滚动区域顶部以下且 section 顶部在滚动区域底部以上，则可见
+          const isVisible =
+            sectionRect.bottom > scrollRect.top + VISIBILITY_GAP &&
+            sectionRect.top < scrollRect.bottom - VISIBILITY_GAP
+
+          if (!isVisible && !isMini) {
+            // 进入迷你模式前固定 section 高度，防止 fixed 定位导致布局塌陷
+            playerSection.style.minHeight = `${sectionRect.height}px`
+            isMini = true
+            playerRef.current.mini = true
+
+            // 首次进入迷你模式时，根据屏幕尺寸设置初始位置和大小
+            // 移动端/平板端：右上角（导航栏下方），缩小尺寸
+            // 桌面端：右下角（回到顶部按钮上方），默认尺寸
+            if (!hasSetInitialPosition) {
+              hasSetInitialPosition = true
+              requestAnimationFrame(() => {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const miniEl = (playerRef.current as any)?.template?.$mini as
+                  | HTMLElement
+                  | undefined
+                if (!miniEl) return
+
+                const isMobile = window.matchMedia('(max-width: 639px)').matches
+                const isTablet = window.matchMedia(
+                  '(min-width: 640px) and (max-width: 1023px)',
+                ).matches
+
+                if (isMobile || isTablet) {
+                  // 移动端/平板端：右上角，导航栏高度 64px + 8px 间距
+                  const miniWidth = isMobile ? 240 : 280
+                  const miniHeight = isMobile ? 135 : 158
+                  const topGap = 72
+                  const rightGap = isMobile ? 12 : 16
+
+                  miniEl.style.width = `${miniWidth}px`
+                  miniEl.style.height = `${miniHeight}px`
+                  miniEl.style.top = `${topGap}px`
+                  miniEl.style.left = `${window.innerWidth - miniWidth - rightGap}px`
+                } else {
+                  // 桌面端：右下角，回到顶部按钮上方
+                  const miniRect = miniEl.getBoundingClientRect()
+                  const bottomGap = 100
+                  const rightGap = 50
+                  miniEl.style.top = `${window.innerHeight - miniRect.height - bottomGap}px`
+                  miniEl.style.left = `${window.innerWidth - miniRect.width - rightGap}px`
+                }
+              })
+            }
+          } else if (isVisible && isMini) {
+            isMini = false
+            playerRef.current.mini = false
+            playerSection.style.minHeight = ''
+          }
+        }, 200)
+
+        scrollViewport.addEventListener('scroll', checkVisibility, { passive: true })
+
+        miniCleanup = () => {
+          checkVisibility.cancel()
+          scrollViewport.removeEventListener('scroll', checkVisibility)
+          if (playerRef.current) {
+            playerRef.current.mini = false
+          }
+          playerSection.style.minHeight = ''
+        }
+      }
+    }
+
     return () => {
+      miniCleanup?.()
       throttledTimeUpdate.cancel()
       if (playerRef.current && playerRef.current.destroy) {
         addHistorySnapshot()

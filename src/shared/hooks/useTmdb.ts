@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import type { AppendToResponseMovieKey, AppendToResponseTvKey } from 'tmdb-ts'
 import { useTmdbStore } from '../store/tmdbStore'
 import { getTmdbClient, normalizeToMediaItem } from '../lib/tmdb'
+import { useSettingStore } from '../store/settingStore'
 import type { TmdbMediaType, TmdbMovieDetail, TmdbTvDetail } from '../types/tmdb'
 
 /**
@@ -206,7 +207,7 @@ export function useTmdbRecommendations() {
 export function useTmdbDetail<T extends TmdbMovieDetail | TmdbTvDetail>(
   id: number | undefined,
   mediaType: TmdbMediaType,
-  language = 'zh-CN',
+  language = useSettingStore.getState().system.tmdbLanguage,
 ) {
   const [detail, setDetail] = useState<T | null>(null)
   const [loading, setLoading] = useState(false)

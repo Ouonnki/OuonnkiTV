@@ -28,6 +28,7 @@ const personalConfigSchema = z.object({
       .object({
         isSearchHistoryEnabled: z.boolean().optional(),
         isSearchHistoryVisible: z.boolean().optional(),
+        maxSearchHistoryCount: z.number().min(5).max(100).optional(),
       })
       .optional(),
     playback: z
@@ -39,6 +40,10 @@ const personalConfigSchema = z.object({
         defaultVolume: z.number().min(0).max(1).optional(),
         playerThemeColor: z.string().optional(),
         maxViewingHistoryCount: z.number().min(10).max(500).optional(),
+        isLoopEnabled: z.boolean().optional(),
+        isPipEnabled: z.boolean().optional(),
+        isAutoMiniEnabled: z.boolean().optional(),
+        isScreenshotEnabled: z.boolean().optional(),
         // 向后兼容：旧版配置可能在 playback 中包含 adFilteringEnabled
         adFilteringEnabled: z.boolean().optional(),
       })

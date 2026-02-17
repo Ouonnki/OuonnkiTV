@@ -12,15 +12,8 @@ import {
   type SearchErrorEvent,
 } from '@ouonnki/cms-core'
 import { useSettingStore } from '@/shared/store/settingStore'
+import { PROXY_URL } from '@/shared/config/api.config'
 
-/**
- * 默认代理URL
- */
-const DEFAULT_PROXY_URL = '/proxy?url='
-
-/**
- * 获取或创建CmsClient单例
- */
 let globalClient: CmsClient | null = null
 let globalConcurrencyLimit: number | null = null
 
@@ -34,7 +27,7 @@ function getCmsClient(config?: CmsClientConfig): CmsClient {
   if (!globalClient) {
     globalConcurrencyLimit = settingLimit
     globalClient = createCmsClient({
-      proxyStrategy: createUrlPrefixProxyStrategy(DEFAULT_PROXY_URL),
+      proxyStrategy: createUrlPrefixProxyStrategy(PROXY_URL),
       concurrencyLimit: settingLimit,
       ...config,
     })

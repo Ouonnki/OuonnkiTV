@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from 'react'
 import { getTmdbClient, normalizeToMediaItem } from '@/shared/lib/tmdb'
+import { useSettingStore } from '@/shared/store/settingStore'
 import type { TmdbMediaItem } from '@/shared/types/tmdb'
 
 // 搜索建议最大数量
@@ -51,7 +52,7 @@ export function useSearchSuggestions(): UseSearchSuggestionsReturn {
         const res = await client.search.multi({
           query: query.trim(),
           page: 1,
-          language: 'zh-CN',
+          language: useSettingStore.getState().system.tmdbLanguage as any,
           include_adult: false,
         })
 

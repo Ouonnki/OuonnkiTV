@@ -18,6 +18,9 @@ export const DEFAULT_SETTINGS = {
       envSettings?.search?.isSearchHistoryEnabled ??
       import.meta.env.VITE_SEARCH_HISTORY_ENABLED !== 'false',
     isSearchHistoryVisible: envSettings?.search?.isSearchHistoryVisible ?? true,
+    maxSearchHistoryCount:
+      envSettings?.search?.maxSearchHistoryCount ??
+      (Number(import.meta.env.VITE_MAX_SEARCH_HISTORY_COUNT) || 20),
   },
   playback: {
     isViewingHistoryEnabled:
@@ -38,6 +41,10 @@ export const DEFAULT_SETTINGS = {
     maxViewingHistoryCount:
       envSettings?.playback?.maxViewingHistoryCount ??
       (Number(import.meta.env.VITE_MAX_VIEWING_HISTORY_COUNT) || 50),
+    isLoopEnabled: envSettings?.playback?.isLoopEnabled ?? false,
+    isPipEnabled: envSettings?.playback?.isPipEnabled ?? true,
+    isAutoMiniEnabled: envSettings?.playback?.isAutoMiniEnabled ?? true,
+    isScreenshotEnabled: envSettings?.playback?.isScreenshotEnabled ?? true,
   },
   system: {
     isUpdateLogEnabled:

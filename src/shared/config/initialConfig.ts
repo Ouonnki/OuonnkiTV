@@ -7,6 +7,7 @@ interface SettingsConfig {
   search?: {
     isSearchHistoryEnabled?: boolean
     isSearchHistoryVisible?: boolean
+    maxSearchHistoryCount?: number
   }
   playback?: {
     isViewingHistoryEnabled?: boolean
@@ -16,6 +17,10 @@ interface SettingsConfig {
     defaultVolume?: number
     playerThemeColor?: string
     maxViewingHistoryCount?: number
+    isLoopEnabled?: boolean
+    isPipEnabled?: boolean
+    isAutoMiniEnabled?: boolean
+    isScreenshotEnabled?: boolean
   }
   system?: {
     isUpdateLogEnabled?: boolean

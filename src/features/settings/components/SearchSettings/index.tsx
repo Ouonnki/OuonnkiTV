@@ -1,4 +1,5 @@
 import { Switch } from '@/shared/components/ui/switch'
+import { Input } from '@/shared/components/ui/input'
 import { Search } from 'lucide-react'
 import { useSettingStore } from '@/shared/store/settingStore'
 import { SettingsItem, SettingsSection } from '../common'
@@ -33,6 +34,26 @@ export default function SearchSettings() {
             checked={search.isSearchHistoryVisible}
             onCheckedChange={checked => setSearchSettings({ isSearchHistoryVisible: checked })}
           />
+        }
+      />
+      <SettingsItem
+        title="搜索历史上限"
+        description="最多保留的搜索历史条数，超出后自动清除最早的记录。"
+        control={
+          <div className="w-full sm:w-48">
+            <Input
+              type="number"
+              min={5}
+              max={100}
+              step={5}
+              value={search.maxSearchHistoryCount}
+              onChange={e =>
+                setSearchSettings({
+                  maxSearchHistoryCount: Number.parseInt(e.target.value, 10) || 20,
+                })
+              }
+            />
+          </div>
         }
       />
     </SettingsSection>

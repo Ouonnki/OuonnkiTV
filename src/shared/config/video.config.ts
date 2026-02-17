@@ -1,4 +1,6 @@
+import { DEFAULT_SETTINGS } from './settings.config'
+
 export const PaginationConfig = {
-  singlePageSize: 16, // 单页大小
-  maxRequestTimeout: 3000, // 视频源请求最大超时时间
+  singlePageSize: 16,
+  maxRequestTimeout: DEFAULT_SETTINGS.network.defaultTimeout,
 }

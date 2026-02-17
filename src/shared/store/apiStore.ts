@@ -12,6 +12,7 @@ import {
   importSources,
 } from '@ouonnki/cms-core/source'
 import { getInitialVideoSources } from '@/shared/config/api.config'
+import { DEFAULT_SETTINGS } from '@/shared/config/settings.config'
 import { v4 as uuidv4 } from 'uuid'
 import { useSettingStore } from './settingStore'
 
@@ -145,8 +146,8 @@ export const useApiStore = create<ApiStore>()(
             if (envSources.length > 0) {
               const store = toSourceStore(state)
               const { store: newStore } = importSources(store, envSources, {
-                defaultTimeout: useSettingStore.getState().network.defaultTimeout || 3000,
-                defaultRetry: useSettingStore.getState().network.defaultRetry || 3,
+                defaultTimeout: useSettingStore.getState().network.defaultTimeout,
+                defaultRetry: useSettingStore.getState().network.defaultRetry,
                 skipInvalid: true,
               })
               state.videoAPIs = fromSourceStore(newStore)
@@ -163,8 +164,8 @@ export const useApiStore = create<ApiStore>()(
               id: api.id || uuidv4(),
             }))
             const { store: newStore } = importSources(store, apisWithIds, {
-              defaultTimeout: useSettingStore.getState().network.defaultTimeout || 3000,
-              defaultRetry: useSettingStore.getState().network.defaultRetry || 3,
+              defaultTimeout: useSettingStore.getState().network.defaultTimeout,
+              defaultRetry: useSettingStore.getState().network.defaultRetry,
               skipInvalid: true,
             })
             state.videoAPIs = fromSourceStore(newStore)
@@ -197,8 +198,8 @@ export const useApiStore = create<ApiStore>()(
             state.videoAPIs =
               state.videoAPIs?.map(api => ({
                 ...api,
-                timeout: 3000,
-                retry: 3,
+                timeout: DEFAULT_SETTINGS.network.defaultTimeout,
+                retry: DEFAULT_SETTINGS.network.defaultRetry,
                 updatedAt: new Date(),
               })) || []
           }

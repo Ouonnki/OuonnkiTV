@@ -12,6 +12,7 @@ interface NetworkSettings {
 interface SearchSettings {
   isSearchHistoryEnabled: boolean
   isSearchHistoryVisible: boolean
+  maxSearchHistoryCount: number
 }
 
 interface PlaybackSettings {
@@ -22,6 +23,10 @@ interface PlaybackSettings {
   defaultVolume: number
   playerThemeColor: string
   maxViewingHistoryCount: number
+  isLoopEnabled: boolean
+  isPipEnabled: boolean
+  isAutoMiniEnabled: boolean
+  isScreenshotEnabled: boolean
 }
 
 interface SystemSettings {
@@ -100,15 +105,13 @@ export const useSettingStore = create<SettingStore>()(
       })),
       {
         name: 'ouonnki-tv-setting-store',
-        version: 3,
+        version: 4,
         migrate: (persistedState: unknown, version: number) => {
           const state = persistedState as Record<string, unknown>
           if (version < 2 && state.playback) {
-            // v1→v2: 移除已废弃的 adFilteringEnabled 字段，统一使用 apiStore
             delete (state.playback as Record<string, unknown>).adFilteringEnabled
           }
           if (version < 3) {
-            // v2→v3: 为新增字段补充默认值
             const playback = (state.playback ?? {}) as Record<string, unknown>
             playback.defaultVolume ??= DEFAULT_SETTINGS.playback.defaultVolume
             playback.playerThemeColor ??= DEFAULT_SETTINGS.playback.playerThemeColor
@@ -123,6 +126,19 @@ export const useSettingStore = create<SettingStore>()(
             system.tmdbLanguage ??= DEFAULT_SETTINGS.system.tmdbLanguage
             system.tmdbImageQuality ??= DEFAULT_SETTINGS.system.tmdbImageQuality
             state.system = system
+          }
+          if (version < 4) {
+            // v3→v4: 搜索历史上限 + 播放器功能开关
+            const search = (state.search ?? {}) as Record<string, unknown>
+            search.maxSearchHistoryCount ??= DEFAULT_SETTINGS.search.maxSearchHistoryCount
+            state.search = search
+
+            const playback = (state.playback ?? {}) as Record<string, unknown>
+            playback.isLoopEnabled ??= DEFAULT_SETTINGS.playback.isLoopEnabled
+            playback.isPipEnabled ??= DEFAULT_SETTINGS.playback.isPipEnabled
+            playback.isAutoMiniEnabled ??= DEFAULT_SETTINGS.playback.isAutoMiniEnabled
+            playback.isScreenshotEnabled ??= DEFAULT_SETTINGS.playback.isScreenshotEnabled
+            state.playback = playback
           }
           return state
         },

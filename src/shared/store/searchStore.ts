@@ -78,6 +78,12 @@ export const useSearchStore = create<SearchStore>()(
             state.searchHistory.sort(
               (a: SearchHistoryItem, b: SearchHistoryItem) => b.updatedAt - a.updatedAt,
             )
+
+            // 限制历史记录数量
+            const maxCount = useSettingStore.getState().search.maxSearchHistoryCount
+            if (state.searchHistory.length > maxCount) {
+              state.searchHistory.splice(maxCount)
+            }
           })
         },
 

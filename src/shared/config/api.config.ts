@@ -1,30 +1,31 @@
 // API 配置
+export const DEFAULT_USER_AGENT =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
+
 export const API_CONFIG = {
   search: {
     path: '/api.php/provide/vod/?ac=videolist&wd=',
     headers: {
-      'User-Agent':
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+      'User-Agent': DEFAULT_USER_AGENT,
       Accept: 'application/json',
     },
   },
   detail: {
     path: '/api.php/provide/vod/?ac=videolist&ids=',
     headers: {
-      'User-Agent':
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+      'User-Agent': DEFAULT_USER_AGENT,
       Accept: 'application/json',
     },
   },
 }
 
-// 其他配置
 // 统一使用内置代理
 export const PROXY_URL = '/proxy?url='
 export const M3U8_PATTERN = /\$https?:\/\/[^"'\s]+?\.m3u8/g
 
 import type { VideoApi } from '@/shared/types/video'
 import { INITIAL_CONFIG } from './initialConfig'
+import { DEFAULT_SETTINGS } from './settings.config'
 
 // 从环境变量获取初始视频源
 export const getInitialVideoSources = async (): Promise<VideoApi[]> => {
@@ -90,8 +91,8 @@ const parseVideoSources = (sources: any[]): VideoApi[] => {
         detailUrl: (source.detailUrl as string) || source.url,
         isEnabled: source.isEnabled !== undefined ? (source.isEnabled as boolean) : true,
         updatedAt: source.updatedAt ? new Date(source.updatedAt) : new Date(),
-        timeout: (source.timeout as number) || 3000,
-        retry: (source.retry as number) || 3,
+        timeout: (source.timeout as number) || DEFAULT_SETTINGS.network.defaultTimeout,
+        retry: (source.retry as number) || DEFAULT_SETTINGS.network.defaultRetry,
       } as VideoApi
     })
     .filter((source): source is VideoApi => source !== null)
