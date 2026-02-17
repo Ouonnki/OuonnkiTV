@@ -1,12 +1,6 @@
 import { useState } from 'react'
-import {
-  Rss,
-  RefreshCw,
-  Trash2,
-  Clock,
-  AlertCircle,
-  Loader2,
-} from 'lucide-react'
+import { toast } from 'sonner'
+import { Rss, RefreshCw, Trash2, Clock, AlertCircle, Loader2, Activity } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
 import { Badge } from '@/shared/components/ui/badge'
 import { Input } from '@/shared/components/ui/input'
@@ -30,6 +24,8 @@ import {
 import { SettingsSection } from '../common'
 import { ConfirmModal } from '@/shared/components/common/ConfirmModal'
 import { useSubscriptionStore } from '@/shared/store/subscriptionStore'
+import { batchCheckSubscriptions } from '@/shared/lib/health-check'
+import SubscriptionHealthBadge from './SubscriptionHealthBadge'
 import type { VideoSourceSubscription } from '@/shared/types/subscription'
 import { cn } from '@/shared/lib'
 import dayjs from 'dayjs'
@@ -117,21 +113,14 @@ function AddSubscriptionModal({
                 placeholder="https://example.com/sources.json"
                 className={cn(errors.url && 'border-destructive focus-visible:ring-destructive/30')}
               />
-              {errors.url && (
-                <p className="text-destructive text-sm">{errors.url.message}</p>
-              )}
+              {errors.url && <p className="text-destructive text-sm">{errors.url.message}</p>}
             </div>
 
             <div className="grid gap-2">
               <Label htmlFor="sub-name">
-                订阅名称{' '}
-                <span className="text-muted-foreground text-xs font-normal">（可选）</span>
+                订阅名称 <span className="text-muted-foreground text-xs font-normal">（可选）</span>
               </Label>
-              <Input
-                id="sub-name"
-                {...register('name')}
-                placeholder="留空则自动使用域名"
-              />
+              <Input id="sub-name" {...register('name')} placeholder="留空则自动使用域名" />
             </div>
 
             <div className="grid gap-2">
@@ -177,13 +166,8 @@ function AddSubscriptionModal({
 
 // ==================== 订阅项卡片 ====================
 
-function SubscriptionCard({
-  subscription,
-}: {
-  subscription: VideoSourceSubscription
-}) {
-  const { refreshSubscription, removeSubscription, setRefreshInterval } =
-    useSubscriptionStore()
+function SubscriptionCard({ subscription }: { subscription: VideoSourceSubscription }) {
+  const { refreshSubscription, removeSubscription, setRefreshInterval } = useSubscriptionStore()
   const [confirmRemoveOpen, setConfirmRemoveOpen] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
 
@@ -218,6 +202,7 @@ function SubscriptionCard({
                   ? '刷新失败'
                   : '未刷新'}
             </Badge>
+            <SubscriptionHealthBadge subscriptionId={subscription.id} />
           </div>
           <div className="flex items-center gap-1">
             <Button
@@ -242,7 +227,17 @@ function SubscriptionCard({
 
         {/* 第二行：URL + 上次刷新时间 */}
         <div className="text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
-          <span className="max-w-xs truncate">{subscription.url}</span>
+          <button
+            type="button"
+            className="max-w-xs cursor-pointer truncate underline-offset-2 hover:underline"
+            onClick={() => {
+              navigator.clipboard.writeText(subscription.url)
+              toast.success('已复制订阅 URL')
+            }}
+            title="点击复制"
+          >
+            {subscription.url}
+          </button>
           {subscription.lastRefreshedAt && (
             <span className="flex items-center gap-1">
               <Clock className="size-3" />
@@ -256,9 +251,7 @@ function SubscriptionCard({
           <span className="text-muted-foreground">自动刷新：</span>
           <Select
             value={String(subscription.refreshInterval)}
-            onValueChange={val =>
-              setRefreshInterval(subscription.id, Number.parseInt(val, 10))
-            }
+            onValueChange={val => setRefreshInterval(subscription.id, Number.parseInt(val, 10))}
           >
             <SelectTrigger className="h-7 w-28 text-xs">
               <SelectValue />
@@ -301,11 +294,22 @@ export default function SubscriptionManager() {
   const { subscriptions, refreshAllSubscriptions } = useSubscriptionStore()
   const [addModalOpen, setAddModalOpen] = useState(false)
   const [isRefreshingAll, setIsRefreshingAll] = useState(false)
+  const [isTesting, setIsTesting] = useState(false)
+  const [testProgress, setTestProgress] = useState({ completed: 0, total: 0 })
 
   const handleRefreshAll = async () => {
     setIsRefreshingAll(true)
     await refreshAllSubscriptions()
     setIsRefreshingAll(false)
+  }
+
+  const handleBatchCheck = async () => {
+    setIsTesting(true)
+    setTestProgress({ completed: 0, total: subscriptions.length })
+    await batchCheckSubscriptions(subscriptions, (completed, total) => {
+      setTestProgress({ completed, total })
+    })
+    setIsTesting(false)
   }
 
   return (
@@ -317,7 +321,7 @@ export default function SubscriptionManager() {
         icon={<Rss className="size-4" />}
         tone="violet"
         action={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {subscriptions.length > 0 && (
               <Button
                 variant="ghost"
@@ -326,10 +330,24 @@ export default function SubscriptionManager() {
                 onClick={handleRefreshAll}
                 disabled={isRefreshingAll}
               >
-                <RefreshCw
-                  className={cn('mr-1 size-3.5', isRefreshingAll && 'animate-spin')}
-                />
-                全部刷新
+                <RefreshCw className={cn('mr-1 size-3.5', isRefreshingAll && 'animate-spin')} />
+                刷新
+              </Button>
+            )}
+            {subscriptions.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 px-3"
+                onClick={handleBatchCheck}
+                disabled={isTesting}
+              >
+                {isTesting ? (
+                  <Loader2 className="mr-1 size-3.5 animate-spin" />
+                ) : (
+                  <Activity className="mr-1 size-3.5" />
+                )}
+                {isTesting ? `${testProgress.completed}/${testProgress.total}` : '测速'}
               </Button>
             )}
             <Button

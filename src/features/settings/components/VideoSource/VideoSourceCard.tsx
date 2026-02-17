@@ -8,9 +8,9 @@ import {
   extractSubscriptionId,
   useSubscriptionStore,
 } from '@/shared/store/subscriptionStore'
-import { cn } from '@/shared/lib'
 import dayjs from 'dayjs'
 import type { VideoSource } from '@ouonnki/cms-core'
+import HealthStatusIndicator from './HealthStatusIndicator'
 
 interface VideoSourceCardProps {
   source: VideoSource
@@ -22,32 +22,19 @@ export default function VideoSourceCard({ source, onEdit }: VideoSourceCardProps
   const isSub = isSubscriptionSource(source.id)
 
   return (
-    <div className="bg-muted/35 space-y-2 rounded-lg px-4 py-3">
-      {/* 第一行：名称 + 操作区 */}
-      <div className="flex items-center justify-between gap-2">
+    <div className="bg-muted/35 space-y-2.5 rounded-lg px-4 py-3">
+      {/* 第一行：名称 + 测速(桌面端) + 操作区 */}
+      <div className="flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2">
           {isSub && (
-            <Rss className="size-4 shrink-0 text-violet-600 dark:text-violet-400" />
+            <Rss className="size-3.5 shrink-0 text-violet-600 dark:text-violet-400" />
           )}
           <p className="truncate text-sm font-medium">{source.name}</p>
-          {isSub && (
-            <Badge
-              variant="outline"
-              className="border-violet-500/30 text-violet-600 dark:text-violet-400 shrink-0 text-xs"
-            >
-              订阅源
-            </Badge>
-          )}
-          {!isSub && (
-            <span
-              className={cn(
-                'inline-block size-1.5 shrink-0 rounded-full',
-                source.isEnabled ? 'bg-emerald-500' : 'bg-zinc-400',
-              )}
-            />
-          )}
+          <span className="hidden shrink-0 sm:inline-flex">
+            <HealthStatusIndicator sourceId={source.id} />
+          </span>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex shrink-0 items-center gap-1.5">
           <Switch
             checked={source.isEnabled}
             onCheckedChange={checked => setApiEnabled(source.id, checked)}
@@ -63,7 +50,7 @@ export default function VideoSourceCard({ source, onEdit }: VideoSourceCardProps
           </Button>
         </div>
       </div>
-      {/* 第二行：URL + 附加信息 */}
+      {/* 第二行：Badge + 测速(移动端) + 附加信息 */}
       <SecondaryInfo source={source} isSub={isSub} />
     </div>
   )
@@ -76,10 +63,28 @@ function SecondaryInfo({ source, isSub }: { source: VideoSource; isSub: boolean 
   )
 
   return (
-    <div className="text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
-      <span className="max-w-xs truncate">{source.url}</span>
+    <div className="text-muted-foreground flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5 text-xs">
+      {isSub ? (
+        <Badge
+          variant="outline"
+          className="border-violet-500/30 text-violet-600 dark:text-violet-400 h-5 text-[10px]"
+        >
+          订阅源
+        </Badge>
+      ) : (
+        <Badge
+          variant="outline"
+          className="border-sky-500/30 text-sky-600 dark:text-sky-400 h-5 text-[10px]"
+        >
+          自建源
+        </Badge>
+      )}
+      {/* 移动端测速结果显示在 Badge 右侧 */}
+      <span className="shrink-0 sm:hidden">
+        <HealthStatusIndicator sourceId={source.id} />
+      </span>
       {isSub && subscription && (
-        <span>来自订阅「{subscription.name}」</span>
+        <span className="truncate">来自「{subscription.name}」</span>
       )}
       {!isSub && source.updatedAt && (
         <span className="flex items-center gap-1">

@@ -51,6 +51,8 @@ interface ApiActions {
   replaceSubscriptionSources: (subscriptionId: string, sources: VideoSource[]) => void
   // 移除指定订阅的所有视频源
   removeSubscriptionSources: (subscriptionId: string) => void
+  // 按 ID 数组顺序重排视频源（拖拽排序 / 一键按延迟排序）
+  reorderVideoAPIs: (orderedIds: string[]) => void
 }
 
 type ApiStore = ApiState & ApiActions
@@ -221,6 +223,20 @@ export const useApiStore = create<ApiStore>()(
           set(state => {
             const prefix = `sub:${subscriptionId}:`
             state.videoAPIs = state.videoAPIs.filter(s => !s.id.startsWith(prefix))
+          })
+        },
+
+        reorderVideoAPIs: (orderedIds: string[]) => {
+          set(state => {
+            const idIndexMap = new Map(orderedIds.map((id, index) => [id, index]))
+            state.videoAPIs = [...state.videoAPIs].sort((a, b) => {
+              const indexA = idIndexMap.get(a.id)
+              const indexB = idIndexMap.get(b.id)
+              if (indexA !== undefined && indexB !== undefined) return indexA - indexB
+              if (indexA !== undefined) return -1
+              if (indexB !== undefined) return 1
+              return 0
+            })
           })
         },
       })),
