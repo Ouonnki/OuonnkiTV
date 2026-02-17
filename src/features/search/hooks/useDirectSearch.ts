@@ -3,12 +3,7 @@ import { type VideoItem, type SearchResultEvent, type Pagination, type VideoSour
 import { useApiStore } from '@/shared/store/apiStore'
 import { useCmsClient } from '@/shared/hooks'
 import { PaginationConfig } from '@/shared/config/video.config'
-
-// 源分页信息缓存结构
-interface SourcePaginationInfo {
-  totalPages: number
-  totalResults: number
-}
+import { getSourcesToFetch, type SourcePaginationInfo } from './directSearch.utils'
 
 export function useDirectSearch() {
   const [directResults, setDirectResults] = useState<VideoItem[]>([])
@@ -68,11 +63,7 @@ export function useDirectSearch() {
 
     // 根据缓存判断哪些源需要跳过
     const cachedSources = sourcePaginationCacheRef.current
-    const sourcesToFetch = selectedAPIs.filter(source => {
-      const cached = cachedSources.get(source.id)
-      if (!cached) return true // 没有缓存信息，需要请求
-      return page <= cached.totalPages // 有缓存但页码未超出，需要请求
-    })
+    const sourcesToFetch = getSourcesToFetch(selectedAPIs, cachedSources, page)
     const totalRequestedSources = sourcesToFetch.length
 
     // 保存当前页需要请求的源列表

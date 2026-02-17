@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useDocumentTitle } from '@/shared/hooks'
 import { useTmdbNowPlaying } from '@/shared/hooks/useTmdb'
 import { useSearchStore } from '@/shared/store/searchStore'
+import { normalizeSearchMode } from '../lib/searchMode'
 
 import {
   SearchModeToggle,
@@ -24,7 +25,7 @@ export default function SearchHubView() {
   const modeParam = searchParams.get('mode')
 
   // 搜索模式状态 - 直接从 URL 获取，作为 Single Source of Truth
-  const mode: SearchMode = modeParam === 'direct' ? 'direct' : 'tmdb'
+  const mode: SearchMode = normalizeSearchMode(modeParam)
 
   const [isDirectCentered, setIsDirectCentered] = useState(false)
 
