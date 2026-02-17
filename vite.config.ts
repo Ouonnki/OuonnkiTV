@@ -17,10 +17,26 @@ export default defineConfig({
     // 优化构建性能
     rollupOptions: {
       output: {
-        manualChunks: {
-          'react-vendor': ['react', 'react-dom', 'react-router'],
-          'ui-vendor': ['framer-motion', '@radix-ui/react-dialog', '@radix-ui/react-select'],
-          'player-vendor': ['artplayer', 'hls.js'],
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return
+
+          // 核心框架
+          if (id.includes('/react/') || id.includes('/react-dom/') || id.includes('/react-router/')) {
+            return 'react-vendor'
+          }
+
+          // 播放器相关（拆分大包，避免单 chunk 过大）
+          if (id.includes('/artplayer/')) return 'artplayer-vendor'
+          if (id.includes('/hls.js/')) return 'hls-vendor'
+
+          // UI 与动效
+          if (id.includes('/framer-motion/')) return 'motion-vendor'
+          if (id.includes('/@radix-ui/')) return 'radix-vendor'
+
+          // 其他常用库
+          if (id.includes('/zustand/')) return 'state-vendor'
+          if (id.includes('/tmdb-ts/')) return 'tmdb-vendor'
+          if (id.includes('/dayjs/')) return 'dayjs-vendor'
         },
       },
     },

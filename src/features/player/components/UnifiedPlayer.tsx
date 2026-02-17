@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router'
 import Artplayer from 'artplayer'
-import Hls, { type HlsConfig } from 'hls.js'
+import type Hls from 'hls.js'
+import type { HlsConfig } from 'hls.js'
 import { ChevronDown } from 'lucide-react'
 import { type DetailResult } from '@ouonnki/cms-core'
 import { createM3u8Processor, createHlsLoaderClass } from '@ouonnki/cms-core/m3u8'
@@ -48,7 +49,34 @@ interface PlayerRouteParams {
 const isSupportedMediaType = (value: string): value is TmdbMediaType => value === 'movie' || value === 'tv'
 
 const m3u8Processor = createM3u8Processor({ filterAds: true })
-const CustomHlsJsLoader = createHlsLoaderClass({ m3u8Processor, Hls })
+type HlsConstructor = typeof import('hls.js')['default']
+
+let hlsConstructorPromise: Promise<HlsConstructor> | null = null
+let customHlsLoaderClass: ReturnType<typeof createHlsLoaderClass> | null = null
+
+const getHlsConstructor = async (): Promise<HlsConstructor> => {
+  if (!hlsConstructorPromise) {
+    hlsConstructorPromise = import('hls.js/dist/hls.light.mjs')
+      .then(module => module.default as HlsConstructor)
+      .catch(error => {
+        hlsConstructorPromise = null
+        throw error
+      })
+  }
+
+  return hlsConstructorPromise
+}
+
+const getCustomHlsLoaderClass = (HlsClass: HlsConstructor) => {
+  if (!customHlsLoaderClass) {
+    customHlsLoaderClass = createHlsLoaderClass({
+      m3u8Processor,
+      Hls: HlsClass,
+    })
+  }
+
+  return customHlsLoaderClass
+}
 
 const parseEpisodeIndex = (value: string | null): number => {
   const parsed = Number.parseInt(value || '0', 10)
@@ -444,21 +472,37 @@ export default function UnifiedPlayer() {
       customType: {
         m3u8: function (video: HTMLMediaElement, url: string, art: Artplayer) {
           const artWithHls = art as ArtplayerWithHls
-          if (Hls.isSupported()) {
-            if (artWithHls.hls) artWithHls.hls.destroy()
-            const hlsConfig: Partial<HlsConfig> = adFilteringEnabled
-              ? { loader: CustomHlsJsLoader as unknown as typeof Hls.DefaultConfig.loader }
-              : {}
-            const hls = new Hls(hlsConfig)
-            hls.loadSource(url)
-            hls.attachMedia(video)
-            artWithHls.hls = hls
-            art.on('destroy', () => hls.destroy())
-          } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-            video.src = url
-          } else {
-            art.notice.show = 'Unsupported playback format: m3u8'
-          }
+          void (async () => {
+            try {
+              const HlsClass = await getHlsConstructor()
+              if (playerRef.current !== art) return
+
+              if (HlsClass.isSupported()) {
+                if (artWithHls.hls) artWithHls.hls.destroy()
+                const hlsConfig: Partial<HlsConfig> = adFilteringEnabled
+                  ? {
+                      loader: getCustomHlsLoaderClass(HlsClass) as unknown as typeof HlsClass.DefaultConfig.loader,
+                    }
+                  : {}
+                const hls = new HlsClass(hlsConfig)
+                hls.loadSource(url)
+                hls.attachMedia(video)
+                artWithHls.hls = hls
+                art.on('destroy', () => hls.destroy())
+              } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = url
+              } else {
+                art.notice.show = 'Unsupported playback format: m3u8'
+              }
+            } catch (loadError) {
+              console.error('加载 HLS 播放内核失败:', loadError)
+              if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = url
+              } else {
+                art.notice.show = '播放内核加载失败，请稍后重试'
+              }
+            }
+          })()
         },
       },
     })
