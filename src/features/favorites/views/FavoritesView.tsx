@@ -27,7 +27,6 @@ export default function FavoritesView() {
   const [activeTab, setActiveTab] = useState<FavoriteWatchStatus | 'all'>('all')
   const [selectionMode, setSelectionMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  const [tabsExpanded, setTabsExpanded] = useState(false)
 
   // 当前显示的收藏列表（根据状态标签筛选）
   const displayFavorites = useMemo(() => {
@@ -88,42 +87,22 @@ export default function FavoritesView() {
 
   return (
     <div className="min-h-full">
-      {/* 页面头部 - 单行布局 */}
+      {/* 页面头部 */}
       <header className="border-border bg-sidebar/80 sticky top-0 z-20 border-b backdrop-blur-md">
-        <div className="px-4">
-          {/* 桌面端：标题 + StatusTabs 单行 */}
-          <div className="hidden md:flex h-14 items-center justify-between">
-            <div className="flex items-center gap-2">
-              <h1 className="text-lg font-bold">收藏</h1>
-              {stats.total > 0 && (
-                <span className="text-muted-foreground text-sm">
-                  共 <span className="text-primary font-medium">{stats.total}</span> 项
-                </span>
-              )}
-            </div>
-            <StatusTabs currentStatus={activeTab} onStatusChange={handleTabChange} stats={stats} />
-          </div>
-
-          {/* 移动端：标题 + 可折叠 StatusTabs 单行 */}
-          <div className="flex h-14 items-center gap-2 md:hidden">
-            {!tabsExpanded && (
+        <div className="px-4 py-1.5 md:py-2">
+          <div className="flex flex-wrap items-center gap-1.5 md:gap-2">
+            <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <h1 className="text-lg font-bold">收藏</h1>
+                <h1 className="truncate text-base font-bold md:text-lg">收藏</h1>
                 {stats.total > 0 && (
-                  <span className="text-muted-foreground text-sm">
+                  <span className="text-muted-foreground shrink-0 text-xs md:text-sm">
                     共 <span className="text-primary font-medium">{stats.total}</span> 项
                   </span>
                 )}
               </div>
-            )}
-            <div className={tabsExpanded ? 'w-full' : 'ml-auto'}>
-              <StatusTabs
-                collapsible
-                onExpandedChange={setTabsExpanded}
-                currentStatus={activeTab}
-                onStatusChange={handleTabChange}
-                stats={stats}
-              />
+            </div>
+            <div className="order-3 w-full md:order-none md:ml-auto md:flex md:w-[min(58vw,760px)] md:justify-end">
+              <StatusTabs currentStatus={activeTab} onStatusChange={handleTabChange} stats={stats} />
             </div>
           </div>
         </div>
@@ -145,17 +124,17 @@ export default function FavoritesView() {
             </p>
           </div>
         ) : (
-            <FavoritesGrid
-              favorites={displayFavorites}
-              selectedIds={selectedIds}
-              onSelectionChange={selected => {
-                setSelectedIds(selected)
-                setStoreSelectedIds(selected)
-              }}
-              selectionMode={selectionMode}
-              onUpdateWatchStatus={updateWatchStatus}
-              onRemoveFavorite={removeFavorite}
-            />
+          <FavoritesGrid
+            favorites={displayFavorites}
+            selectedIds={selectedIds}
+            onSelectionChange={selected => {
+              setSelectedIds(selected)
+              setStoreSelectedIds(selected)
+            }}
+            selectionMode={selectionMode}
+            onUpdateWatchStatus={updateWatchStatus}
+            onRemoveFavorite={removeFavorite}
+          />
         )}
       </main>
 

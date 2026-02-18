@@ -1,5 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
-import { NavLink, useLocation, useNavigate } from 'react-router'
+import { useLocation, useNavigate } from 'react-router'
 import { cn } from '@/shared/lib'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
@@ -7,6 +6,7 @@ import { ArrowLeft, Compass, FolderCog, Info, ListVideo, Play, Settings2 } from 
 import { AnimatePresence, motion } from 'framer-motion'
 import { CustomAnimatedOutlet } from '@/shared/components/AnimatedOutlet'
 import { animationPresets } from '@/shared/lib/animationVariants'
+import { UnderlineTabs } from '@/shared/components/common/UnderlineTabs'
 
 const settingsModules = [
   {
@@ -79,105 +79,19 @@ const settingsModules = [
 export default function SettingsLayout() {
   const navigate = useNavigate()
   const location = useLocation()
-  const tabScrollRef = useRef<HTMLDivElement | null>(null)
-  const tabListRef = useRef<HTMLDivElement | null>(null)
-  const [edgeHint, setEdgeHint] = useState({ left: false, right: false })
   const activeModule =
     settingsModules.find(module => location.pathname.startsWith(module.path)) || settingsModules[0]
 
-  useEffect(() => {
-    const scrollEl = tabScrollRef.current
-    const listEl = tabListRef.current
-    if (!scrollEl || !listEl) return
-
-    const updateEdgeHint = () => {
-      const overflow = scrollEl.scrollWidth > scrollEl.clientWidth + 1
-      if (!overflow) {
-        setEdgeHint(prev => (prev.left || prev.right ? { left: false, right: false } : prev))
-        return
-      }
-
-      const maxScrollLeft = scrollEl.scrollWidth - scrollEl.clientWidth
-      const nextLeft = scrollEl.scrollLeft > 2
-      const nextRight = scrollEl.scrollLeft < maxScrollLeft - 2
-
-      setEdgeHint(prev =>
-        prev.left === nextLeft && prev.right === nextRight
-          ? prev
-          : { left: nextLeft, right: nextRight },
-      )
-    }
-
-    updateEdgeHint()
-    scrollEl.addEventListener('scroll', updateEdgeHint, { passive: true })
-    window.addEventListener('resize', updateEdgeHint)
-
-    const resizeObserver = new ResizeObserver(updateEdgeHint)
-    resizeObserver.observe(scrollEl)
-    resizeObserver.observe(listEl)
-
-    return () => {
-      scrollEl.removeEventListener('scroll', updateEdgeHint)
-      window.removeEventListener('resize', updateEdgeHint)
-      resizeObserver.disconnect()
-    }
-  }, [location.pathname])
-
-  const renderTabs = (className?: string) => (
-    <section className={cn('relative', className)}>
-      <div ref={tabScrollRef} className="scrollbar-hide overflow-x-auto">
-        <div
-          ref={tabListRef}
-          className="relative flex min-w-max items-center gap-3 border-b border-transparent md:gap-5"
-        >
-          {settingsModules.map(module => {
-            const isActive = module.id === activeModule.id
-
-            return (
-              <NavLink
-                key={module.id}
-                to={module.path}
-                data-module-id={module.id}
-                className="relative shrink-0 px-1 py-1.5 text-xs font-medium whitespace-nowrap md:py-2 md:text-sm"
-              >
-                <span
-                  className={cn(
-                    'inline-flex items-center gap-1.5 transition-colors',
-                    isActive ? 'text-foreground' : 'text-muted-foreground hover:text-foreground/80',
-                  )}
-                >
-                  <span className={cn('inline-block size-1.5 rounded-full', module.dotClass)} />
-                  <span>{module.name}</span>
-                </span>
-                {isActive ? (
-                  <motion.span
-                    layoutId="settings-tab-underline"
-                    className={cn(
-                      'absolute right-0 bottom-0 left-0 h-0.5 rounded-full',
-                      module.dotClass,
-                    )}
-                    transition={{ type: 'spring', stiffness: 420, damping: 38, mass: 0.35 }}
-                  />
-                ) : null}
-              </NavLink>
-            )
-          })}
-        </div>
-      </div>
-      <div
-        className={cn(
-          'from-sidebar via-sidebar/72 pointer-events-none absolute top-0 bottom-[3px] left-0 z-10 w-9 rounded-r-2xl bg-gradient-to-r to-transparent transition-opacity duration-300 ease-out',
-          edgeHint.left ? 'opacity-100' : 'opacity-0',
-        )}
-      />
-      <div
-        className={cn(
-          'from-sidebar via-sidebar/72 pointer-events-none absolute top-0 right-0 bottom-[3px] z-10 w-10 rounded-l-2xl bg-gradient-to-l to-transparent transition-opacity duration-300 ease-out',
-          edgeHint.right ? 'opacity-100' : 'opacity-0',
-        )}
-      />
-    </section>
-  )
+  const tabOptions = settingsModules.map(module => ({
+    key: module.id,
+    label: (
+      <>
+        <span className={cn('inline-block size-1.5 rounded-full', module.dotClass)} />
+        <span>{module.name}</span>
+      </>
+    ),
+    indicatorClassName: module.dotClass,
+  }))
 
   return (
     <div className="min-h-[90vh] pb-8">
@@ -200,7 +114,20 @@ export default function SettingsLayout() {
             </div>
 
             <div className="order-3 w-full md:order-none md:ml-auto md:flex md:w-[min(58vw,760px)] md:justify-end md:pr-3">
-              {renderTabs()}
+              <UnderlineTabs
+                options={tabOptions}
+                activeKey={activeModule.id}
+                onChange={nextId => {
+                  const targetModule = settingsModules.find(module => module.id === nextId)
+                  if (targetModule && targetModule.path !== location.pathname) {
+                    navigate(targetModule.path)
+                  }
+                }}
+                layoutId="settings-tab-underline"
+                listClassName="border-b border-transparent"
+                leftEdgeClassName="from-sidebar via-sidebar/72 to-transparent"
+                rightEdgeClassName="from-sidebar via-sidebar/72 to-transparent"
+              />
             </div>
           </div>
         </div>
