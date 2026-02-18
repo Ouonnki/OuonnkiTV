@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { AppendToResponseMovieKey, AppendToResponseTvKey } from 'tmdb-ts'
 import { useTmdbStore } from '../store/tmdbStore'
 import { getTmdbClient, normalizeToMediaItem } from '../lib/tmdb'
@@ -170,46 +170,52 @@ export function useTmdbTvLists() {
 
 /**
  * 猜你喜欢 Hook
- * 按优先级顺序获取推荐来源：收藏夹第一个 -> 观看记录第一个 -> 待看清单第一个 -> trending 第一个
- * 目前收藏夹和待看清单未实现，预留位置
+ * 优先从传入的 TMDB 候选来源中随机选择一条；若没有候选来源则随机回退到 trending。
  */
 export function useTmdbRecommendations(
-  preferredSource?: { id: number; mediaType: TmdbMediaType } | null,
+  preferredSources: Array<{ id: number; mediaType: TmdbMediaType }> = [],
 ) {
   const recommendations = useTmdbStore(s => s.recommendations)
   const loading = useTmdbStore(s => s.loading.recommendations)
   const trending = useTmdbStore(s => s.trending)
-  const preferredSourceId = preferredSource?.id
-  const preferredSourceMediaType = preferredSource?.mediaType
 
   const fetchRecommendations = useTmdbStore(s => s.fetchRecommendations)
+  const recommendationSourceId = useTmdbStore(s => s.recommendationSourceId)
+  const recommendationSourceMediaType = useTmdbStore(s => s.recommendationSourceMediaType)
+
+  const selectedSource = useMemo(() => {
+    if (preferredSources.length > 0) {
+      const randomIndex = Math.floor(Math.random() * preferredSources.length)
+      return preferredSources[randomIndex]
+    }
+
+    if (trending.length > 0) {
+      const randomIndex = Math.floor(Math.random() * trending.length)
+      const randomTrendingItem = trending[randomIndex]
+      return {
+        id: randomTrendingItem.id,
+        mediaType: randomTrendingItem.mediaType,
+      }
+    }
+
+    return null
+  }, [preferredSources, trending])
 
   useEffect(() => {
-    // TODO: 未来实现优先级：
-    // 1. 收藏夹第一个 (已实现，优先使用 preferredSource)
-    // 2. 观看记录第一个 - 目前观看记录使用的是非 TMDB ID，暂时无法使用
-    // 3. 待看清单第一个 (未实现)
-    // 4. trending 第一个 (当前使用)
+    if (!selectedSource) return
 
-    if (recommendations.length > 0) return
+    const sourceUnchanged =
+      recommendationSourceId === selectedSource.id &&
+      recommendationSourceMediaType === selectedSource.mediaType
+    if (sourceUnchanged && recommendations.length > 0) return
 
-    // 优先使用调用方传入的推荐来源（例如：收藏夹中最近的 TMDB 项）
-    if (preferredSourceId && preferredSourceMediaType) {
-      fetchRecommendations(preferredSourceId, preferredSourceMediaType)
-      return
-    }
-
-    // 回退逻辑：使用 trending 第一个作为推荐来源
-    if (trending.length > 0) {
-      const firstItem = trending[0]
-      fetchRecommendations(firstItem.id, firstItem.mediaType)
-    }
+    fetchRecommendations(selectedSource.id, selectedSource.mediaType)
   }, [
-    trending,
-    recommendations.length,
+    selectedSource,
     fetchRecommendations,
-    preferredSourceId,
-    preferredSourceMediaType,
+    recommendationSourceId,
+    recommendationSourceMediaType,
+    recommendations.length,
   ])
 
   return {

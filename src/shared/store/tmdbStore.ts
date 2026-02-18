@@ -41,6 +41,7 @@ interface TmdbState {
   // 推荐
   recommendations: TmdbMediaItem[]
   recommendationSourceId: number | null // 推荐来源的 TMDB ID
+  recommendationSourceMediaType: 'movie' | 'tv' | null // 推荐来源的 TMDB 媒体类型
 
   // 筛选条件 (内部维护)
   filterOptions: TmdbFilterOptions
@@ -133,6 +134,7 @@ export const useTmdbStore = create<TmdbState & TmdbActions>()(
 
       recommendations: [],
       recommendationSourceId: null,
+      recommendationSourceMediaType: null,
 
       filterOptions: { ...INITIAL_FILTER },
 
@@ -599,10 +601,10 @@ export const useTmdbStore = create<TmdbState & TmdbActions>()(
       // 推荐：根据指定的 movie/tv 获取推荐列表
       fetchRecommendations: async (id: number, mediaType: 'movie' | 'tv') => {
         const client = getTmdbClient()
-        const { recommendationSourceId } = get()
+        const { recommendationSourceId, recommendationSourceMediaType } = get()
 
-        // 如果推荐来源 ID 没有变化，不重新获取
-        if (recommendationSourceId === id) return
+        // 如果推荐来源未变化，不重新获取
+        if (recommendationSourceId === id && recommendationSourceMediaType === mediaType) return
 
         set(state => {
           state.loading.recommendations = true
@@ -619,6 +621,7 @@ export const useTmdbStore = create<TmdbState & TmdbActions>()(
               normalizeToMediaItem(i as unknown as Record<string, unknown>, mediaType),
             )
             state.recommendationSourceId = id
+            state.recommendationSourceMediaType = mediaType
             state.loading.recommendations = false
           })
         } catch (err: unknown) {

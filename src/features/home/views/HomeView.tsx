@@ -5,7 +5,10 @@ import {
   useTmdbRecommendations,
 } from '@/shared/hooks/useTmdb'
 import { useFavoritesStore } from '@/features/favorites/store/favoritesStore'
+import { useViewingHistoryStore } from '@/shared/store'
+import { isTmdbHistoryItem } from '@/shared/lib/viewingHistory'
 import type { TmdbFavoriteItem } from '@/features/favorites/types/favorites'
+import type { TmdbMediaType } from '@/shared/types/tmdb'
 import { FeaturedCarousel } from '../components/FeaturedCarousel'
 import { ContinueWatching } from '../components/ContinueWatching'
 import { MediaCarousel } from '../components/MediaCarousel'
@@ -16,6 +19,7 @@ import { useMemo } from 'react'
  */
 export default function HomeView() {
   const favorites = useFavoritesStore(state => state.favorites)
+  const viewingHistory = useViewingHistoryStore(state => state.viewingHistory)
   const { trending, loading } = useTmdbNowPlaying()
   const {
     nowPlaying,
@@ -30,25 +34,32 @@ export default function HomeView() {
     topRated: topRatedTv,
     loading: tvLoading,
   } = useTmdbTvLists()
-  const favoriteRecommendationSource = useMemo(() => {
+  const tmdbRecommendationCandidates = useMemo(() => {
     const tmdbFavorites = favorites.filter(
       (item): item is TmdbFavoriteItem => item.sourceType === 'tmdb',
     )
 
-    if (tmdbFavorites.length === 0) {
-      return null
-    }
-    const latestTmdbFavorite = tmdbFavorites.reduce((latest, item) =>
-      item.updatedAt > latest.updatedAt ? item : latest,
-    )
+    const favoriteSources = tmdbFavorites.map(item => ({
+      id: item.media.id,
+      mediaType: item.media.mediaType,
+    }))
 
-    return {
-      id: latestTmdbFavorite.media.id,
-      mediaType: latestTmdbFavorite.media.mediaType,
-    }
-  }, [favorites])
+    const historySources = viewingHistory
+      .filter(isTmdbHistoryItem)
+      .map(item => ({
+        id: item.tmdbId,
+        mediaType: item.tmdbMediaType,
+      }))
+
+    const sourceMap = new Map<string, { id: number; mediaType: TmdbMediaType }>()
+    ;[...favoriteSources, ...historySources].forEach(source => {
+      sourceMap.set(`${source.mediaType}-${source.id}`, source)
+    })
+
+    return Array.from(sourceMap.values())
+  }, [favorites, viewingHistory])
   const { recommendations, loading: recommendationsLoading } =
-    useTmdbRecommendations(favoriteRecommendationSource)
+    useTmdbRecommendations(tmdbRecommendationCandidates)
 
   return (
     <div className="flex flex-col gap-6">
