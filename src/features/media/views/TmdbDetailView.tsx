@@ -297,7 +297,7 @@ export default function TmdbDetailView() {
           seasonNumber:
             tmdbType === 'tv' ? latestTmdbHistory.tmdbSeasonNumber ?? undefined : undefined,
         })
-    : buildTmdbPlayPath(tmdbType, detail.id)
+    : ''
 
   return (
     <div className="space-y-0">

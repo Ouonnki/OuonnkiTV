@@ -18,7 +18,7 @@ import { motion } from 'framer-motion'
 import type { ViewingHistoryItem } from '@/shared/types'
 import {
   buildHistoryPlayPath,
-  getHistorySeriesKey,
+  getHistoryItemKey,
   isTmdbHistoryItem,
 } from '@/shared/lib/viewingHistory'
 
@@ -36,21 +36,12 @@ const formatEpisodeDisplay = (item: ViewingHistoryItem): string => {
 
 const HistoryList = ({
   viewingHistory,
-  removeViewingHistory,
+  removeViewingHistoryItem,
 }: {
   viewingHistory: ViewingHistoryItem[]
-  removeViewingHistory: (item: ViewingHistoryItem) => void
+  removeViewingHistoryItem: (item: ViewingHistoryItem) => void
 }) => {
-  const filteredHistory = useMemo(() => {
-    const historyMap = new Map<string, ViewingHistoryItem>()
-    viewingHistory.forEach(item => {
-      const key = getHistorySeriesKey(item)
-      if (!historyMap.has(key)) {
-        historyMap.set(key, item)
-      }
-    })
-    return Array.from(historyMap.values())
-  }, [viewingHistory])
+  const filteredHistory = useMemo(() => viewingHistory, [viewingHistory])
   if (filteredHistory.length === 0) {
     return (
       <div className="mt-5 flex flex-col items-center justify-center gap-2">
@@ -65,7 +56,7 @@ const HistoryList = ({
         {filteredHistory.map(item => (
           <Card
             className="@container group mb-[.6rem] h-[30vw] w-full cursor-pointer overflow-hidden border-none bg-white/30 p-0 shadow-md/5 transition-all duration-500 hover:scale-101 hover:shadow-lg md:h-[8rem] md:w-[25rem]"
-            key={getHistorySeriesKey(item)}
+            key={getHistoryItemKey(item)}
           >
             <NavLink className="w-full" to={buildHistoryPlayPath(item)}>
               <div className="flex h-[30vw] w-full md:h-[8rem]">
@@ -103,7 +94,7 @@ const HistoryList = ({
                         onClick={e => {
                           e.preventDefault()
                           e.stopPropagation()
-                          removeViewingHistory(item)
+                          removeViewingHistoryItem(item)
                         }}
                       >
                         <TrashIcon size={16} />
@@ -134,7 +125,7 @@ const HistoryList = ({
 
 export default function RecentHistory() {
   const [isOpen, setIsOpen] = useState(false)
-  const { viewingHistory, removeViewingHistory, clearViewingHistory } = useViewingHistoryStore()
+  const { viewingHistory, removeViewingHistoryItem, clearViewingHistory } = useViewingHistoryStore()
   return (
     <>
       <Popover open={isBrowser ? undefined : isOpen} onOpenChange={isBrowser ? undefined : setIsOpen}>
@@ -174,7 +165,7 @@ export default function RecentHistory() {
               <div className="min-w-[25rem]">
                 <HistoryList
                   viewingHistory={viewingHistory}
-                  removeViewingHistory={removeViewingHistory}
+                  removeViewingHistoryItem={removeViewingHistoryItem}
                 />
               </div>
             </div>
@@ -216,7 +207,7 @@ export default function RecentHistory() {
               <div className="w-full overflow-hidden" onClick={e => e.stopPropagation()}>
                 <HistoryList
                   viewingHistory={viewingHistory}
-                  removeViewingHistory={removeViewingHistory}
+                  removeViewingHistoryItem={removeViewingHistoryItem}
                 />
               </div>
             </div>

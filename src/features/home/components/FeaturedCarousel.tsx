@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Play, Info } from 'lucide-react'
 import Autoplay from 'embla-carousel-autoplay'
 import { NavLink } from 'react-router'
 
 import { getBackdropUrl, getLogoUrl } from '@/shared/lib/tmdb'
 import { buildTmdbDetailPath, buildTmdbPlayPath } from '@/shared/lib/routes'
+import { buildHistoryPlayPath, isTmdbHistoryItem } from '@/shared/lib/viewingHistory'
 import { Button } from '@/shared/components/ui/button'
 import {
   Carousel,
@@ -15,7 +16,9 @@ import {
 import { AspectRatio } from '@/shared/components/ui/aspect-ratio'
 import { Skeleton } from '@/shared/components/ui/skeleton'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
+import { useViewingHistoryStore } from '@/shared/store/viewingHistoryStore'
 import type { TmdbMediaItem } from '@/shared/types/tmdb'
+import type { ViewingHistoryItem } from '@/shared/types/video'
 
 // 平板断点 (768px - 1024px)
 const TABLET_BREAKPOINT = 1024
@@ -56,6 +59,36 @@ export function FeaturedCarousel({
   const [activeIndex, setActiveIndex] = useState(0)
   const isMobile = useIsMobile()
   const isTablet = useIsTablet()
+  const viewingHistory = useViewingHistoryStore(state => state.viewingHistory)
+
+  const latestTmdbHistoryMap = useMemo(() => {
+    const latestHistoryMap = new Map<string, ViewingHistoryItem>()
+    const latestMappedHistoryMap = new Map<string, ViewingHistoryItem>()
+
+    viewingHistory.forEach(historyItem => {
+      if (!isTmdbHistoryItem(historyItem)) return
+
+      const mediaKey = `${historyItem.tmdbMediaType}-${historyItem.tmdbId}`
+      const latestHistory = latestHistoryMap.get(mediaKey)
+      const latestMappedHistory = latestMappedHistoryMap.get(mediaKey)
+
+      if (!latestHistory || historyItem.timestamp > latestHistory.timestamp) {
+        latestHistoryMap.set(mediaKey, historyItem)
+      }
+
+      if (!historyItem.sourceCode || !historyItem.vodId) return
+
+      if (!latestMappedHistory || historyItem.timestamp > latestMappedHistory.timestamp) {
+        latestMappedHistoryMap.set(mediaKey, historyItem)
+      }
+    })
+
+    const resultMap = new Map<string, ViewingHistoryItem>()
+    latestHistoryMap.forEach((historyItem, mediaKey) => {
+      resultMap.set(mediaKey, latestMappedHistoryMap.get(mediaKey) || historyItem)
+    })
+    return resultMap
+  }, [viewingHistory])
 
   // 根据设备类型获取AspectRatio
   // 移动端: 4/3, 平板: 16/9, 桌面: 9/4
@@ -89,7 +122,7 @@ export function FeaturedCarousel({
         <AspectRatio ratio={getAspectRatio()} className="bg-muted overflow-hidden rounded-lg">
           <Skeleton className="h-full w-full rounded-lg" />
           {/* 骨架屏遮罩层 - 移动端/平板 */}
-          <div className="absolute inset-0 flex min-h-0 flex-col justify-end rounded-lg bg-gradient-to-t from-black/90 via-black/50 via-60% to-transparent px-5 pt-4 pb-6 md:px-8 md:pb-8 lg:hidden">
+          <div className="absolute inset-0 flex min-h-0 flex-col justify-end rounded-lg bg-gradient-to-t from-black/90 via-black/50 via-60% to-transparent px-6 pt-4 pb-6 md:px-8 md:pb-8 lg:hidden">
             <Skeleton className="mb-3 h-8 w-36 md:mb-4 md:h-10 md:w-48" />
             <Skeleton className="mb-2 h-3 w-2/3 md:h-4" />
             <Skeleton className="mb-3 h-3 w-1/2 md:mb-4 md:h-4" />
@@ -99,7 +132,7 @@ export function FeaturedCarousel({
             </div>
           </div>
           {/* 骨架屏遮罩层 - 桌面端 */}
-          <div className="absolute inset-0 hidden flex-col justify-end rounded-lg bg-gradient-to-r from-black/90 via-black/50 via-40% to-transparent px-16 py-25 lg:flex">
+          <div className="absolute inset-0 hidden flex-col justify-end rounded-lg bg-gradient-to-r from-black/90 via-black/50 via-40% to-transparent px-16 pt-25 pb-16 lg:flex">
             <Skeleton className="mb-8 h-20 w-80 xl:h-24 xl:w-96" />
             <Skeleton className="mb-2 h-4 w-2/3 max-w-2xl" />
             <Skeleton className="mb-5 h-4 w-1/2 max-w-xl" />
@@ -139,6 +172,35 @@ export function FeaturedCarousel({
             const isActive = index === activeIndex
             const playPath = buildTmdbPlayPath(item.mediaType, item.id)
             const detailPath = buildTmdbDetailPath(item.mediaType, item.id)
+            const latestTmdbHistory = latestTmdbHistoryMap.get(`${item.mediaType}-${item.id}`)
+            const continueWatchingLabel = latestTmdbHistory
+              ? latestTmdbHistory.episodeName || `第${latestTmdbHistory.episodeIndex + 1}集`
+              : ''
+            const continueWatchingProgressLabel = latestTmdbHistory
+              ? latestTmdbHistory.duration > 0
+                ? `已观看 ${Math.round(
+                    Math.min(
+                      100,
+                      Math.max(
+                        0,
+                        (latestTmdbHistory.playbackPosition / latestTmdbHistory.duration) * 100,
+                      ),
+                    ),
+                  )}%`
+                : '已开始观看'
+              : ''
+            const continueWatchingPath = latestTmdbHistory
+              ? latestTmdbHistory.sourceCode && latestTmdbHistory.vodId
+                ? buildHistoryPlayPath(latestTmdbHistory)
+                : buildTmdbPlayPath(item.mediaType, item.id, {
+                    episodeIndex: latestTmdbHistory.episodeIndex,
+                    seasonNumber:
+                      item.mediaType === 'tv'
+                        ? latestTmdbHistory.tmdbSeasonNumber ?? undefined
+                        : undefined,
+                  })
+              : ''
+            const playNowLabel = continueWatchingPath ? '从头播放' : '立即播放'
 
             return (
               <CarouselItem key={`${item.mediaType}-${item.id}`} className="h-fit rounded-lg">
@@ -155,7 +217,7 @@ export function FeaturedCarousel({
 
                   {/* 遮罩层 - 移动端/平板从下到上渐变 */}
                   <div
-                    className={`absolute inset-0 flex min-h-0 flex-col justify-end rounded-lg bg-gradient-to-t from-black/90 via-black/50 via-60% to-transparent px-5 pt-4 pb-6 transition-opacity duration-500 ease-out md:px-8 md:pb-8 lg:hidden ${isActive ? 'opacity-100' : 'opacity-0'} `}
+                    className={`absolute inset-0 flex min-h-0 flex-col justify-end rounded-lg bg-gradient-to-t from-black/90 via-black/50 via-60% to-transparent px-6 pt-4 pb-6 transition-opacity duration-500 ease-out md:px-8 md:pb-8 lg:hidden ${isActive ? 'opacity-100' : 'opacity-0'} `}
                   >
                     {/* Logo图片或标题文字 - 移动端/平板 */}
                     <div
@@ -183,6 +245,28 @@ export function FeaturedCarousel({
                     <div
                       className={`flex shrink-0 gap-2 transition-all delay-200 duration-500 ease-out md:gap-3 ${isActive ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'} `}
                     >
+                      {continueWatchingPath ? (
+                        <Button
+                          asChild
+                          size="sm"
+                          className="group relative h-8 gap-1.5 bg-[#E50914] px-3 font-semibold text-white hover:bg-[#ca0812] md:h-9 md:gap-2 md:px-4 md:text-sm"
+                        >
+                          <NavLink to={continueWatchingPath} className="relative inline-flex">
+                            <span className="inline-flex items-center gap-1.5 transition-opacity duration-200 group-hover:opacity-0 md:gap-2">
+                              <Play className="size-3.5 fill-current md:size-4" />
+                              继续观看
+                              {continueWatchingLabel ? (
+                                <span className="hidden md:inline">· {continueWatchingLabel}</span>
+                              ) : null}
+                            </span>
+                            {continueWatchingProgressLabel ? (
+                              <span className="pointer-events-none absolute inset-0 hidden items-center justify-center text-[11px] font-semibold opacity-0 transition-opacity duration-200 group-hover:opacity-100 md:flex">
+                                {continueWatchingProgressLabel}
+                              </span>
+                            ) : null}
+                          </NavLink>
+                        </Button>
+                      ) : null}
                       <Button
                         asChild
                         size="sm"
@@ -190,7 +274,7 @@ export function FeaturedCarousel({
                       >
                         <NavLink to={playPath}>
                           <Play className="size-3.5 fill-current md:size-4" />
-                          立即播放
+                          {playNowLabel}
                         </NavLink>
                       </Button>
                       <Button
@@ -209,7 +293,7 @@ export function FeaturedCarousel({
 
                   {/* 遮罩层 - 桌面端Netflix风格从左到右渐变 */}
                   <div
-                    className={`absolute inset-0 hidden flex-col justify-end rounded-lg bg-gradient-to-r from-black/90 via-black/50 via-40% to-transparent px-16 py-25 transition-opacity duration-500 ease-out lg:flex ${isActive ? 'opacity-100' : 'opacity-0'} `}
+                    className={`absolute inset-0 hidden flex-col justify-end rounded-lg bg-gradient-to-r from-black/90 via-black/50 via-40% to-transparent px-16 pt-25 pb-16 transition-opacity duration-500 ease-out lg:flex ${isActive ? 'opacity-100' : 'opacity-0'} `}
                   >
                     {/* Logo图片或标题文字 */}
                     <div
@@ -239,6 +323,26 @@ export function FeaturedCarousel({
                     <div
                       className={`flex gap-3 transition-all delay-200 duration-500 ease-out ${isActive ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'} `}
                     >
+                      {continueWatchingPath ? (
+                        <Button
+                          asChild
+                          size="lg"
+                          className="group relative gap-2 bg-[#E50914] font-semibold text-white hover:bg-[#ca0812]"
+                        >
+                          <NavLink to={continueWatchingPath} className="relative inline-flex">
+                            <span className="inline-flex items-center gap-2 transition-opacity duration-200 group-hover:opacity-0">
+                              <Play className="size-5 fill-current" />
+                              继续观看
+                              {continueWatchingLabel ? <span>· {continueWatchingLabel}</span> : null}
+                            </span>
+                            {continueWatchingProgressLabel ? (
+                              <span className="pointer-events-none absolute inset-0 hidden items-center justify-center text-xs font-semibold opacity-0 transition-opacity duration-200 group-hover:opacity-100 xl:flex">
+                                {continueWatchingProgressLabel}
+                              </span>
+                            ) : null}
+                          </NavLink>
+                        </Button>
+                      ) : null}
                       <Button
                         asChild
                         size="lg"
@@ -246,7 +350,7 @@ export function FeaturedCarousel({
                       >
                         <NavLink to={playPath}>
                           <Play className="size-5 fill-current" />
-                          立即播放
+                          {playNowLabel}
                         </NavLink>
                       </Button>
                       <Button

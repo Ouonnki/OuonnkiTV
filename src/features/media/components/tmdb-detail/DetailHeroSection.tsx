@@ -55,6 +55,7 @@ export function DetailHeroSection({
 }: DetailHeroSectionProps) {
   const heroBadgeClass =
     'h-6 gap-1 px-2 text-[10px] leading-none text-white [&_svg]:size-3 md:h-7 md:gap-1.5 md:px-2.5 md:text-xs md:[&_svg]:size-3.5'
+  const playNowLabel = onContinueWatching ? '从头播放' : '立即播放'
 
   return (
     <section className="relative overflow-hidden rounded-lg">
@@ -224,7 +225,7 @@ export function DetailHeroSection({
               onClick={onPlayNow}
             >
               <Play className="size-4" />
-              立即播放
+              {playNowLabel}
             </Button>
             <Button
               variant="outline"
