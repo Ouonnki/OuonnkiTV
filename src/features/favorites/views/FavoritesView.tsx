@@ -1,12 +1,18 @@
 import { useState, useMemo, useCallback } from 'react'
 import { toast } from 'sonner'
 import { StatusTabs } from '../components/StatusTabs'
+import { FavoritesSortControl } from '../components/FavoritesSortControl'
 import { FavoritesGrid } from '../components/ui/favoritesGrid'
 import { ManagementPanel } from '../components/ManagementPanel'
 import { useFavorites } from '../hooks/useFavorites'
 import { usePortalToSidebarInset } from '@/shared/hooks/usePortalToSidebarInset'
 import { FavoriteWatchStatus } from '../types/favorites'
 import { NoResultIcon } from '@/shared/components/icons'
+import {
+  DEFAULT_FAVORITE_SORT_VALUE,
+  FAVORITE_SORT_OPTIONS,
+  type FavoriteSortValue,
+} from '../constants/sort'
 
 /**
  * FavoritesView - 收藏页面
@@ -15,9 +21,11 @@ import { NoResultIcon } from '@/shared/components/icons'
 export default function FavoritesView() {
   const {
     filteredFavorites,
+    filterOptions,
     stats,
     removeFavorite,
     removeFavorites,
+    setFilter,
     updateWatchStatus,
     setSelectedIds: setStoreSelectedIds,
   } = useFavorites()
@@ -27,6 +35,17 @@ export default function FavoritesView() {
   const [activeTab, setActiveTab] = useState<FavoriteWatchStatus | 'all'>('all')
   const [selectionMode, setSelectionMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+
+  const activeSortValue = useMemo<FavoriteSortValue>(() => {
+    const currentSortBy = filterOptions.sortBy || 'addedAt'
+    const currentSortOrder = filterOptions.sortOrder || 'desc'
+
+    const matchedOption = FAVORITE_SORT_OPTIONS.find(
+      option => option.sortBy === currentSortBy && option.sortOrder === currentSortOrder,
+    )
+
+    return matchedOption?.value || DEFAULT_FAVORITE_SORT_VALUE
+  }, [filterOptions.sortBy, filterOptions.sortOrder])
 
   // 当前显示的收藏列表（根据状态标签筛选）
   const displayFavorites = useMemo(() => {
@@ -52,6 +71,20 @@ export default function FavoritesView() {
       setActiveTab(status)
     },
     [],
+  )
+
+  // 切换排序方案
+  const handleSortChange = useCallback(
+    (value: FavoriteSortValue) => {
+      const nextSortOption = FAVORITE_SORT_OPTIONS.find(option => option.value === value)
+      if (!nextSortOption) return
+
+      setFilter({
+        sortBy: nextSortOption.sortBy,
+        sortOrder: nextSortOption.sortOrder,
+      })
+    },
+    [setFilter],
   )
 
   // 进入/退出多选模式
@@ -110,6 +143,9 @@ export default function FavoritesView() {
 
       {/* 主内容区域 */}
       <main className="px-4 py-6">
+        <div className="mb-4 flex items-center">
+          <FavoritesSortControl value={activeSortValue} onChange={handleSortChange} />
+        </div>
         {!hasContent ? (
           <div className="flex flex-col items-center justify-center py-32">
             <NoResultIcon size={128} className="text-muted-foreground/30" />

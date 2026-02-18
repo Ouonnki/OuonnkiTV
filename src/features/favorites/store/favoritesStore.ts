@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
 import { immer } from 'zustand/middleware/immer'
-import type { FavoriteList, FavoriteFilterOptions, FavoriteStats } from '../types/favorites'
+import type { FavoriteItem, FavoriteList, FavoriteFilterOptions, FavoriteStats } from '../types/favorites'
 import { FavoriteWatchStatus } from '../types/favorites'
 import type { TmdbFavoriteItem, CmsFavoriteItem } from '../types/favorites'
 import type { TmdbMediaItem } from '@/shared/types/tmdb'
@@ -157,6 +157,25 @@ function createCmsMediaSnapshot(video: VideoItem): CmsFavoriteItem['media'] {
     sourceCode: video.source_code || '',
     sourceName: video.source_name || '',
   }
+}
+
+/** 获取收藏项标题（用于名称排序） */
+function getFavoriteTitle(item: FavoriteItem): string {
+  return item.sourceType === 'tmdb' ? item.media.title : item.media.vodName
+}
+
+/** 获取收藏项评分（排序值） */
+function getFavoriteRatingValue(item: FavoriteItem): number {
+  if (item.rating !== undefined) return item.rating
+  if (item.sourceType === 'tmdb') return item.media.voteAverage ?? 0
+  return 0
+}
+
+/** 获取收藏项上映日期时间戳（排序值） */
+function getFavoriteReleaseDateValue(item: FavoriteItem): number {
+  if (item.sourceType !== 'tmdb' || !item.media.releaseDate) return 0
+  const timestamp = new Date(item.media.releaseDate).getTime()
+  return Number.isNaN(timestamp) ? 0 : timestamp
 }
 
 export const useFavoritesStore = create<FavoritesStore>()(
@@ -340,6 +359,7 @@ export const useFavoritesStore = create<FavoritesStore>()(
               item.updatedAt = Date.now()
             }
           })
+          get()._applyFilters()
         },
 
         setNotes: (id: string, notes: string) => {
@@ -350,6 +370,7 @@ export const useFavoritesStore = create<FavoritesStore>()(
               item.updatedAt = Date.now()
             }
           })
+          get()._applyFilters()
         },
 
         addTag: (id: string, tag: string) => {
@@ -360,6 +381,7 @@ export const useFavoritesStore = create<FavoritesStore>()(
               item.updatedAt = Date.now()
             }
           })
+          get()._applyFilters()
         },
 
         removeTag: (id: string, tag: string) => {
@@ -370,6 +392,7 @@ export const useFavoritesStore = create<FavoritesStore>()(
               item.updatedAt = Date.now()
             }
           })
+          get()._applyFilters()
         },
 
         // === 查询实现 ===
@@ -470,14 +493,8 @@ export const useFavoritesStore = create<FavoritesStore>()(
             filtered.sort((a, b) => {
               // title 排序单独处理，因为返回的是字符串
               if (sortBy === 'title') {
-                const titleA =
-                  a.sourceType === 'tmdb'
-                    ? (a as TmdbFavoriteItem).media.title
-                    : (a as CmsFavoriteItem).media.vodName
-                const titleB =
-                  b.sourceType === 'tmdb'
-                    ? (b as TmdbFavoriteItem).media.title
-                    : (b as CmsFavoriteItem).media.vodName
+                const titleA = getFavoriteTitle(a)
+                const titleB = getFavoriteTitle(b)
                 return (sortOrder === 'asc' ? 1 : -1) * titleA.localeCompare(titleB, 'zh-CN')
               }
 
@@ -495,18 +512,13 @@ export const useFavoritesStore = create<FavoritesStore>()(
                   valB = b.updatedAt
                   break
                 case 'rating':
-                  valA = a.rating ?? 0
-                  valB = b.rating ?? 0
+                  // 优先用户评分，未评分时回退到 TMDB 站点评分
+                  valA = getFavoriteRatingValue(a)
+                  valB = getFavoriteRatingValue(b)
                   break
                 case 'releaseDate':
-                  valA =
-                    a.sourceType === 'tmdb'
-                      ? new Date((a as TmdbFavoriteItem).media.releaseDate).getTime()
-                      : 0
-                  valB =
-                    b.sourceType === 'tmdb'
-                      ? new Date((b as TmdbFavoriteItem).media.releaseDate).getTime()
-                      : 0
+                  valA = getFavoriteReleaseDateValue(a)
+                  valB = getFavoriteReleaseDateValue(b)
                   break
                 default:
                   valA = a.addedAt
@@ -597,7 +609,17 @@ export const useFavoritesStore = create<FavoritesStore>()(
       })),
       {
         name: 'ouonnki-tv-favorites-store',
-        version: 1,
+        version: 2,
+        partialize: state => ({ favorites: state.favorites }),
+        migrate: persistedState => {
+          const state = persistedState as Partial<FavoritesState> | undefined
+          return {
+            favorites: Array.isArray(state?.favorites) ? state.favorites : [],
+          }
+        },
+        onRehydrateStorage: () => state => {
+          state?._applyFilters()
+        },
       },
     ),
     {
