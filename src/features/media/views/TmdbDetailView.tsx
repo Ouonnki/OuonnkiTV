@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useDocumentTitle } from '@/shared/hooks'
 import { useTmdbDetail } from '@/shared/hooks/useTmdb'
 import { buildTmdbPlayPath } from '@/shared/lib/routes'
+import { buildHistoryPlayPath, isTmdbHistoryItem } from '@/shared/lib/viewingHistory'
 import type {
   TmdbMediaItem,
   TmdbMediaType,
@@ -13,6 +14,7 @@ import type {
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent } from '@/shared/components/ui/card'
 import { useFavoritesStore } from '@/features/favorites/store/favoritesStore'
+import { useViewingHistoryStore } from '@/shared/store/viewingHistoryStore'
 import {
   DetailCastTab,
   DetailHeroSection,
@@ -55,6 +57,7 @@ export default function TmdbDetailView() {
     mediaType && isValidId ? state.isTmdbFavorited(parsedTmdbId, mediaType) : false,
   )
   const toggleTmdbFavorite = useFavoritesStore(state => state.toggleTmdbFavorite)
+  const viewingHistory = useViewingHistoryStore(state => state.viewingHistory)
 
   const { detail, loading, error } = useTmdbDetail<TmdbMovieDetail | TmdbTvDetail>(
     isValidRoute ? parsedTmdbId : undefined,
@@ -126,6 +129,25 @@ export default function TmdbDetailView() {
     releaseDate: detail?.releaseDate || '',
     seasons: safeSeasons,
   })
+
+  const latestTmdbHistory = useMemo(() => {
+    if (!mediaType || !isValidRoute) return null
+
+    const matchedItems = viewingHistory
+      .filter(
+      item =>
+        isTmdbHistoryItem(item) &&
+        item.tmdbMediaType === mediaType &&
+        item.tmdbId === parsedTmdbId,
+      )
+      .sort((a, b) => b.timestamp - a.timestamp)
+    if (matchedItems.length === 0) return null
+
+    // 继续观看路径优先级：
+    // 1. 优先选择带有 sourceCode + vodId 的记录（可直接回到上次源）
+    // 2. 其次使用最近一条 tmdb 记录（回到同集/同季）
+    return matchedItems.find(item => Boolean(item.sourceCode && item.vodId)) || matchedItems[0]
+  }, [isValidRoute, mediaType, parsedTmdbId, viewingHistory])
 
   if (!isValidRoute) {
     return (
@@ -251,6 +273,32 @@ export default function TmdbDetailView() {
     },
   ].filter(field => field.value)
 
+  const continueWatchingLabel = latestTmdbHistory
+    ? latestTmdbHistory.episodeName || `第${latestTmdbHistory.episodeIndex + 1}集`
+    : ''
+  const continueWatchingProgressLabel = latestTmdbHistory
+    ? latestTmdbHistory.duration > 0
+      ? `已观看 ${Math.round(
+          Math.min(
+            100,
+            Math.max(
+              0,
+              (latestTmdbHistory.playbackPosition / latestTmdbHistory.duration) * 100,
+            ),
+          ),
+        )}%`
+      : '已开始观看'
+    : ''
+  const continueWatchingPath = latestTmdbHistory
+    ? latestTmdbHistory.sourceCode && latestTmdbHistory.vodId
+      ? buildHistoryPlayPath(latestTmdbHistory)
+      : buildTmdbPlayPath(tmdbType, detail.id, {
+          episodeIndex: latestTmdbHistory.episodeIndex,
+          seasonNumber:
+            tmdbType === 'tv' ? latestTmdbHistory.tmdbSeasonNumber ?? undefined : undefined,
+        })
+    : buildTmdbPlayPath(tmdbType, detail.id)
+
   return (
     <div className="space-y-0">
       <DetailHeroSection
@@ -264,6 +312,11 @@ export default function TmdbDetailView() {
         favorited={favorited}
         onBack={() => navigate(TMDB_SEARCH_PATH)}
         onPlayNow={() => navigate(buildTmdbPlayPath(tmdbType, detail.id))}
+        onContinueWatching={
+          continueWatchingPath ? () => navigate(continueWatchingPath) : undefined
+        }
+        continueWatchingLabel={continueWatchingLabel}
+        continueWatchingProgressLabel={continueWatchingProgressLabel}
         onToggleFavorite={() => toggleTmdbFavorite(mediaSnapshot)}
       />
 

@@ -31,6 +31,9 @@ interface DetailHeroSectionProps {
   favorited: boolean
   onBack: () => void
   onPlayNow: () => void
+  onContinueWatching?: () => void
+  continueWatchingLabel?: string
+  continueWatchingProgressLabel?: string
   onToggleFavorite: () => void
 }
 
@@ -45,6 +48,9 @@ export function DetailHeroSection({
   favorited,
   onBack,
   onPlayNow,
+  onContinueWatching,
+  continueWatchingLabel,
+  continueWatchingProgressLabel,
   onToggleFavorite,
 }: DetailHeroSectionProps) {
   const heroBadgeClass =
@@ -194,6 +200,25 @@ export function DetailHeroSection({
           <p className="line-clamp-2 text-sm leading-6 text-white/85 md:line-clamp-4 md:text-base">{detail.overview || '暂无简介'}</p>
 
           <div className="flex flex-wrap gap-3">
+            {onContinueWatching ? (
+              <Button
+                className="group relative bg-[#E50914] font-semibold text-white shadow-lg hover:bg-[#ca0812]"
+                onClick={onContinueWatching}
+              >
+                <span className="inline-flex items-center gap-1.5 transition-opacity duration-200 group-hover:opacity-0">
+                  <Play className="size-4 fill-current" />
+                  继续观看
+                  {continueWatchingLabel ? (
+                    <span className="hidden sm:inline">· {continueWatchingLabel}</span>
+                  ) : null}
+                </span>
+                {continueWatchingProgressLabel ? (
+                  <span className="pointer-events-none absolute inset-0 hidden items-center justify-center text-xs font-semibold opacity-0 transition-opacity duration-200 group-hover:opacity-100 sm:flex">
+                    {continueWatchingProgressLabel}
+                  </span>
+                ) : null}
+              </Button>
+            ) : null}
             <Button
               className="bg-white font-semibold text-black shadow-lg hover:bg-white/90"
               onClick={onPlayNow}

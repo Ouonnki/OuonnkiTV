@@ -21,6 +21,7 @@ import { useDocumentTitle, useCmsClient } from '@/shared/hooks'
 import { cn } from '@/shared/lib/utils'
 import { buildCmsPlayPath, buildTmdbDetailPath, buildTmdbPlayPath } from '@/shared/lib/routes'
 import { isTmdbHistoryItem } from '@/shared/lib/viewingHistory'
+import { getBackdropUrl } from '@/shared/lib/tmdb'
 import { useFavoritesStore } from '@/features/favorites/store/favoritesStore'
 import type { TmdbMediaItem, TmdbMediaType } from '@/shared/types/tmdb'
 import type { ViewingHistoryItem } from '@/shared/types'
@@ -632,10 +633,16 @@ export default function UnifiedPlayer() {
 
     const addHistorySnapshot = () => {
       if (!resolvedSourceCode || !resolvedVodId || !detail.videoInfo) return
+      const historyImageUrl =
+        (canUseTmdbHistory
+          ? getBackdropUrl(tmdbPlayback.tmdbDetail?.backdropPath || null, 'w1280')
+          : '') ||
+        detail.videoInfo.cover ||
+        ''
       addViewingHistory({
         recordType: canUseTmdbHistory ? 'tmdb' : 'cms',
         title: detail.videoInfo.title || '未知视频',
-        imageUrl: detail.videoInfo.cover || '',
+        imageUrl: historyImageUrl,
         sourceCode: resolvedSourceCode,
         sourceName: detail.videoInfo.source_name || '',
         vodId: resolvedVodId,
@@ -670,10 +677,16 @@ export default function UnifiedPlayer() {
 
       if (timeSinceLastUpdate >= TIME_UPDATE_INTERVAL && currentTime > 0 && duration > 0) {
         lastTimeUpdate = Date.now()
+        const historyImageUrl =
+          (canUseTmdbHistory
+            ? getBackdropUrl(tmdbPlayback.tmdbDetail?.backdropPath || null, 'w1280')
+            : '') ||
+          detail.videoInfo.cover ||
+          ''
         addViewingHistory({
           recordType: canUseTmdbHistory ? 'tmdb' : 'cms',
           title: detail.videoInfo.title || '未知视频',
-          imageUrl: detail.videoInfo.cover || '',
+          imageUrl: historyImageUrl,
           sourceCode: resolvedSourceCode,
           sourceName: detail.videoInfo.source_name || '',
           vodId: resolvedVodId,
@@ -805,6 +818,7 @@ export default function UnifiedPlayer() {
     resolvedVodId,
     selectedEpisode,
     showPlayerNotice,
+    tmdbPlayback.tmdbDetail?.backdropPath,
     tmdbMediaType,
     tmdbSeasonNumberForHistory,
   ])
