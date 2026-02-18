@@ -15,6 +15,7 @@ import {
 } from '@/shared/components/ui/dialog'
 import { ScrollArea } from '@/shared/components/ui/scroll-area'
 import { buildTmdbPlayPath } from '@/shared/lib/routes'
+import { isTmdbHistoryItem } from '@/shared/lib/viewingHistory'
 import { useViewingHistoryStore } from '@/shared/store/viewingHistoryStore'
 import { useSettingStore } from '@/shared/store/settingStore'
 import type { ViewingHistoryItem } from '@/shared/types'
@@ -38,11 +39,17 @@ interface DetailPlaylistTabProps {
   onRetry: () => void
 }
 
-const buildPlayLink = (tmdbType: TmdbMediaType, tmdbId: number, entry: PlaylistMatchItem) => {
+const buildPlayLink = (
+  tmdbType: TmdbMediaType,
+  tmdbId: number,
+  entry: PlaylistMatchItem,
+  seasonNumber?: number,
+) => {
   if (!entry.item.source_code || !entry.item.vod_id) return null
   return buildTmdbPlayPath(tmdbType, tmdbId, {
     sourceCode: entry.item.source_code,
     vodId: entry.item.vod_id,
+    seasonNumber: tmdbType === 'tv' ? seasonNumber : undefined,
   })
 }
 
@@ -194,13 +201,29 @@ function getLatestHistoryForMatch(
   viewingHistory: ViewingHistoryItem[],
   sourceCode: string | undefined,
   vodId: string | undefined,
+  tmdbType: TmdbMediaType,
+  tmdbId: number,
+  seasonNumber?: number,
 ): ViewingHistoryItem | null {
+  const tmdbMatches = viewingHistory.filter(item => {
+    if (!isTmdbHistoryItem(item)) return false
+    if (item.tmdbMediaType !== tmdbType || item.tmdbId !== tmdbId) return false
+    if (tmdbType === 'tv') {
+      return (item.tmdbSeasonNumber ?? null) === (seasonNumber ?? null)
+    }
+    return true
+  })
+
+  if (tmdbMatches.length > 0) {
+    return tmdbMatches.reduce((latest, item) => (item.timestamp > latest.timestamp ? item : latest))
+  }
+
   if (!sourceCode || !vodId) return null
-  const matches = viewingHistory.filter(
-    item => item.sourceCode === sourceCode && item.vodId === vodId,
+  const cmsMatches = viewingHistory.filter(
+    item => item.recordType === 'cms' && item.sourceCode === sourceCode && item.vodId === vodId,
   )
-  if (matches.length === 0) return null
-  return matches.reduce((latest, item) => (item.timestamp > latest.timestamp ? item : latest))
+  if (cmsMatches.length === 0) return null
+  return cmsMatches.reduce((latest, item) => (item.timestamp > latest.timestamp ? item : latest))
 }
 
 function ViewingProgressBadge({ historyItem }: { historyItem: ViewingHistoryItem }) {
@@ -232,6 +255,7 @@ function MatchRow({
   density = 'default',
   viewingHistory,
   showProgress,
+  seasonNumber,
 }: {
   tmdbType: TmdbMediaType
   tmdbId: number
@@ -239,8 +263,9 @@ function MatchRow({
   density?: 'default' | 'compact'
   viewingHistory?: ViewingHistoryItem[]
   showProgress?: boolean
+  seasonNumber?: number
 }) {
-  const playLink = buildPlayLink(tmdbType, tmdbId, entry)
+  const playLink = buildPlayLink(tmdbType, tmdbId, entry, seasonNumber)
   const title = entry.item.vod_name || '未命名条目'
   const year = entry.item.vod_year || ''
   const remarks = entry.item.vod_remarks || ''
@@ -252,7 +277,14 @@ function MatchRow({
 
   const latestHistory =
     showProgress && viewingHistory
-      ? getLatestHistoryForMatch(viewingHistory, entry.item.source_code, entry.item.vod_id)
+      ? getLatestHistoryForMatch(
+          viewingHistory,
+          entry.item.source_code,
+          entry.item.vod_id,
+          tmdbType,
+          tmdbId,
+          seasonNumber,
+        )
       : null
 
   return (
@@ -312,12 +344,14 @@ function SourceMatchBlock({
   sourceMatch,
   viewingHistory,
   showProgress,
+  seasonNumber,
 }: {
   tmdbType: TmdbMediaType
   tmdbId: number
   sourceMatch: SourceBestMatch
   viewingHistory?: ViewingHistoryItem[]
   showProgress?: boolean
+  seasonNumber?: number
 }) {
   const totalMatches = (sourceMatch.bestMatch ? 1 : 0) + sourceMatch.alternatives.length
   const best = sourceMatch.bestMatch
@@ -357,7 +391,14 @@ function SourceMatchBlock({
 
             {isSingle && best ? (
               <div className="rounded-lg border border-border/45 p-3">
-                <MatchRow tmdbType={tmdbType} tmdbId={tmdbId} entry={best} viewingHistory={viewingHistory} showProgress={showProgress} />
+                <MatchRow
+                  tmdbType={tmdbType}
+                  tmdbId={tmdbId}
+                  entry={best}
+                  viewingHistory={viewingHistory}
+                  showProgress={showProgress}
+                  seasonNumber={seasonNumber}
+                />
               </div>
             ) : useScrollArea ? (
               <ScrollArea className="max-h-[65vh]">
@@ -366,7 +407,14 @@ function SourceMatchBlock({
                     <section className="space-y-2">
                       <p className="text-muted-foreground text-xs">最佳匹配</p>
                       <div className="rounded-lg border border-border/45 p-3">
-                        <MatchRow tmdbType={tmdbType} tmdbId={tmdbId} entry={best} viewingHistory={viewingHistory} showProgress={showProgress} />
+                        <MatchRow
+                          tmdbType={tmdbType}
+                          tmdbId={tmdbId}
+                          entry={best}
+                          viewingHistory={viewingHistory}
+                          showProgress={showProgress}
+                          seasonNumber={seasonNumber}
+                        />
                       </div>
                     </section>
                   )}
@@ -377,7 +425,15 @@ function SourceMatchBlock({
                       <ul className="divide-border/35 border-border/35 divide-y rounded-lg border">
                         {sourceMatch.alternatives.map(entry => (
                           <li key={`${sourceMatch.sourceCode}-${entry.item.vod_id}-alt-all`} className="p-3">
-                            <MatchRow tmdbType={tmdbType} tmdbId={tmdbId} entry={entry} density="compact" viewingHistory={viewingHistory} showProgress={showProgress} />
+                            <MatchRow
+                              tmdbType={tmdbType}
+                              tmdbId={tmdbId}
+                              entry={entry}
+                              density="compact"
+                              viewingHistory={viewingHistory}
+                              showProgress={showProgress}
+                              seasonNumber={seasonNumber}
+                            />
                           </li>
                         ))}
                       </ul>
@@ -391,7 +447,14 @@ function SourceMatchBlock({
                   <section className="space-y-2">
                     <p className="text-muted-foreground text-xs">最佳匹配</p>
                     <div className="rounded-lg border border-border/45 p-3">
-                      <MatchRow tmdbType={tmdbType} tmdbId={tmdbId} entry={best} viewingHistory={viewingHistory} showProgress={showProgress} />
+                      <MatchRow
+                        tmdbType={tmdbType}
+                        tmdbId={tmdbId}
+                        entry={best}
+                        viewingHistory={viewingHistory}
+                        showProgress={showProgress}
+                        seasonNumber={seasonNumber}
+                      />
                     </div>
                   </section>
                 )}
@@ -402,7 +465,15 @@ function SourceMatchBlock({
                     <ul className="divide-border/35 border-border/35 divide-y rounded-lg border">
                       {sourceMatch.alternatives.map(entry => (
                         <li key={`${sourceMatch.sourceCode}-${entry.item.vod_id}-alt-all`} className="p-3">
-                          <MatchRow tmdbType={tmdbType} tmdbId={tmdbId} entry={entry} density="compact" viewingHistory={viewingHistory} showProgress={showProgress} />
+                          <MatchRow
+                            tmdbType={tmdbType}
+                            tmdbId={tmdbId}
+                            entry={entry}
+                            density="compact"
+                            viewingHistory={viewingHistory}
+                            showProgress={showProgress}
+                            seasonNumber={seasonNumber}
+                          />
                         </li>
                       ))}
                     </ul>
@@ -416,7 +487,14 @@ function SourceMatchBlock({
 
       {best ? (
         <div className="rounded-lg border border-border/45 p-3">
-          <MatchRow tmdbType={tmdbType} tmdbId={tmdbId} entry={best} viewingHistory={viewingHistory} showProgress={showProgress} />
+          <MatchRow
+            tmdbType={tmdbType}
+            tmdbId={tmdbId}
+            entry={best}
+            viewingHistory={viewingHistory}
+            showProgress={showProgress}
+            seasonNumber={seasonNumber}
+          />
         </div>
       ) : (
         <div className="rounded-lg border border-dashed border-border/55 p-3">
@@ -484,6 +562,7 @@ function TvSeasonBlock({
                 sourceMatch={sourceMatch}
                 viewingHistory={viewingHistory}
                 showProgress={showProgress}
+                seasonNumber={seasonMatch.season.season_number}
               />
             ))}
           </div>

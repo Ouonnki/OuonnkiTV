@@ -20,8 +20,10 @@ import { useSettingStore } from '@/shared/store/settingStore'
 import { useDocumentTitle, useCmsClient } from '@/shared/hooks'
 import { cn } from '@/shared/lib/utils'
 import { buildCmsPlayPath, buildTmdbDetailPath, buildTmdbPlayPath } from '@/shared/lib/routes'
+import { isTmdbHistoryItem } from '@/shared/lib/viewingHistory'
 import { useFavoritesStore } from '@/features/favorites/store/favoritesStore'
 import type { TmdbMediaItem, TmdbMediaType } from '@/shared/types/tmdb'
+import type { ViewingHistoryItem } from '@/shared/types'
 import type { VideoItem } from '@/shared/types/video'
 import { useTmdbRecommendations } from '@/shared/hooks/useTmdb'
 import { toast } from 'sonner'
@@ -106,6 +108,20 @@ const stripHtmlTags = (value: string) => {
     .trim()
 
   return stripped
+}
+
+const matchesTmdbHistory = (
+  item: ViewingHistoryItem,
+  mediaType: TmdbMediaType,
+  tmdbId: number,
+  seasonNumber: number | null,
+) => {
+  if (!isTmdbHistoryItem(item)) return false
+  if (item.tmdbMediaType !== mediaType || item.tmdbId !== tmdbId) return false
+  if (mediaType === 'tv') {
+    return (item.tmdbSeasonNumber ?? null) === seasonNumber
+  }
+  return true
 }
 
 export default function UnifiedPlayer() {
@@ -207,6 +223,11 @@ export default function UnifiedPlayer() {
 
   const resolvedSourceCode = isCmsRoute ? routeSourceCode : tmdbPlayback.resolvedSourceCode
   const resolvedVodId = isCmsRoute ? routeVodId : tmdbPlayback.resolvedVodId
+  const canUseTmdbHistory = Boolean(
+    isTmdbRoute && tmdbMediaType && Number.isInteger(parsedTmdbId) && parsedTmdbId > 0,
+  )
+  const tmdbSeasonNumberForHistory =
+    tmdbMediaType === 'tv' ? (tmdbPlayback.selectedSeasonNumber ?? querySeasonNumber ?? null) : null
   const cmsFavoriteActive = useFavoritesStore(state =>
     isCmsRoute && resolvedVodId && resolvedSourceCode
       ? state.isCmsFavorited(resolvedVodId, resolvedSourceCode)
@@ -405,18 +426,74 @@ export default function UnifiedPlayer() {
 
   const episodeProgressMap = useMemo(() => {
     if (!playback.isViewingHistoryVisible || !resolvedSourceCode || !resolvedVodId) return null
-    const map = new Map<number, number>()
-    for (const item of viewingHistory) {
-      if (item.sourceCode === resolvedSourceCode && item.vodId === resolvedVodId) {
-        const progress =
-          item.duration > 0
-            ? Math.min(100, Math.max(0, (item.playbackPosition / item.duration) * 100))
-            : 0
-        map.set(item.episodeIndex, progress)
+
+    const appendProgress = (
+      targetMap: Map<number, { progress: number; timestamp: number }>,
+      item: ViewingHistoryItem,
+    ) => {
+      const progress =
+        item.duration > 0 ? Math.min(100, Math.max(0, (item.playbackPosition / item.duration) * 100)) : 0
+      const previous = targetMap.get(item.episodeIndex)
+
+      if (!previous || item.timestamp > previous.timestamp) {
+        targetMap.set(item.episodeIndex, { progress, timestamp: item.timestamp })
       }
     }
-    return map
-  }, [playback.isViewingHistoryVisible, resolvedSourceCode, resolvedVodId, viewingHistory])
+
+    if (canUseTmdbHistory && tmdbMediaType) {
+      const tmdbMap = new Map<number, { progress: number; timestamp: number }>()
+      const cmsFallbackMap = new Map<number, { progress: number; timestamp: number }>()
+
+      for (const item of viewingHistory) {
+        if (matchesTmdbHistory(item, tmdbMediaType, parsedTmdbId, tmdbSeasonNumberForHistory)) {
+          appendProgress(tmdbMap, item)
+          continue
+        }
+
+        if (
+          item.recordType === 'cms' &&
+          item.sourceCode === resolvedSourceCode &&
+          item.vodId === resolvedVodId
+        ) {
+          appendProgress(cmsFallbackMap, item)
+        }
+      }
+
+      const merged = new Map<number, number>()
+      tmdbMap.forEach((value, episodeIndex) => {
+        merged.set(episodeIndex, value.progress)
+      })
+      cmsFallbackMap.forEach((value, episodeIndex) => {
+        if (!merged.has(episodeIndex)) {
+          merged.set(episodeIndex, value.progress)
+        }
+      })
+
+      return merged
+    }
+
+    const map = new Map<number, { progress: number; timestamp: number }>()
+    for (const item of viewingHistory) {
+      if (item.sourceCode === resolvedSourceCode && item.vodId === resolvedVodId) {
+        appendProgress(map, item)
+      }
+    }
+
+    const normalized = new Map<number, number>()
+    map.forEach((value, episodeIndex) => {
+      normalized.set(episodeIndex, value.progress)
+    })
+    return normalized
+  }, [
+    canUseTmdbHistory,
+    parsedTmdbId,
+    playback.isViewingHistoryVisible,
+    resolvedSourceCode,
+    resolvedVodId,
+    tmdbMediaType,
+    tmdbSeasonNumberForHistory,
+    viewingHistory,
+  ])
 
   const playerRef = useRef<Artplayer | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -516,12 +593,32 @@ export default function UnifiedPlayer() {
         art.video.style.background = '#000'
       }
 
-      const existingHistory = viewingHistoryRef.current.find(
-        item =>
-          item.sourceCode === resolvedSourceCode &&
-          item.vodId === resolvedVodId &&
-          item.episodeIndex === selectedEpisode,
-      )
+      let existingHistory: ViewingHistoryItem | undefined
+
+      if (canUseTmdbHistory && tmdbMediaType) {
+        existingHistory = viewingHistoryRef.current.find(
+          item =>
+            item.episodeIndex === selectedEpisode &&
+            matchesTmdbHistory(item, tmdbMediaType, parsedTmdbId, tmdbSeasonNumberForHistory),
+        )
+
+        if (!existingHistory) {
+          existingHistory = viewingHistoryRef.current.find(
+            item =>
+              item.recordType === 'cms' &&
+              item.sourceCode === resolvedSourceCode &&
+              item.vodId === resolvedVodId &&
+              item.episodeIndex === selectedEpisode,
+          )
+        }
+      } else {
+        existingHistory = viewingHistoryRef.current.find(
+          item =>
+            item.sourceCode === resolvedSourceCode &&
+            item.vodId === resolvedVodId &&
+            item.episodeIndex === selectedEpisode,
+        )
+      }
 
       if (pendingSeekRef.current && pendingSeekRef.current > 0) {
         art.seek = pendingSeekRef.current
@@ -536,11 +633,16 @@ export default function UnifiedPlayer() {
     const addHistorySnapshot = () => {
       if (!resolvedSourceCode || !resolvedVodId || !detail.videoInfo) return
       addViewingHistory({
+        recordType: canUseTmdbHistory ? 'tmdb' : 'cms',
         title: detail.videoInfo.title || '未知视频',
         imageUrl: detail.videoInfo.cover || '',
         sourceCode: resolvedSourceCode,
         sourceName: detail.videoInfo.source_name || '',
         vodId: resolvedVodId,
+        tmdbMediaType: canUseTmdbHistory ? tmdbMediaType || undefined : undefined,
+        tmdbId: canUseTmdbHistory ? parsedTmdbId : undefined,
+        tmdbSeasonNumber:
+          canUseTmdbHistory && tmdbMediaType === 'tv' ? tmdbSeasonNumberForHistory : undefined,
         episodeIndex: selectedEpisode,
         episodeName: episodes[selectedEpisode],
         playbackPosition: art.currentTime || 0,
@@ -569,11 +671,16 @@ export default function UnifiedPlayer() {
       if (timeSinceLastUpdate >= TIME_UPDATE_INTERVAL && currentTime > 0 && duration > 0) {
         lastTimeUpdate = Date.now()
         addViewingHistory({
+          recordType: canUseTmdbHistory ? 'tmdb' : 'cms',
           title: detail.videoInfo.title || '未知视频',
           imageUrl: detail.videoInfo.cover || '',
           sourceCode: resolvedSourceCode,
           sourceName: detail.videoInfo.source_name || '',
           vodId: resolvedVodId,
+          tmdbMediaType: canUseTmdbHistory ? tmdbMediaType || undefined : undefined,
+          tmdbId: canUseTmdbHistory ? parsedTmdbId : undefined,
+          tmdbSeasonNumber:
+            canUseTmdbHistory && tmdbMediaType === 'tv' ? tmdbSeasonNumberForHistory : undefined,
           episodeIndex: selectedEpisode,
           episodeName: episodes[selectedEpisode],
           playbackPosition: currentTime,
@@ -689,13 +796,17 @@ export default function UnifiedPlayer() {
     addViewingHistory,
     adFilteringEnabled,
     buildCurrentPlayPath,
+    canUseTmdbHistory,
     detail,
     episodes,
     navigate,
+    parsedTmdbId,
     resolvedSourceCode,
     resolvedVodId,
     selectedEpisode,
     showPlayerNotice,
+    tmdbMediaType,
+    tmdbSeasonNumberForHistory,
   ])
 
   const handleEpisodeChange = (displayIndex: number) => {

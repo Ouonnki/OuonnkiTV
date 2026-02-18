@@ -16,7 +16,11 @@ import { isBrowser } from 'react-device-detect'
 import clsx from 'clsx'
 import { motion } from 'framer-motion'
 import type { ViewingHistoryItem } from '@/shared/types'
-import { buildCmsPlayPath } from '@/shared/lib/routes'
+import {
+  buildHistoryPlayPath,
+  getHistorySeriesKey,
+  isTmdbHistoryItem,
+} from '@/shared/lib/viewingHistory'
 
 dayjs.extend(relativeTime)
 dayjs.locale('zh-cn')
@@ -38,9 +42,9 @@ const HistoryList = ({
   removeViewingHistory: (item: ViewingHistoryItem) => void
 }) => {
   const filteredHistory = useMemo(() => {
-    const historyMap = new Map()
+    const historyMap = new Map<string, ViewingHistoryItem>()
     viewingHistory.forEach(item => {
-      const key = `${item.sourceCode}-${item.vodId}`
+      const key = getHistorySeriesKey(item)
       if (!historyMap.has(key)) {
         historyMap.set(key, item)
       }
@@ -58,15 +62,12 @@ const HistoryList = ({
   return (
     <>
       <ScrollArea className="max-h-[50vh] overflow-y-auto bg-transparent p-2">
-        {filteredHistory.map((item, index) => (
+        {filteredHistory.map(item => (
           <Card
             className="@container group mb-[.6rem] h-[30vw] w-full cursor-pointer overflow-hidden border-none bg-white/30 p-0 shadow-md/5 transition-all duration-500 hover:scale-101 hover:shadow-lg md:h-[8rem] md:w-[25rem]"
-            key={index}
+            key={getHistorySeriesKey(item)}
           >
-            <NavLink
-              className="w-full"
-              to={buildCmsPlayPath(item.sourceCode, item.vodId, item.episodeIndex)}
-            >
+            <NavLink className="w-full" to={buildHistoryPlayPath(item)}>
               <div className="flex h-[30vw] w-full md:h-[8rem]">
                 <div className="relative shrink-0">
                   <div className="aspect-square h-full overflow-hidden rounded-lg">
@@ -90,7 +91,7 @@ const HistoryList = ({
                       variant="default"
                       className="h-[6cqw] px-[3%] text-[3cqw] md:h-6 md:px-2 md:text-xs"
                     >
-                      {item.sourceName}
+                      {isTmdbHistoryItem(item) ? 'TMDB' : 'CMS'} · {item.sourceName}
                     </Badge>
                     <div className="flex items-center justify-center gap-[.6rem] text-[3.5cqw] text-gray-500 md:text-sm">
                       <p>{dayjs(item.timestamp).fromNow()}</p>

@@ -1,4 +1,5 @@
 import dayjs from 'dayjs'
+import { getHistoryItemKey as getSharedHistoryItemKey } from '@/shared/lib/viewingHistory'
 import type { ViewingHistoryItem } from '@/shared/types'
 
 export type HistorySectionKey = 'today' | 'yesterday' | 'older'
@@ -17,8 +18,7 @@ export const HISTORY_SECTION_BADGE_CLASS_MAP: Record<HistorySectionKey, string> 
   older: 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-200',
 }
 
-export const getHistoryItemKey = (item: ViewingHistoryItem) =>
-  `${item.sourceCode}::${item.vodId}::${item.episodeIndex}`
+export const getHistoryItemKey = (item: ViewingHistoryItem) => getSharedHistoryItemKey(item)
 
 export const getHistorySectionKey = (timestamp: number): HistorySectionKey => {
   const target = dayjs(timestamp)

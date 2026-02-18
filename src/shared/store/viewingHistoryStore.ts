@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
 import { immer } from 'zustand/middleware/immer'
+import { getHistoryItemKey, getHistorySeriesKey } from '@/shared/lib/viewingHistory'
 import type { ViewingHistoryItem } from '@/shared/types'
 import { useSettingStore } from './settingStore'
 
@@ -39,11 +40,9 @@ export const useViewingHistoryStore = create<ViewingHistoryStore>()(
           set(state => {
             if (item.duration <= 0) return
             // 检查是否已经存在相同视频的记录
+            const targetItemKey = getHistoryItemKey(item)
             const existingIndex = state.viewingHistory.findIndex(
-              historyItem =>
-                historyItem.sourceCode === item.sourceCode &&
-                historyItem.vodId === item.vodId &&
-                historyItem.episodeIndex === item.episodeIndex,
+              historyItem => getHistoryItemKey(historyItem) === targetItemKey,
             )
 
             if (existingIndex !== -1) {
@@ -70,20 +69,18 @@ export const useViewingHistoryStore = create<ViewingHistoryStore>()(
 
         removeViewingHistory: (item: ViewingHistoryItem) => {
           set(state => {
+            const targetSeriesKey = getHistorySeriesKey(item)
             state.viewingHistory = state.viewingHistory.filter(
-              historyItem =>
-                historyItem.sourceCode !== item.sourceCode || historyItem.vodId !== item.vodId,
+              historyItem => getHistorySeriesKey(historyItem) !== targetSeriesKey,
             )
           })
         },
 
         removeViewingHistoryItem: (item: ViewingHistoryItem) => {
           set(state => {
+            const targetItemKey = getHistoryItemKey(item)
             state.viewingHistory = state.viewingHistory.filter(
-              historyItem =>
-                historyItem.sourceCode !== item.sourceCode ||
-                historyItem.vodId !== item.vodId ||
-                historyItem.episodeIndex !== item.episodeIndex,
+              historyItem => getHistoryItemKey(historyItem) !== targetItemKey,
             )
           })
         },
@@ -96,8 +93,17 @@ export const useViewingHistoryStore = create<ViewingHistoryStore>()(
       })),
       {
         name: 'ouonnki-tv-viewing-history', // 持久化存储的键名
-        version: 2.1,
+        version: 3,
         migrate: (persistedState: unknown, version: number) => {
+          const persistedHistory =
+            (
+              persistedState as
+                | {
+                    viewingHistory?: ViewingHistoryItem[]
+                  }
+                | undefined
+            )?.viewingHistory || []
+
           if (version < 2) {
             return {
               viewingHistory: [], // 清空历史记录
@@ -105,11 +111,19 @@ export const useViewingHistoryStore = create<ViewingHistoryStore>()(
           }
           if (version < 2.1) {
             return {
-              viewingHistory: (
-                persistedState as { viewingHistory: ViewingHistoryItem[] }
-              ).viewingHistory.map(item => ({
+              viewingHistory: persistedHistory.map(item => ({
                 ...item,
                 sourceName: item.sourceCode.slice(0, 5),
+                recordType: 'cms',
+              })),
+            }
+          }
+          if (version < 3) {
+            return {
+              viewingHistory: persistedHistory.map(item => ({
+                ...item,
+                sourceName: item.sourceName || item.sourceCode.slice(0, 5),
+                recordType: item.recordType === 'tmdb' ? 'tmdb' : 'cms',
               })),
             }
           }

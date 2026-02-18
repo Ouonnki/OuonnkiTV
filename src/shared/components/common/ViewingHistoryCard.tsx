@@ -6,7 +6,7 @@ import { AspectRatio } from '@/shared/components/ui/aspect-ratio'
 import { Checkbox } from '@/shared/components/ui/checkbox'
 import { Progress } from '@/shared/components/ui/progress'
 import { cn } from '@/shared/lib/utils'
-import { buildCmsPlayPath } from '@/shared/lib/routes'
+import { buildHistoryPlayPath, isTmdbHistoryItem } from '@/shared/lib/viewingHistory'
 import type { ViewingHistoryItem } from '@/shared/types'
 
 interface ViewingHistoryCardProps {
@@ -17,8 +17,7 @@ interface ViewingHistoryCardProps {
   onToggleSelect?: (item: ViewingHistoryItem) => void
 }
 
-const getPlayPath = (item: ViewingHistoryItem) =>
-  buildCmsPlayPath(item.sourceCode, item.vodId, item.episodeIndex)
+const getPlayPath = (item: ViewingHistoryItem) => buildHistoryPlayPath(item)
 
 const getProgressValue = (item: ViewingHistoryItem) => {
   if (item.duration <= 0) return 0
@@ -26,6 +25,7 @@ const getProgressValue = (item: ViewingHistoryItem) => {
 }
 
 const getEpisodeLabel = (item: ViewingHistoryItem) => item.episodeName || `第${item.episodeIndex + 1}集`
+const getRecordTypeLabel = (item: ViewingHistoryItem) => (isTmdbHistoryItem(item) ? 'TMDB' : 'CMS')
 
 export function ViewingHistoryCard({
   item,
@@ -76,6 +76,9 @@ export function ViewingHistoryCard({
           src={item.imageUrl}
           alt={item.title}
         />
+        <span className="pointer-events-none absolute top-2 left-2 rounded bg-black/65 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-white">
+          {getRecordTypeLabel(item)}
+        </span>
         <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-2 pt-6 transition-opacity duration-300 group-hover:opacity-0">
           <span className="line-clamp-1 text-sm font-medium text-white">{item.title}</span>
         </div>
@@ -92,9 +95,11 @@ export function ViewingHistoryCard({
         </div>
       </div>
 
-      <span className="pointer-events-none absolute top-2 left-2 rounded bg-black/60 px-1.5 py-0.5 text-xs font-medium text-white opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-        {getEpisodeLabel(item)}
-      </span>
+      {!selectionMode ? (
+        <span className="pointer-events-none absolute top-2 right-2 rounded bg-black/60 px-1.5 py-0.5 text-xs font-medium text-white opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+          {getEpisodeLabel(item)}
+        </span>
+      ) : null}
     </div>
   )
 
