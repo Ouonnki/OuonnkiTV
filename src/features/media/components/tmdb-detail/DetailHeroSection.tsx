@@ -75,7 +75,7 @@ export function DetailHeroSection({
       <Button
         variant="ghost"
         onClick={onBack}
-        className="absolute top-4 left-4 z-20 !bg-transparent text-white/90 transition-colors hover:!bg-transparent hover:text-primary dark:hover:!bg-transparent"
+        className="absolute top-4 left-4 z-20 h-8 rounded-full px-2.5 !bg-transparent text-white/90 transition-colors hover:!bg-transparent hover:text-primary dark:hover:!bg-transparent sm:h-9 sm:px-3"
       >
         <ArrowLeft className="size-4" />
         返回
@@ -84,14 +84,32 @@ export function DetailHeroSection({
         <Button
           asChild
           variant="ghost"
-          className="absolute top-4 right-4 z-20 !bg-transparent text-white/90 transition-colors hover:!bg-transparent hover:text-white"
+          className="absolute top-4 right-24 z-20 h-8 rounded-full px-2.5 !bg-transparent text-white/90 transition-colors hover:!bg-transparent hover:text-white sm:right-16 sm:h-9 sm:px-3 md:right-4"
         >
           <a href={richDetail.homepage} target="_blank" rel="noreferrer">
             <ExternalLink className="size-4" />
-            官方页面
+            <span className="md:hidden">官网</span>
+            <span className="hidden md:inline">官方页面</span>
+            <span className="sr-only md:hidden">官方页面</span>
           </a>
         </Button>
       )}
+      <Button
+        variant="ghost"
+        className="absolute top-4 right-4 z-20 h-8 gap-1 rounded-full px-1.5 !bg-transparent text-white/90 hover:!bg-transparent hover:text-white focus-visible:!bg-transparent active:!bg-transparent sm:h-9 sm:px-2 md:hidden"
+        onClick={onToggleFavorite}
+        aria-label={favorited ? '取消收藏' : '加入收藏'}
+      >
+        <motion.span
+          key={favorited ? 'mobile-favorited' : 'mobile-unfavorited'}
+          initial={{ scale: 0.65, rotate: -14, opacity: 0.6 }}
+          animate={{ scale: 1, rotate: 0, opacity: 1 }}
+          transition={{ type: 'spring', stiffness: 520, damping: 24 }}
+        >
+          <Heart className={`size-4 transition-colors ${favorited ? 'fill-rose-500 text-rose-500' : ''}`} />
+        </motion.span>
+        <span className="text-xs font-medium">{favorited ? '已收藏' : '收藏'}</span>
+      </Button>
 
       <div className="relative z-10 flex min-h-[420px] flex-col justify-end gap-5 p-4 sm:min-h-[460px] sm:p-5 md:min-h-[620px] md:gap-6 md:p-8 lg:flex-row lg:items-end lg:justify-between">
         <div className="flex flex-col gap-4 md:max-w-2xl">
@@ -229,7 +247,7 @@ export function DetailHeroSection({
             </Button>
             <Button
               variant="outline"
-              className="border-white/35 bg-white/12 font-semibold text-white hover:bg-white/20 hover:text-white"
+              className="hidden border-white/35 bg-white/12 font-semibold text-white hover:bg-white/20 hover:text-white md:inline-flex"
               onClick={onToggleFavorite}
             >
               <motion.span
