@@ -12,8 +12,10 @@ interface ViewingHistoryState {
 interface ViewingHistoryActions {
   // 添加观看历史
   addViewingHistory: (item: ViewingHistoryItem) => void
-  // 删除观看历史项
+  // 删除同一视频的所有观看历史项
   removeViewingHistory: (item: ViewingHistoryItem) => void
+  // 删除指定分集的观看历史项
+  removeViewingHistoryItem: (item: ViewingHistoryItem) => void
   // 清空观看历史
   clearViewingHistory: () => void
 }
@@ -71,6 +73,17 @@ export const useViewingHistoryStore = create<ViewingHistoryStore>()(
             state.viewingHistory = state.viewingHistory.filter(
               historyItem =>
                 historyItem.sourceCode !== item.sourceCode || historyItem.vodId !== item.vodId,
+            )
+          })
+        },
+
+        removeViewingHistoryItem: (item: ViewingHistoryItem) => {
+          set(state => {
+            state.viewingHistory = state.viewingHistory.filter(
+              historyItem =>
+                historyItem.sourceCode !== item.sourceCode ||
+                historyItem.vodId !== item.vodId ||
+                historyItem.episodeIndex !== item.episodeIndex,
             )
           })
         },
