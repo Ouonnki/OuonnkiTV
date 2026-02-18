@@ -19,6 +19,7 @@ interface SettingsConfig {
     defaultVolume?: number
     playerThemeColor?: string
     maxViewingHistoryCount?: number
+    tmdbMatchCacheTTLHours?: number
     isLoopEnabled?: boolean
     isPipEnabled?: boolean
     isAutoMiniEnabled?: boolean

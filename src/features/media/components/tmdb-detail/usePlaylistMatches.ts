@@ -9,6 +9,8 @@ import type {
 import type { TmdbMediaType } from '@/shared/types/tmdb'
 import { useCmsClient } from '@/shared/hooks'
 import { useApiStore } from '@/shared/store/apiStore'
+import { useSettingStore } from '@/shared/store/settingStore'
+import { useTmdbMatchCacheStore } from '@/shared/store/tmdbMatchCacheStore'
 import {
   buildPlaylistMatches,
   type PlaylistMatchItem,
@@ -77,6 +79,42 @@ const initialState: PlaylistMatchesState = {
   seasonSourceMatches: [],
 }
 
+const TMDB_MATCH_CACHE_MAX_ENTRIES = 200
+
+const normalizeCacheText = (value: string) => value.trim().toLowerCase().replace(/\s+/g, ' ')
+
+const buildSourceSignature = (sources: VideoSource[]) =>
+  sources
+    .slice()
+    .sort((a, b) => a.id.localeCompare(b.id))
+    .map(source => {
+      const updatedAt =
+        source.updatedAt instanceof Date
+          ? source.updatedAt.getTime()
+          : source.updatedAt
+            ? new Date(source.updatedAt).getTime()
+            : 0
+      return [
+        source.id,
+        source.url || '',
+        source.detailUrl || '',
+        source.timeout ?? '',
+        source.retry ?? '',
+        Number.isFinite(updatedAt) ? updatedAt : 0,
+      ].join('|')
+    })
+    .join(';;')
+
+const buildSeasonSignature = (seasons: DetailSeason[]) =>
+  seasons
+    .slice()
+    .sort((a, b) => {
+      if (a.season_number !== b.season_number) return a.season_number - b.season_number
+      return a.id - b.id
+    })
+    .map(season => `${season.id}|${season.season_number}`)
+    .join(';;')
+
 export function usePlaylistMatches({
   active,
   tmdbType,
@@ -88,6 +126,10 @@ export function usePlaylistMatches({
 }: UsePlaylistMatchesParams) {
   const cmsClient = useCmsClient()
   const videoAPIs = useApiStore(state => state.videoAPIs)
+  const tmdbMatchCacheTTLHours = useSettingStore(state => state.playback.tmdbMatchCacheTTLHours)
+  const getTmdbMatchCacheEntry = useTmdbMatchCacheStore(state => state.getEntry)
+  const setTmdbMatchCacheEntry = useTmdbMatchCacheStore(state => state.setEntry)
+  const pruneTmdbMatchCache = useTmdbMatchCacheStore(state => state.prune)
   const enabledSources = useMemo(() => videoAPIs.filter(source => source.isEnabled), [videoAPIs])
 
   const [state, setState] = useState<PlaylistMatchesState>(initialState)
@@ -102,6 +144,12 @@ export function usePlaylistMatches({
   const recomputeTimerRef = useRef<number | null>(null)
   const unsubRef = useRef<Array<() => void>>([])
 
+  const clearRecomputeTimer = useCallback(() => {
+    if (!recomputeTimerRef.current) return
+    window.clearTimeout(recomputeTimerRef.current)
+    recomputeTimerRef.current = null
+  }, [])
+
   const clearSubscriptions = useCallback(() => {
     unsubRef.current.forEach(unsub => unsub())
     unsubRef.current = []
@@ -113,9 +161,7 @@ export function usePlaylistMatches({
       releaseYear?: string
       sourceMetaList: Array<{ id: string; name: string }>
     }) => {
-      if (recomputeTimerRef.current) {
-        window.clearTimeout(recomputeTimerRef.current)
-      }
+      clearRecomputeTimer()
 
       recomputeTimerRef.current = window.setTimeout(() => {
         const items = Array.from(uniqueMapRef.current.values())
@@ -137,13 +183,26 @@ export function usePlaylistMatches({
         }))
       }, 160)
     },
-    [originalTitle, seasons, tmdbType],
+    [clearRecomputeTimer, originalTitle, seasons, tmdbType],
   )
 
   const runSearch = useCallback(
     async (force = false) => {
       const keyword = title.trim()
       const releaseYear = releaseDate ? releaseDate.slice(0, 4) : undefined
+      const normalizedKeyword = normalizeCacheText(keyword)
+      const normalizedOriginalTitle = normalizeCacheText(originalTitle || '')
+      const sourceSignature = buildSourceSignature(enabledSources)
+      const seasonSignature = tmdbType === 'tv' ? buildSeasonSignature(seasons) : 'movie'
+      const currentKey = [
+        tmdbType,
+        tmdbId,
+        normalizedKeyword,
+        normalizedOriginalTitle,
+        releaseYear || '',
+        sourceSignature,
+        seasonSignature,
+      ].join('::')
 
       if (!keyword) {
         setState(prev => ({
@@ -183,9 +242,43 @@ export function usePlaylistMatches({
         return
       }
 
-      const currentKey = `${tmdbType}:${tmdbId}:${keyword}:${originalTitle || ''}:${releaseYear || ''}`
       if (!force && searchKeyRef.current === currentKey && state.searched) {
         return
+      }
+
+      if (!force) {
+        const cachedEntry = getTmdbMatchCacheEntry(currentKey, tmdbMatchCacheTTLHours)
+        if (cachedEntry) {
+          abortRef.current?.abort()
+          clearSubscriptions()
+          clearRecomputeTimer()
+          searchKeyRef.current = currentKey
+          setState(prev => ({
+            ...prev,
+            loading: false,
+            error: null,
+            searched: true,
+            searchedKeyword: cachedEntry.payload.searchedKeyword,
+            progress: {
+              phase: 'complete',
+              completed: 0,
+              total: 0,
+              currentSourceName: '',
+              currentSourceId: '',
+              lastEvent: 'complete',
+              lastEventAt: Date.now(),
+              lastResultSourceName: '',
+              lastResultSourceId: '',
+              lastResultCount: 0,
+            },
+            startedAt: null,
+            completedAt: null,
+            candidates: cachedEntry.payload.candidates,
+            movieSourceMatches: cachedEntry.payload.movieSourceMatches,
+            seasonSourceMatches: cachedEntry.payload.seasonSourceMatches,
+          }))
+          return
+        }
       }
 
       abortRef.current?.abort()
@@ -333,13 +426,35 @@ export function usePlaylistMatches({
 
         await cmsClient.aggregatedSearch(keyword, enabledSources, 1, controller.signal)
 
+        const items = Array.from(uniqueMapRef.current.values())
+        const { candidates, movieSourceMatches, seasonSourceMatches } = buildPlaylistMatches({
+          mediaType: tmdbType,
+          items,
+          title: keyword,
+          originalTitle,
+          releaseYear,
+          seasons,
+          sources: sourceMetaList,
+        })
+
         setState(prev => ({
           ...prev,
           loading: false,
           error: null,
           progress: { ...prev.progress, phase: 'complete', lastEvent: 'complete', lastEventAt: Date.now() },
           completedAt: Date.now(),
+          candidates,
+          movieSourceMatches,
+          seasonSourceMatches,
         }))
+
+        setTmdbMatchCacheEntry(currentKey, {
+          searchedKeyword: keyword,
+          candidates,
+          movieSourceMatches,
+          seasonSourceMatches,
+        })
+        pruneTmdbMatchCache(TMDB_MATCH_CACHE_MAX_ENTRIES)
       } catch (error) {
         if ((error as Error).name === 'AbortError') {
           return
@@ -375,13 +490,19 @@ export function usePlaylistMatches({
       clearSubscriptions,
       cmsClient,
       enabledSources,
+      getTmdbMatchCacheEntry,
       originalTitle,
+      pruneTmdbMatchCache,
       releaseDate,
+      seasons,
       scheduleRecompute,
+      setTmdbMatchCacheEntry,
       state.searched,
       title,
+      tmdbMatchCacheTTLHours,
       tmdbId,
       tmdbType,
+      clearRecomputeTimer,
     ],
   )
 
@@ -394,8 +515,9 @@ export function usePlaylistMatches({
     return () => {
       abortRef.current?.abort()
       clearSubscriptions()
+      clearRecomputeTimer()
     }
-  }, [clearSubscriptions])
+  }, [clearRecomputeTimer, clearSubscriptions])
 
   return {
     ...state,

@@ -44,6 +44,9 @@ export const DEFAULT_SETTINGS = {
     maxViewingHistoryCount:
       envSettings?.playback?.maxViewingHistoryCount ??
       (Number(import.meta.env.VITE_MAX_VIEWING_HISTORY_COUNT) || 50),
+    tmdbMatchCacheTTLHours:
+      envSettings?.playback?.tmdbMatchCacheTTLHours ??
+      (Number(import.meta.env.VITE_TMDB_MATCH_CACHE_TTL_HOURS) || 24),
     isLoopEnabled: envSettings?.playback?.isLoopEnabled ?? false,
     isPipEnabled: envSettings?.playback?.isPipEnabled ?? true,
     isAutoMiniEnabled: envSettings?.playback?.isAutoMiniEnabled ?? true,

@@ -25,6 +25,7 @@ interface PlaybackSettings {
   defaultVolume: number
   playerThemeColor: string
   maxViewingHistoryCount: number
+  tmdbMatchCacheTTLHours: number
   isLoopEnabled: boolean
   isPipEnabled: boolean
   isAutoMiniEnabled: boolean
@@ -107,7 +108,7 @@ export const useSettingStore = create<SettingStore>()(
       })),
       {
         name: 'ouonnki-tv-setting-store',
-        version: 5,
+        version: 6,
         migrate: (persistedState: unknown, version: number) => {
           const state = persistedState as Record<string, unknown>
           if (version < 2 && state.playback) {
@@ -147,6 +148,11 @@ export const useSettingStore = create<SettingStore>()(
             network.isProxyEnabled ??= DEFAULT_SETTINGS.network.isProxyEnabled
             network.proxyUrl ??= DEFAULT_SETTINGS.network.proxyUrl
             state.network = network
+          }
+          if (version < 6) {
+            const playback = (state.playback ?? {}) as Record<string, unknown>
+            playback.tmdbMatchCacheTTLHours ??= DEFAULT_SETTINGS.playback.tmdbMatchCacheTTLHours
+            state.playback = playback
           }
           return state
         },
