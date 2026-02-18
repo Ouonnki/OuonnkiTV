@@ -221,7 +221,7 @@ export function DetailHeroSection({
           <div className="flex flex-wrap gap-3">
             {onContinueWatching ? (
               <Button
-                className="group relative bg-[#E50914] font-semibold text-white shadow-lg hover:bg-[#ca0812]"
+                className="group relative rounded-full bg-[#E50914] font-semibold text-white shadow-lg hover:bg-[#ca0812]"
                 onClick={onContinueWatching}
               >
                 <span className="inline-flex items-center gap-1.5 transition-opacity duration-200 group-hover:opacity-0">
@@ -239,7 +239,7 @@ export function DetailHeroSection({
               </Button>
             ) : null}
             <Button
-              className="bg-white font-semibold text-black shadow-lg hover:bg-white/90"
+              className="rounded-full bg-white font-semibold text-black shadow-lg hover:bg-white/90"
               onClick={onPlayNow}
             >
               <Play className="size-4" />
@@ -247,7 +247,7 @@ export function DetailHeroSection({
             </Button>
             <Button
               variant="outline"
-              className="hidden border-white/35 bg-white/12 font-semibold text-white hover:bg-white/20 hover:text-white md:inline-flex"
+              className="hidden rounded-full border-white/35 bg-white/12 font-semibold text-white hover:bg-white/20 hover:text-white md:inline-flex"
               onClick={onToggleFavorite}
             >
               <motion.span
