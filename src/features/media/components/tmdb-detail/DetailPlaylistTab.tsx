@@ -15,10 +15,6 @@ import {
 } from '@/shared/components/ui/dialog'
 import { ScrollArea } from '@/shared/components/ui/scroll-area'
 import { buildTmdbPlayPath } from '@/shared/lib/routes'
-import { isTmdbHistoryItem } from '@/shared/lib/viewingHistory'
-import { useViewingHistoryStore } from '@/shared/store/viewingHistoryStore'
-import { useSettingStore } from '@/shared/store/settingStore'
-import type { ViewingHistoryItem } from '@/shared/types'
 import type { TmdbMediaType } from '@/shared/types/tmdb'
 import type { PlaylistMatchItem, SeasonSourceMatches, SourceBestMatch } from './playlistMatcher'
 import type { PlaylistMatchesProgress } from './usePlaylistMatches'
@@ -194,75 +190,17 @@ function ProgressPill({
   )
 }
 
-/**
- * 获取匹配条目最近的观看记录
- */
-function getLatestHistoryForMatch(
-  viewingHistory: ViewingHistoryItem[],
-  sourceCode: string | undefined,
-  vodId: string | undefined,
-  tmdbType: TmdbMediaType,
-  tmdbId: number,
-  seasonNumber?: number,
-): ViewingHistoryItem | null {
-  const tmdbMatches = viewingHistory.filter(item => {
-    if (!isTmdbHistoryItem(item)) return false
-    if (item.tmdbMediaType !== tmdbType || item.tmdbId !== tmdbId) return false
-    if (tmdbType === 'tv') {
-      return (item.tmdbSeasonNumber ?? null) === (seasonNumber ?? null)
-    }
-    return true
-  })
-
-  if (tmdbMatches.length > 0) {
-    return tmdbMatches.reduce((latest, item) => (item.timestamp > latest.timestamp ? item : latest))
-  }
-
-  if (!sourceCode || !vodId) return null
-  const cmsMatches = viewingHistory.filter(
-    item => item.recordType === 'cms' && item.sourceCode === sourceCode && item.vodId === vodId,
-  )
-  if (cmsMatches.length === 0) return null
-  return cmsMatches.reduce((latest, item) => (item.timestamp > latest.timestamp ? item : latest))
-}
-
-function ViewingProgressBadge({ historyItem }: { historyItem: ViewingHistoryItem }) {
-  const progress =
-    historyItem.duration > 0
-      ? Math.min(100, Math.max(0, (historyItem.playbackPosition / historyItem.duration) * 100))
-      : 0
-  const episodeLabel = historyItem.episodeName || `第${historyItem.episodeIndex + 1}集`
-  const isCompleted = progress > 90
-
-  return (
-    <Badge
-      variant="secondary"
-      className={
-        isCompleted
-          ? 'rounded-full bg-emerald-100 text-[11px] text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
-          : 'rounded-full bg-sky-100 text-[11px] text-sky-700 dark:bg-sky-950/40 dark:text-sky-300'
-      }
-    >
-      {isCompleted ? `${episodeLabel} 已看完` : `${episodeLabel} ${Math.round(progress)}%`}
-    </Badge>
-  )
-}
-
 function MatchRow({
   tmdbType,
   tmdbId,
   entry,
   density = 'default',
-  viewingHistory,
-  showProgress,
   seasonNumber,
 }: {
   tmdbType: TmdbMediaType
   tmdbId: number
   entry: PlaylistMatchItem
   density?: 'default' | 'compact'
-  viewingHistory?: ViewingHistoryItem[]
-  showProgress?: boolean
   seasonNumber?: number
 }) {
   const playLink = buildPlayLink(tmdbType, tmdbId, entry, seasonNumber)
@@ -274,18 +212,6 @@ function MatchRow({
     density === 'compact'
       ? 'flex flex-col gap-2.5 sm:flex-row sm:items-start sm:justify-between sm:gap-3'
       : 'flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4'
-
-  const latestHistory =
-    showProgress && viewingHistory
-      ? getLatestHistoryForMatch(
-          viewingHistory,
-          entry.item.source_code,
-          entry.item.vod_id,
-          tmdbType,
-          tmdbId,
-          seasonNumber,
-        )
-      : null
 
   return (
     <div className={rowClass}>
@@ -311,7 +237,6 @@ function MatchRow({
                 {remarks}
               </Badge>
             )}
-            {latestHistory && <ViewingProgressBadge historyItem={latestHistory} />}
           </div>
         </div>
       </div>
@@ -342,15 +267,11 @@ function SourceMatchBlock({
   tmdbType,
   tmdbId,
   sourceMatch,
-  viewingHistory,
-  showProgress,
   seasonNumber,
 }: {
   tmdbType: TmdbMediaType
   tmdbId: number
   sourceMatch: SourceBestMatch
-  viewingHistory?: ViewingHistoryItem[]
-  showProgress?: boolean
   seasonNumber?: number
 }) {
   const totalMatches = (sourceMatch.bestMatch ? 1 : 0) + sourceMatch.alternatives.length
@@ -395,8 +316,6 @@ function SourceMatchBlock({
                   tmdbType={tmdbType}
                   tmdbId={tmdbId}
                   entry={best}
-                  viewingHistory={viewingHistory}
-                  showProgress={showProgress}
                   seasonNumber={seasonNumber}
                 />
               </div>
@@ -411,8 +330,6 @@ function SourceMatchBlock({
                           tmdbType={tmdbType}
                           tmdbId={tmdbId}
                           entry={best}
-                          viewingHistory={viewingHistory}
-                          showProgress={showProgress}
                           seasonNumber={seasonNumber}
                         />
                       </div>
@@ -430,8 +347,6 @@ function SourceMatchBlock({
                               tmdbId={tmdbId}
                               entry={entry}
                               density="compact"
-                              viewingHistory={viewingHistory}
-                              showProgress={showProgress}
                               seasonNumber={seasonNumber}
                             />
                           </li>
@@ -451,8 +366,6 @@ function SourceMatchBlock({
                         tmdbType={tmdbType}
                         tmdbId={tmdbId}
                         entry={best}
-                        viewingHistory={viewingHistory}
-                        showProgress={showProgress}
                         seasonNumber={seasonNumber}
                       />
                     </div>
@@ -470,8 +383,6 @@ function SourceMatchBlock({
                             tmdbId={tmdbId}
                             entry={entry}
                             density="compact"
-                            viewingHistory={viewingHistory}
-                            showProgress={showProgress}
                             seasonNumber={seasonNumber}
                           />
                         </li>
@@ -491,8 +402,6 @@ function SourceMatchBlock({
             tmdbType={tmdbType}
             tmdbId={tmdbId}
             entry={best}
-            viewingHistory={viewingHistory}
-            showProgress={showProgress}
             seasonNumber={seasonNumber}
           />
         </div>
@@ -511,16 +420,12 @@ function TvSeasonBlock({
   seasonMatch,
   expanded,
   onToggle,
-  viewingHistory,
-  showProgress,
 }: {
   tmdbType: TmdbMediaType
   tmdbId: number
   seasonMatch: SeasonSourceMatches
   expanded: boolean
   onToggle: () => void
-  viewingHistory?: ViewingHistoryItem[]
-  showProgress?: boolean
 }) {
   const matchedCount = seasonMatch.sourceMatches.filter(match => Boolean(match.bestMatch)).length
   const matchedSources = seasonMatch.sourceMatches.filter(match => Boolean(match.bestMatch))
@@ -560,8 +465,6 @@ function TvSeasonBlock({
                 tmdbType={tmdbType}
                 tmdbId={tmdbId}
                 sourceMatch={sourceMatch}
-                viewingHistory={viewingHistory}
-                showProgress={showProgress}
                 seasonNumber={seasonMatch.season.season_number}
               />
             ))}
@@ -590,9 +493,6 @@ export function DetailPlaylistTab({
   onRetry,
 }: DetailPlaylistTabProps) {
   const movieMatchedSources = movieSourceMatches.filter(match => Boolean(match.bestMatch))
-
-  const { viewingHistory } = useViewingHistoryStore()
-  const isViewingHistoryVisible = useSettingStore(state => state.playback.isViewingHistoryVisible)
 
   const firstSeasonId = seasonSourceMatches.find(seasonMatch => seasonMatch.season.season_number === 1)?.season.id ?? null
   const [expandedSeasonId, setExpandedSeasonId] = useState<number | null>(firstSeasonId)
@@ -686,7 +586,11 @@ export function DetailPlaylistTab({
                       exit={{ opacity: 0, y: -10 }}
                       transition={{ duration: 0.18, ease: 'easeOut' }}
                     >
-                      <SourceMatchBlock tmdbType={tmdbType} tmdbId={tmdbId} sourceMatch={sourceMatch} viewingHistory={viewingHistory} showProgress={isViewingHistoryVisible} />
+                      <SourceMatchBlock
+                        tmdbType={tmdbType}
+                        tmdbId={tmdbId}
+                        sourceMatch={sourceMatch}
+                      />
                     </motion.div>
                   ))}
                 </AnimatePresence>
@@ -714,8 +618,6 @@ export function DetailPlaylistTab({
                   onToggle={() =>
                     setExpandedSeasonId(prev => (prev === seasonMatch.season.id ? null : seasonMatch.season.id))
                   }
-                  viewingHistory={viewingHistory}
-                  showProgress={isViewingHistoryVisible}
                 />
               ))}
             </div>
