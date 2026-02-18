@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Play, Info } from 'lucide-react'
+import { MoreHorizontal, Play, Info } from 'lucide-react'
 import Autoplay from 'embla-carousel-autoplay'
-import { NavLink } from 'react-router'
+import { NavLink, useNavigate } from 'react-router'
 
 import { getBackdropUrl, getLogoUrl } from '@/shared/lib/tmdb'
 import { buildTmdbDetailPath, buildTmdbPlayPath } from '@/shared/lib/routes'
@@ -14,6 +14,12 @@ import {
   type CarouselApi,
 } from '@/shared/components/ui/carousel'
 import { AspectRatio } from '@/shared/components/ui/aspect-ratio'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/shared/components/ui/dropdown-menu'
 import { Skeleton } from '@/shared/components/ui/skeleton'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { useViewingHistoryStore } from '@/shared/store/viewingHistoryStore'
@@ -55,6 +61,7 @@ export function FeaturedCarousel({
   loading = false,
   autoplayDelay = 5000,
 }: FeaturedCarouselProps) {
+  const navigate = useNavigate()
   const [api, setApi] = useState<CarouselApi>()
   const [activeIndex, setActiveIndex] = useState(0)
   const isMobile = useIsMobile()
@@ -236,58 +243,110 @@ export function FeaturedCarousel({
 
                     {/* 介绍 - 移动端/平板，使用min-h-0允许收缩 */}
                     <p
-                      className={`mb-3 line-clamp-2 min-h-0 shrink text-xs text-white/80 transition-all delay-150 duration-500 ease-out md:mb-4 md:line-clamp-3 md:max-w-md md:text-sm ${isActive ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'} `}
+                      className={`mb-2 line-clamp-2 min-h-0 shrink text-xs text-white/80 transition-all delay-150 duration-500 ease-out md:mb-4 md:line-clamp-3 md:max-w-md md:text-sm ${isActive ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'} `}
                     >
                       {item.overview}
                     </p>
 
                     {/* 按钮组 - 移动端/平板 */}
                     <div
-                      className={`flex shrink-0 gap-2 transition-all delay-200 duration-500 ease-out md:gap-3 ${isActive ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'} `}
+                      className={`shrink-0 transition-all delay-200 duration-500 ease-out ${isActive ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'} `}
                     >
-                      {continueWatchingPath ? (
-                        <Button
-                          asChild
-                          size="sm"
-                          className="group relative h-8 gap-1.5 bg-[#E50914] px-3 font-semibold text-white hover:bg-[#ca0812] md:h-9 md:gap-2 md:px-4 md:text-sm"
-                        >
-                          <NavLink to={continueWatchingPath} className="relative inline-flex">
-                            <span className="inline-flex items-center gap-1.5 transition-opacity duration-200 group-hover:opacity-0 md:gap-2">
+                      {isMobile ? (
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            className="h-7 min-w-0 flex-1 gap-1 rounded-full bg-[#E50914] px-2.5 text-xs font-semibold text-white hover:bg-[#ca0812]"
+                            onClick={() => navigate(continueWatchingPath || playPath)}
+                          >
+                            <Play className="size-3.5 fill-current" />
+                            {continueWatchingPath ? '继续观看' : playNowLabel}
+                          </Button>
+
+                          {continueWatchingPath ? (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  className="h-7 shrink-0 gap-1 rounded-full bg-white/30 px-2.5 text-xs font-semibold text-white hover:bg-white/40"
+                                >
+                                  <MoreHorizontal className="size-3.5" />
+                                  更多
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-36">
+                                <DropdownMenuItem onClick={() => navigate(playPath)}>
+                                  <Play className="size-3.5" />
+                                  {playNowLabel}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => navigate(detailPath)}>
+                                  <Info className="size-3.5" />
+                                  查看详情
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              className="h-7 shrink-0 gap-1 rounded-full bg-white/30 px-2.5 text-xs font-semibold text-white hover:bg-white/40"
+                              onClick={() => navigate(detailPath)}
+                            >
+                              <Info className="size-3.5" />
+                              详情
+                            </Button>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="flex flex-wrap gap-2 md:gap-3">
+                          {continueWatchingPath ? (
+                            <Button
+                              asChild
+                              size="sm"
+                              className="group relative h-8 gap-1.5 bg-[#E50914] px-3 font-semibold text-white hover:bg-[#ca0812] md:h-9 md:gap-2 md:px-4 md:text-sm"
+                            >
+                              <NavLink to={continueWatchingPath} className="relative inline-flex">
+                                <span className="inline-flex items-center gap-1.5 transition-opacity duration-200 group-hover:opacity-0 md:gap-2">
+                                  <Play className="size-3.5 fill-current md:size-4" />
+                                  继续观看
+                                  {continueWatchingLabel ? (
+                                    <span className="hidden md:inline">· {continueWatchingLabel}</span>
+                                  ) : null}
+                                </span>
+                                {continueWatchingProgressLabel ? (
+                                  <span className="pointer-events-none absolute inset-0 hidden items-center justify-center text-[11px] font-semibold opacity-0 transition-opacity duration-200 group-hover:opacity-100 md:flex">
+                                    {continueWatchingProgressLabel}
+                                  </span>
+                                ) : null}
+                              </NavLink>
+                            </Button>
+                          ) : null}
+
+                          <Button
+                            asChild
+                            size="sm"
+                            className="h-8 gap-1.5 bg-white px-3 font-semibold text-black hover:bg-white/90 md:h-9 md:gap-2 md:px-4 md:text-sm"
+                          >
+                            <NavLink to={playPath}>
                               <Play className="size-3.5 fill-current md:size-4" />
-                              继续观看
-                              {continueWatchingLabel ? (
-                                <span className="hidden md:inline">· {continueWatchingLabel}</span>
-                              ) : null}
-                            </span>
-                            {continueWatchingProgressLabel ? (
-                              <span className="pointer-events-none absolute inset-0 hidden items-center justify-center text-[11px] font-semibold opacity-0 transition-opacity duration-200 group-hover:opacity-100 md:flex">
-                                {continueWatchingProgressLabel}
-                              </span>
-                            ) : null}
-                          </NavLink>
-                        </Button>
-                      ) : null}
-                      <Button
-                        asChild
-                        size="sm"
-                        className="h-8 gap-1.5 bg-white px-3 font-semibold text-black hover:bg-white/90 md:h-9 md:gap-2 md:px-4 md:text-sm"
-                      >
-                        <NavLink to={playPath}>
-                          <Play className="size-3.5 fill-current md:size-4" />
-                          {playNowLabel}
-                        </NavLink>
-                      </Button>
-                      <Button
-                        asChild
-                        size="sm"
-                        variant="secondary"
-                        className="h-8 gap-1.5 bg-white/30 px-3 font-semibold text-white hover:bg-white/40 md:h-9 md:gap-2 md:px-4 md:text-sm"
-                      >
-                        <NavLink to={detailPath}>
-                          <Info className="size-3.5 md:size-4" />
-                          查看详情
-                        </NavLink>
-                      </Button>
+                              {playNowLabel}
+                            </NavLink>
+                          </Button>
+
+                          <Button
+                            asChild
+                            size="sm"
+                            variant="secondary"
+                            className="h-8 gap-1.5 bg-white/30 px-3 font-semibold text-white hover:bg-white/40 md:h-9 md:gap-2 md:px-4 md:text-sm"
+                          >
+                            <NavLink to={detailPath}>
+                              <Info className="size-3.5 md:size-4" />
+                              查看详情
+                            </NavLink>
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </div>
 
