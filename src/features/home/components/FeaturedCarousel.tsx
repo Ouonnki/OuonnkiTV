@@ -304,7 +304,7 @@ export function FeaturedCarousel({
                             <Button
                               asChild
                               size="sm"
-                              className="group relative h-8 gap-1.5 bg-[#E50914] px-3 font-semibold text-white hover:bg-[#ca0812] md:h-9 md:gap-2 md:px-4 md:text-sm"
+                              className="group relative h-8 rounded-full gap-1.5 bg-[#E50914] px-3 font-semibold text-white hover:bg-[#ca0812] md:h-9 md:gap-2 md:px-4 md:text-sm"
                             >
                               <NavLink to={continueWatchingPath} className="relative inline-flex">
                                 <span className="inline-flex items-center gap-1.5 transition-opacity duration-200 group-hover:opacity-0 md:gap-2">
@@ -326,7 +326,7 @@ export function FeaturedCarousel({
                           <Button
                             asChild
                             size="sm"
-                            className="h-8 gap-1.5 bg-white px-3 font-semibold text-black hover:bg-white/90 md:h-9 md:gap-2 md:px-4 md:text-sm"
+                            className="h-8 rounded-full gap-1.5 bg-white px-3 font-semibold text-black hover:bg-white/90 md:h-9 md:gap-2 md:px-4 md:text-sm"
                           >
                             <NavLink to={playPath}>
                               <Play className="size-3.5 fill-current md:size-4" />
@@ -338,7 +338,7 @@ export function FeaturedCarousel({
                             asChild
                             size="sm"
                             variant="secondary"
-                            className="h-8 gap-1.5 bg-white/30 px-3 font-semibold text-white hover:bg-white/40 md:h-9 md:gap-2 md:px-4 md:text-sm"
+                            className="h-8 rounded-full gap-1.5 bg-white/30 px-3 font-semibold text-white hover:bg-white/40 md:h-9 md:gap-2 md:px-4 md:text-sm"
                           >
                             <NavLink to={detailPath}>
                               <Info className="size-3.5 md:size-4" />
@@ -386,7 +386,7 @@ export function FeaturedCarousel({
                         <Button
                           asChild
                           size="lg"
-                          className="group relative gap-2 bg-[#E50914] font-semibold text-white hover:bg-[#ca0812]"
+                          className="group relative rounded-full gap-2 bg-[#E50914] font-semibold text-white hover:bg-[#ca0812]"
                         >
                           <NavLink to={continueWatchingPath} className="relative inline-flex">
                             <span className="inline-flex items-center gap-2 transition-opacity duration-200 group-hover:opacity-0">
@@ -405,7 +405,7 @@ export function FeaturedCarousel({
                       <Button
                         asChild
                         size="lg"
-                        className="gap-2 bg-white font-semibold text-black hover:bg-white/90"
+                        className="rounded-full gap-2 bg-white font-semibold text-black hover:bg-white/90"
                       >
                         <NavLink to={playPath}>
                           <Play className="size-5 fill-current" />
@@ -416,7 +416,7 @@ export function FeaturedCarousel({
                         asChild
                         size="lg"
                         variant="secondary"
-                        className="gap-2 bg-white/30 font-semibold text-white hover:bg-white/40"
+                        className="rounded-full gap-2 bg-white/30 font-semibold text-white hover:bg-white/40"
                       >
                         <NavLink to={detailPath}>
                           <Info className="size-5" />
