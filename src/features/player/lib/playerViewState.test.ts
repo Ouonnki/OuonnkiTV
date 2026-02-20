@@ -5,16 +5,48 @@ describe('derivePlayerViewState', () => {
   it('错误存在时不应显示 loading', () => {
     const state = derivePlayerViewState({
       hasDetail: false,
-      loading: true,
+      loading: false,
       error: '缺少参数',
       routeError: null,
+      isTmdbRoute: true,
+      tmdbLoading: false,
+      tmdbError: null,
+      tmdbPlaylistSearched: true,
+    })
+
+    expect(state.primaryError).toBe('缺少参数')
+    expect(state.shouldShowLoading).toBe(false)
+  })
+
+  it('新一轮加载开始时应优先显示 loading，避免旧错误闪屏', () => {
+    const state = derivePlayerViewState({
+      hasDetail: false,
+      loading: true,
+      error: '上一次请求失败',
+      routeError: null,
+      isTmdbRoute: true,
+      tmdbLoading: false,
+      tmdbError: null,
+      tmdbPlaylistSearched: true,
+    })
+
+    expect(state.primaryError).toBeNull()
+    expect(state.shouldShowLoading).toBe(true)
+  })
+
+  it('路由级错误仍应直接展示，不被 loading 覆盖', () => {
+    const state = derivePlayerViewState({
+      hasDetail: false,
+      loading: true,
+      error: null,
+      routeError: '无效的播放地址',
       isTmdbRoute: true,
       tmdbLoading: true,
       tmdbError: null,
       tmdbPlaylistSearched: false,
     })
 
-    expect(state.primaryError).toBe('缺少参数')
+    expect(state.primaryError).toBe('无效的播放地址')
     expect(state.shouldShowLoading).toBe(false)
   })
 

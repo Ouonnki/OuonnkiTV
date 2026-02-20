@@ -20,12 +20,26 @@ export function shouldFallbackEpisodeToFirst(episodesLength: number, selectedEpi
 }
 
 export function derivePlayerViewState(params: DerivePlayerViewStateParams): PlayerViewStateResult {
-  const primaryError = params.routeError || params.tmdbError || params.error || null
-  const shouldShowLoading =
-    !params.hasDetail &&
-    !primaryError &&
-    (params.loading ||
-      (params.isTmdbRoute && (params.tmdbLoading || !params.tmdbPlaylistSearched)))
+  const hasPendingLoad =
+    params.loading || (params.isTmdbRoute && (params.tmdbLoading || !params.tmdbPlaylistSearched))
+
+  // 路由级错误必须立即展示；其余错误在新一轮加载开始时应让位于骨架屏，避免闪屏。
+  if (params.routeError) {
+    return {
+      shouldShowLoading: false,
+      primaryError: params.routeError,
+    }
+  }
+
+  if (hasPendingLoad && !params.hasDetail) {
+    return {
+      shouldShowLoading: true,
+      primaryError: null,
+    }
+  }
+
+  const primaryError = params.tmdbError || params.error || null
+  const shouldShowLoading = !params.hasDetail && !primaryError && hasPendingLoad
 
   return {
     shouldShowLoading,
