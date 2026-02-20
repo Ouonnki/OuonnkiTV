@@ -18,6 +18,7 @@ import { buildTmdbPlayPath } from '@/shared/lib/routes'
 import type { TmdbMediaType } from '@/shared/types/tmdb'
 import type { PlaylistMatchItem, SeasonSourceMatches, SourceBestMatch } from './playlistMatcher'
 import type { PlaylistMatchesProgress } from './usePlaylistMatches'
+import { DetailStatePanel } from './DetailStatePanel'
 
 interface DetailPlaylistTabProps {
   tmdbType: TmdbMediaType
@@ -493,6 +494,9 @@ export function DetailPlaylistTab({
   onRetry,
 }: DetailPlaylistTabProps) {
   const movieMatchedSources = movieSourceMatches.filter(match => Boolean(match.bestMatch))
+  const hasTvMatchedSources = seasonSourceMatches.some(seasonMatch =>
+    seasonMatch.sourceMatches.some(sourceMatch => Boolean(sourceMatch.bestMatch)),
+  )
 
   const firstSeasonId = seasonSourceMatches.find(seasonMatch => seasonMatch.season.season_number === 1)?.season.id ?? null
   const [expandedSeasonId, setExpandedSeasonId] = useState<number | null>(firstSeasonId)
@@ -506,6 +510,11 @@ export function DetailPlaylistTab({
   }, [completedAt])
 
   const showPillInActionSlot = loading || showComplete
+  const shouldShowNoMatchState =
+    !error &&
+    searched &&
+    !loading &&
+    (tmdbType === 'movie' ? movieMatchedSources.length === 0 : !hasTvMatchedSources)
 
   return (
     <section className="space-y-5">
@@ -569,44 +578,54 @@ export function DetailPlaylistTab({
         </div>
       </div>
 
-      {!loading && error && <p className="text-sm text-red-500">{error}</p>}
+      {!loading && error && (
+        <DetailStatePanel
+          mode="error"
+          compact
+          tag="匹配失败"
+          title="找不到匹配结果"
+          description={error}
+          primaryAction={{
+            label: '重新匹配',
+            onClick: onRetry,
+          }}
+          secondaryAction={{
+            label: '视频源设置',
+            to: '/settings/source',
+          }}
+        />
+      )}
 
       {!error && searched && tmdbType === 'movie' && (
         <div className="space-y-3">
-          {movieSourceMatches.length > 0 ? (
-            movieMatchedSources.length > 0 ? (
-              <motion.div layout className="grid gap-3 md:grid-cols-2">
-                <AnimatePresence initial={false}>
-                  {movieMatchedSources.map(sourceMatch => (
-                    <motion.div
-                      key={`movie-${sourceMatch.sourceCode}`}
-                      layout
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      transition={{ duration: 0.18, ease: 'easeOut' }}
-                    >
-                      <SourceMatchBlock
-                        tmdbType={tmdbType}
-                        tmdbId={tmdbId}
-                        sourceMatch={sourceMatch}
-                      />
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-              </motion.div>
-            ) : (
-              !loading && <p className="text-muted-foreground text-sm">暂未找到可用最佳项</p>
-            )
-          ) : (
-            !loading && <p className="text-muted-foreground text-sm">暂无可匹配条目</p>
+          {movieMatchedSources.length > 0 && (
+            <motion.div layout className="grid gap-3 md:grid-cols-2">
+              <AnimatePresence initial={false}>
+                {movieMatchedSources.map(sourceMatch => (
+                  <motion.div
+                    key={`movie-${sourceMatch.sourceCode}`}
+                    layout
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.18, ease: 'easeOut' }}
+                  >
+                    <SourceMatchBlock
+                      tmdbType={tmdbType}
+                      tmdbId={tmdbId}
+                      sourceMatch={sourceMatch}
+                    />
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </motion.div>
           )}
         </div>
       )}
 
       {!error && searched && tmdbType === 'tv' && (
         <div className="space-y-4">
-          {seasonSourceMatches.length > 0 ? (
+          {seasonSourceMatches.length > 0 && !shouldShowNoMatchState ? (
             <div className="space-y-4">
               {seasonSourceMatches.map(seasonMatch => (
                 <TvSeasonBlock
@@ -622,13 +641,28 @@ export function DetailPlaylistTab({
               ))}
             </div>
           ) : (
-            !loading && <p className="text-muted-foreground text-sm">当前剧集没有可匹配的季信息</p>
+            !loading &&
+            !shouldShowNoMatchState && <p className="text-muted-foreground text-sm">当前剧集没有可匹配的季信息</p>
           )}
         </div>
       )}
 
-      {!error && searched && !loading && candidates.length === 0 && (
-        <p className="text-muted-foreground text-sm">未找到相关可播放条目，可尝试重新匹配或检查视频源配置</p>
+      {shouldShowNoMatchState && (
+        <DetailStatePanel
+          mode="empty"
+          compact
+          tag="暂无可用播放项"
+          title="找不到匹配结果"
+          description="当前已启用视频源中没有可播放条目。你可以重新匹配，或调整视频源后再试。"
+          primaryAction={{
+            label: '重新匹配',
+            onClick: onRetry,
+          }}
+          secondaryAction={{
+            label: '视频源设置',
+            to: '/settings/source',
+          }}
+        />
       )}
     </section>
   )

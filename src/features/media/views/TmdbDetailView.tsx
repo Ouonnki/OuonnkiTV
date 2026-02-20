@@ -11,8 +11,6 @@ import type {
   TmdbMovieDetail,
   TmdbTvDetail,
 } from '@/shared/types/tmdb'
-import { Button } from '@/shared/components/ui/button'
-import { Card, CardContent } from '@/shared/components/ui/card'
 import { useFavoritesStore } from '@/features/favorites/store/favoritesStore'
 import { useViewingHistoryStore } from '@/shared/store/viewingHistoryStore'
 import {
@@ -21,6 +19,7 @@ import {
   DetailLoadingSkeleton,
   DetailOverviewTab,
   DetailPlaylistTab,
+  DetailStatePanel,
   DetailProductionTab,
   DetailSeasonsTab,
   DetailTabNav,
@@ -151,15 +150,21 @@ export default function TmdbDetailView() {
 
   if (!isValidRoute) {
     return (
-      <div className="flex min-h-[70vh] items-center justify-center p-4">
-        <Card className="w-full max-w-lg rounded-lg">
-          <CardContent className="space-y-4 pt-6 text-center">
-            <p className="text-sm text-red-500">无效的媒体地址，请返回重试</p>
-            <Button variant="secondary" onClick={() => navigate(TMDB_SEARCH_PATH)}>
-              返回
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="px-4 md:px-6">
+        <DetailStatePanel
+          mode="error"
+          tag="路由校验失败"
+          title="这个详情页地址不可用"
+          description="当前链接缺少有效媒体类型或 ID，无法加载影视详情。"
+          primaryAction={{
+            label: '返回搜索页',
+            onClick: () => navigate(TMDB_SEARCH_PATH),
+          }}
+          secondaryAction={{
+            label: '回到上一页',
+            onClick: () => navigate(-1),
+          }}
+        />
       </div>
     )
   }
@@ -170,15 +175,21 @@ export default function TmdbDetailView() {
 
   if (error || !detail) {
     return (
-      <div className="flex min-h-[70vh] items-center justify-center p-4">
-        <Card className="w-full max-w-lg rounded-lg">
-          <CardContent className="space-y-4 pt-6 text-center">
-            <p className="text-sm text-red-500">{error || '获取详情失败'}</p>
-            <Button variant="secondary" onClick={() => navigate(TMDB_SEARCH_PATH)}>
-              返回
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="px-4 md:px-6">
+        <DetailStatePanel
+          mode="error"
+          tag="详情加载失败"
+          title="找不到影视详情"
+          description={error || '该条目可能已下线，或当前服务暂不可用。'}
+          primaryAction={{
+            label: '返回搜索页',
+            onClick: () => navigate(TMDB_SEARCH_PATH),
+          }}
+          secondaryAction={{
+            label: '回到上一页',
+            onClick: () => navigate(-1),
+          }}
+        />
       </div>
     )
   }

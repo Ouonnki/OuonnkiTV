@@ -1,6 +1,7 @@
 export * from './types'
 export * from './helpers'
 export * from './DetailLoadingSkeleton'
+export * from './DetailStatePanel'
 export * from './DetailHeroSection'
 export * from './DetailTabNav'
 export * from './DetailOverviewTab'
