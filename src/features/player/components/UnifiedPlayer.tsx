@@ -6,7 +6,6 @@ import type { HlsConfig } from 'hls.js'
 import { ChevronDown } from 'lucide-react'
 import { type DetailResult } from '@ouonnki/cms-core'
 import { createM3u8Processor, createHlsLoaderClass } from '@ouonnki/cms-core/m3u8'
-import { Card, CardContent } from '@/shared/components/ui/card'
 import { Button } from '@/shared/components/ui/button'
 import {
   Collapsible,
@@ -31,6 +30,7 @@ import { toast } from 'sonner'
 import _ from 'lodash'
 import {
   PlayerEpisodePanel,
+  PlayerErrorState,
   PlayerHeroSection,
   PlayerInfoAndRecommendations,
   PlayerLoadingSkeleton,
@@ -1067,18 +1067,58 @@ export default function UnifiedPlayer() {
     tmdbPlaylistSearched: tmdbPlayback.playlist.searched,
   })
   const loadingMode = isCmsRoute ? 'cms' : 'tmdb'
-  const renderErrorState = (message: string) => (
-    <div className="flex min-h-[60vh] items-center justify-center p-4">
-      <Card className="w-full max-w-lg">
-        <CardContent className="space-y-4 pt-6 text-center">
-          <p className="text-sm text-red-500">{message}</p>
-          <Button variant="secondary" onClick={() => navigate(-1)}>
-            返回
-          </Button>
-        </CardContent>
-      </Card>
-    </div>
-  )
+  const renderErrorState = (message: string) => {
+    const isNoMatch = message.includes('没有匹配到可播放资源')
+    const isRouteInvalid = message.includes('无效的播放地址')
+    const isSourceConfigIssue = message.includes('未找到对应视频源配置')
+
+    const title = isRouteInvalid
+      ? '这个播放地址不可用'
+      : isNoMatch
+        ? '找不到匹配播放源'
+        : '视频暂时无法播放'
+    const tag = isRouteInvalid ? '路由校验失败' : isNoMatch ? '匹配结果为空' : '播放链路异常'
+    const primaryAction = {
+      label: '返回上一页',
+      onClick: () => navigate(-1),
+    }
+
+    const secondaryAction = isNoMatch
+      ? detailLink
+        ? {
+            label: '返回详情页重试',
+            to: detailLink,
+            variant: 'outline' as const,
+          }
+        : {
+            label: '视频源设置',
+            to: '/settings/source',
+            variant: 'outline' as const,
+          }
+      : isSourceConfigIssue
+        ? {
+            label: '视频源设置',
+            to: '/settings/source',
+            variant: 'outline' as const,
+          }
+        : detailLink
+          ? {
+              label: '查看影视详情',
+              to: detailLink,
+              variant: 'outline' as const,
+            }
+          : undefined
+
+    return (
+      <PlayerErrorState
+        title={title}
+        description={message}
+        tag={tag}
+        primaryAction={primaryAction}
+        secondaryAction={secondaryAction}
+      />
+    )
+  }
 
   if (shouldShowLoading) {
     return <PlayerLoadingSkeleton mode={loadingMode} />
