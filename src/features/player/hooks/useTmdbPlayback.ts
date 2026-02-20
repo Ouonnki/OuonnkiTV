@@ -48,10 +48,11 @@ export function useTmdbPlayback({
   querySeasonNumber,
 }: TmdbPlaybackParams) {
   const validTmdbId = Number.isInteger(tmdbId) && tmdbId > 0
+  const shouldEnableTmdbPlayback = enabled && validTmdbId && Boolean(mediaType)
   const tmdbType = mediaType || 'movie'
 
   const { detail, loading, error } = useTmdbDetail<TmdbMovieDetail | TmdbTvDetail>(
-    enabled && validTmdbId ? tmdbId : undefined,
+    shouldEnableTmdbPlayback ? tmdbId : undefined,
     tmdbType,
   )
 
@@ -65,7 +66,7 @@ export function useTmdbPlayback({
   )
 
   const playlist = usePlaylistMatches({
-    active: enabled && validTmdbId && Boolean(detail) && Boolean(mediaType),
+    active: shouldEnableTmdbPlayback && Boolean(detail),
     tmdbType,
     tmdbId,
     title: detail?.title || '',

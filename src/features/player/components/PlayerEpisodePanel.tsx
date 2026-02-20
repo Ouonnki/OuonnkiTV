@@ -128,6 +128,8 @@ export function PlayerEpisodePanel({
               key={`${episode.actualIndex}-${episode.name}`}
               variant={active ? 'default' : 'secondary'}
               className="relative justify-start overflow-hidden rounded-md"
+              aria-current={active ? 'true' : undefined}
+              aria-label={`切换到${episode.name || `第 ${episode.actualIndex + 1} 集`}`}
               onClick={() => onEpisodeSelect(episode.displayIndex)}
             >
               <span className="line-clamp-1 text-left text-xs sm:text-sm">

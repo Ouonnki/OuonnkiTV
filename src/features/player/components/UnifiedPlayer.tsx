@@ -36,6 +36,12 @@ import {
   PlayerLoadingSkeleton,
 } from '@/features/player/components'
 import { useEpisodePagination, useTmdbPlayback } from '@/features/player/hooks'
+import {
+  computeMiniPlayerRect,
+  derivePlayerViewState,
+  shouldFallbackEpisodeToFirst,
+  validatePlayerRoute,
+} from '@/features/player/lib'
 
 interface ArtplayerWithHls extends Artplayer {
   hls?: Hls
@@ -48,8 +54,6 @@ interface PlayerRouteParams {
   sourceCode?: string
   vodId?: string
 }
-
-const isSupportedMediaType = (value: string): value is TmdbMediaType => value === 'movie' || value === 'tv'
 
 const m3u8Processor = createM3u8Processor({ filterAds: true })
 type HlsConstructor = typeof import('hls.js')['default']
@@ -141,6 +145,7 @@ export default function UnifiedPlayer() {
   const playbackRef = useRef(playback)
   const detailRef = useRef<DetailResult | null>(null)
   const pendingSeekRef = useRef<number | null>(null)
+  const detailRequestSeqRef = useRef(0)
 
   useEffect(() => {
     viewingHistoryRef.current = viewingHistory
@@ -152,15 +157,28 @@ export default function UnifiedPlayer() {
   const querySeasonNumber = parsePositiveNumber(searchParams.get('season'))
   const episodeIndexParam = searchParams.get('ep')
 
-  const isTmdbRoute = Boolean(type && tmdbId)
-  const isCmsRoute = Boolean(routeSourceCode && routeVodId)
-  const tmdbMediaType = isSupportedMediaType(type) ? type : null
-  const parsedTmdbId = Number.parseInt(tmdbId, 10)
+  const routeValidation = useMemo(
+    () =>
+      validatePlayerRoute({
+        type,
+        tmdbId,
+        sourceCode: routeSourceCode,
+        vodId: routeVodId,
+      }),
+    [routeSourceCode, routeVodId, tmdbId, type],
+  )
+  const isTmdbRoute = routeValidation.isValid && routeValidation.mode === 'tmdb'
+  const isCmsRoute = routeValidation.isValid && routeValidation.mode === 'cms'
+  const routeError = routeValidation.isValid ? null : routeValidation.message
+  const tmdbMediaType: TmdbMediaType | null =
+    routeValidation.isValid && routeValidation.mode === 'tmdb' ? routeValidation.tmdbMediaType : null
+  const parsedTmdbId =
+    routeValidation.isValid && routeValidation.mode === 'tmdb' ? routeValidation.tmdbId : 0
 
   const tmdbPlayback = useTmdbPlayback({
     enabled: isTmdbRoute,
     mediaType: tmdbMediaType,
-    tmdbId: Number.isInteger(parsedTmdbId) ? parsedTmdbId : 0,
+    tmdbId: parsedTmdbId,
     querySourceCode,
     querySeasonNumber,
   })
@@ -259,7 +277,7 @@ export default function UnifiedPlayer() {
       }
 
       if (isTmdbRoute && tmdbMediaType) {
-        return buildTmdbPlayPath(tmdbMediaType, tmdbId, {
+        return buildTmdbPlayPath(tmdbMediaType, parsedTmdbId, {
           sourceCode: options?.sourceCode || resolvedSourceCode,
           vodId: options?.vodId || resolvedVodId,
           episodeIndex,
@@ -276,7 +294,7 @@ export default function UnifiedPlayer() {
       resolvedVodId,
       routeSourceCode,
       routeVodId,
-      tmdbId,
+      parsedTmdbId,
       tmdbMediaType,
       tmdbPlayback.selectedSeasonNumber,
     ],
@@ -301,7 +319,7 @@ export default function UnifiedPlayer() {
     if (sourceUnchanged && vodUnchanged && seasonUnchanged) return
 
     navigate(
-      buildTmdbPlayPath(tmdbMediaType, tmdbId, {
+      buildTmdbPlayPath(tmdbMediaType, parsedTmdbId, {
         sourceCode: tmdbPlayback.resolvedSourceCode,
         vodId: tmdbPlayback.resolvedVodId,
         episodeIndex: episodeFromUrl,
@@ -317,7 +335,7 @@ export default function UnifiedPlayer() {
     location.pathname,
     navigate,
     searchParams,
-    tmdbId,
+    parsedTmdbId,
     tmdbMediaType,
     tmdbPlayback.playlist.loading,
     tmdbPlayback.playlist.searched,
@@ -328,41 +346,53 @@ export default function UnifiedPlayer() {
   ])
 
   useEffect(() => {
+    const requestSeq = detailRequestSeqRef.current + 1
+    detailRequestSeqRef.current = requestSeq
+    let disposed = false
+    const canCommit = () => !disposed && detailRequestSeqRef.current === requestSeq
+
     const fetchVideoDetail = async () => {
+      if (routeError) {
+        if (!canCommit()) return
+        setDetail(null)
+        setLoading(false)
+        setIsDetailRefreshing(false)
+        setError(routeError)
+        return
+      }
+
       if (!resolvedSourceCode || !resolvedVodId) {
         if (isTmdbRoute && (tmdbPlayback.tmdbLoading || tmdbPlayback.playlist.loading)) {
-          if (!detailRef.current) {
+          if (!canCommit()) return
+          if (detailRef.current) {
+            setIsDetailRefreshing(true)
+          } else {
             setLoading(true)
           }
-          setIsDetailRefreshing(Boolean(detailRef.current))
           setError(null)
           return
         }
 
         if (isTmdbRoute && tmdbPlayback.playlist.searched) {
-          if (!detailRef.current) {
-            setLoading(false)
-            setDetail(null)
-          }
+          if (!canCommit()) return
+          setDetail(null)
+          setLoading(false)
           setIsDetailRefreshing(false)
           setError('没有匹配到可播放资源，请返回详情页重新匹配')
           return
         }
 
-        if (!detailRef.current) {
-          setLoading(false)
-          setDetail(null)
-        }
+        if (!canCommit()) return
+        setDetail(null)
+        setLoading(false)
         setIsDetailRefreshing(false)
         setError('缺少必要的播放参数')
         return
       }
 
-      if (detailRef.current) {
-        setIsDetailRefreshing(true)
-      } else {
-        setLoading(true)
-      }
+      if (!canCommit()) return
+      if (detailRef.current) setIsDetailRefreshing(true)
+      else setLoading(true)
       setError(null)
 
       try {
@@ -371,28 +401,36 @@ export default function UnifiedPlayer() {
         }
 
         const response = await cmsClient.getDetail(resolvedVodId, sourceConfig)
+        if (!canCommit()) return
         if (response.success && response.episodes && response.episodes.length > 0) {
           setDetail(response)
+          setError(null)
           return
         }
 
         throw new Error(response.error || '获取视频详情失败')
       } catch (fetchError) {
+        if (!canCommit()) return
         console.error('获取视频详情失败:', fetchError)
-        if (!detailRef.current) {
-          setDetail(null)
-        }
+        setDetail(null)
         setError(fetchError instanceof Error ? fetchError.message : '获取视频详情失败')
       } finally {
-        setLoading(false)
-        setIsDetailRefreshing(false)
+        if (canCommit()) {
+          setLoading(false)
+          setIsDetailRefreshing(false)
+        }
       }
     }
 
-    fetchVideoDetail()
+    void fetchVideoDetail()
+
+    return () => {
+      disposed = true
+    }
   }, [
     cmsClient,
     isTmdbRoute,
+    routeError,
     resolvedSourceCode,
     resolvedVodId,
     sourceConfig,
@@ -412,9 +450,9 @@ export default function UnifiedPlayer() {
   }, [detail])
 
   useEffect(() => {
-    if (episodes.length === 0) return
-    if (selectedEpisode < episodes.length) return
+    if (!shouldFallbackEpisodeToFirst(episodes.length, selectedEpisode)) return
 
+    pendingSeekRef.current = null
     const nextEpisode = 0
     navigate(buildCurrentPlayPath(nextEpisode), { replace: true })
   }, [buildCurrentPlayPath, episodes.length, navigate, selectedEpisode])
@@ -718,8 +756,33 @@ export default function UnifiedPlayer() {
 
       if (scrollViewport && playerSection) {
         let isMini = false
-        let hasSetInitialPosition = false
         const VISIBILITY_GAP = 50
+        const applyMiniPosition = () => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const miniEl = (playerRef.current as any)?.template?.$mini as HTMLElement | undefined
+          if (!miniEl) return
+
+          const isMobile = window.matchMedia('(max-width: 639px)').matches
+          const isTablet = window.matchMedia('(min-width: 640px) and (max-width: 1023px)').matches
+          const currentRect = miniEl.getBoundingClientRect()
+          const rect = computeMiniPlayerRect({
+            viewportWidth: window.innerWidth,
+            viewportHeight: window.innerHeight,
+            currentWidth: currentRect.width,
+            currentHeight: currentRect.height,
+            isMobile,
+            isTablet,
+          })
+
+          miniEl.style.width = `${rect.width}px`
+          miniEl.style.height = `${rect.height}px`
+          miniEl.style.top = `${rect.top}px`
+          miniEl.style.left = `${rect.left}px`
+        }
+        const handleViewportChange = _.throttle(() => {
+          if (!isMini) return
+          requestAnimationFrame(applyMiniPosition)
+        }, 120)
 
         const checkVisibility = _.throttle(() => {
           if (!playerRef.current) return
@@ -737,45 +800,7 @@ export default function UnifiedPlayer() {
             playerSection.style.minHeight = `${sectionRect.height}px`
             isMini = true
             playerRef.current.mini = true
-
-            // 首次进入迷你模式时，根据屏幕尺寸设置初始位置和大小
-            // 移动端/平板端：右上角（导航栏下方），缩小尺寸
-            // 桌面端：右下角（回到顶部按钮上方），默认尺寸
-            if (!hasSetInitialPosition) {
-              hasSetInitialPosition = true
-              requestAnimationFrame(() => {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const miniEl = (playerRef.current as any)?.template?.$mini as
-                  | HTMLElement
-                  | undefined
-                if (!miniEl) return
-
-                const isMobile = window.matchMedia('(max-width: 639px)').matches
-                const isTablet = window.matchMedia(
-                  '(min-width: 640px) and (max-width: 1023px)',
-                ).matches
-
-                if (isMobile || isTablet) {
-                  // 移动端/平板端：右上角，导航栏高度 64px + 8px 间距
-                  const miniWidth = isMobile ? 240 : 280
-                  const miniHeight = isMobile ? 135 : 158
-                  const topGap = 72
-                  const rightGap = isMobile ? 12 : 16
-
-                  miniEl.style.width = `${miniWidth}px`
-                  miniEl.style.height = `${miniHeight}px`
-                  miniEl.style.top = `${topGap}px`
-                  miniEl.style.left = `${window.innerWidth - miniWidth - rightGap}px`
-                } else {
-                  // 桌面端：右下角，回到顶部按钮上方
-                  const miniRect = miniEl.getBoundingClientRect()
-                  const bottomGap = 100
-                  const rightGap = 50
-                  miniEl.style.top = `${window.innerHeight - miniRect.height - bottomGap}px`
-                  miniEl.style.left = `${window.innerWidth - miniRect.width - rightGap}px`
-                }
-              })
-            }
+            requestAnimationFrame(applyMiniPosition)
           } else if (isVisible && isMini) {
             isMini = false
             playerRef.current.mini = false
@@ -784,10 +809,15 @@ export default function UnifiedPlayer() {
         }, 200)
 
         scrollViewport.addEventListener('scroll', checkVisibility, { passive: true })
+        window.addEventListener('resize', handleViewportChange, { passive: true })
+        window.addEventListener('orientationchange', handleViewportChange)
 
         miniCleanup = () => {
           checkVisibility.cancel()
+          handleViewportChange.cancel()
           scrollViewport.removeEventListener('scroll', checkVisibility)
+          window.removeEventListener('resize', handleViewportChange)
+          window.removeEventListener('orientationchange', handleViewportChange)
           if (playerRef.current) {
             playerRef.current.mini = false
           }
@@ -838,7 +868,7 @@ export default function UnifiedPlayer() {
 
     pendingSeekRef.current = playerRef.current?.currentTime || null
 
-    const nextPath = buildTmdbPlayPath(tmdbMediaType, tmdbId, {
+    const nextPath = buildTmdbPlayPath(tmdbMediaType, parsedTmdbId, {
       sourceCode: nextOption.sourceCode,
       vodId: nextOption.bestVodId,
       episodeIndex: selectedEpisode,
@@ -863,7 +893,7 @@ export default function UnifiedPlayer() {
     const preferredSource =
       seasonSourceOptions.find(option => option.sourceCode === resolvedSourceCode) || seasonSourceOptions[0]
 
-    const nextPath = buildTmdbPlayPath('tv', tmdbId, {
+    const nextPath = buildTmdbPlayPath('tv', parsedTmdbId, {
       sourceCode: preferredSource.sourceCode,
       vodId: preferredSource.bestVodId,
       episodeIndex: 0,
@@ -994,7 +1024,7 @@ export default function UnifiedPlayer() {
       : fallbackRecommendations
     : []
   const detailLink =
-    isTmdbRoute && tmdbMediaType ? buildTmdbDetailPath(tmdbMediaType, tmdbId) : undefined
+    isTmdbRoute && tmdbMediaType ? buildTmdbDetailPath(tmdbMediaType, parsedTmdbId) : undefined
   const seasonCount =
     tmdbMediaType === 'tv'
       ? tmdbPlayback.tmdbRichDetail?.number_of_seasons || tmdbPlayback.seasonOptions.length
@@ -1026,43 +1056,40 @@ export default function UnifiedPlayer() {
     }
   }, [activeRightPanel, hasSeasonPanel, isCmsRoute])
 
-  const shouldShowLoading =
-    !detail &&
-    (loading ||
-      (isTmdbRoute && (tmdbPlayback.tmdbLoading || (!tmdbPlayback.playlist.searched && !tmdbPlayback.tmdbError))))
+  const { shouldShowLoading, primaryError } = derivePlayerViewState({
+    hasDetail: Boolean(detail),
+    loading,
+    error,
+    routeError,
+    isTmdbRoute,
+    tmdbLoading: tmdbPlayback.tmdbLoading,
+    tmdbError: tmdbPlayback.tmdbError,
+    tmdbPlaylistSearched: tmdbPlayback.playlist.searched,
+  })
+  const loadingMode = isCmsRoute ? 'cms' : 'tmdb'
+  const renderErrorState = (message: string) => (
+    <div className="flex min-h-[60vh] items-center justify-center p-4">
+      <Card className="w-full max-w-lg">
+        <CardContent className="space-y-4 pt-6 text-center">
+          <p className="text-sm text-red-500">{message}</p>
+          <Button variant="secondary" onClick={() => navigate(-1)}>
+            返回
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  )
 
   if (shouldShowLoading) {
-    return <PlayerLoadingSkeleton mode={isCmsRoute ? 'cms' : 'tmdb'} />
+    return <PlayerLoadingSkeleton mode={loadingMode} />
   }
 
-  if (tmdbPlayback.tmdbError) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center p-4">
-        <Card className="w-full max-w-lg">
-          <CardContent className="space-y-4 pt-6 text-center">
-            <p className="text-sm text-red-500">{tmdbPlayback.tmdbError}</p>
-            <Button variant="secondary" onClick={() => navigate(-1)}>
-              返回
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    )
+  if (primaryError) {
+    return renderErrorState(primaryError)
   }
 
   if (!detail || detail.episodes.length === 0) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center p-4">
-        <Card className="w-full max-w-lg">
-          <CardContent className="space-y-4 pt-6 text-center">
-            <p className="text-sm text-red-500">{error || '无法获取播放信息'}</p>
-            <Button variant="secondary" onClick={() => navigate(-1)}>
-              返回
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    )
+    return renderErrorState(error || '无法获取播放信息')
   }
 
   return (
@@ -1157,6 +1184,7 @@ export default function UnifiedPlayer() {
                 <CollapsibleTrigger asChild>
                   <button
                     type="button"
+                    aria-label="展开或收起换源面板"
                     className="flex w-full items-center justify-between px-3 py-3 text-sm font-semibold md:px-4"
                   >
                     <span className="flex items-center gap-1.5">
@@ -1183,6 +1211,8 @@ export default function UnifiedPlayer() {
                           size="sm"
                           variant={active ? 'default' : 'secondary'}
                           className="rounded-full"
+                          aria-current={active ? 'true' : undefined}
+                          aria-label={`切换到视频源 ${option.sourceName}`}
                           onClick={() => handleSourceChange(option.sourceCode)}
                         >
                           {option.sourceName}
@@ -1203,6 +1233,7 @@ export default function UnifiedPlayer() {
                 <CollapsibleTrigger asChild>
                   <button
                     type="button"
+                    aria-label="展开或收起选季面板"
                     className="flex w-full items-center justify-between px-3 py-3 text-sm font-semibold md:px-4"
                   >
                     <span className="flex items-center gap-1.5">
@@ -1231,6 +1262,8 @@ export default function UnifiedPlayer() {
                           size="sm"
                           variant={active ? 'default' : 'secondary'}
                           className="rounded-full"
+                          aria-current={active ? 'true' : undefined}
+                          aria-label={`切换到第 ${option.seasonNumber} 季`}
                           onClick={() => handleSeasonChange(option.seasonNumber)}
                         >
                           S{option.seasonNumber}
@@ -1251,6 +1284,7 @@ export default function UnifiedPlayer() {
                   <CollapsibleTrigger asChild>
                     <button
                       type="button"
+                      aria-label="展开或收起选集面板"
                       className="flex w-full items-center justify-between px-3 py-3 text-sm font-semibold md:px-4"
                     >
                       <span className="flex items-center gap-1.5">
