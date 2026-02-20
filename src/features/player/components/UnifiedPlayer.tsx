@@ -37,9 +37,13 @@ import {
 } from '@/features/player/components'
 import { useEpisodePagination, useTmdbPlayback } from '@/features/player/hooks'
 import {
+  buildTmdbSelectionScopeKey,
   computeMiniPlayerRect,
   derivePlayerViewState,
+  getNextTmdbSelectionLock,
+  resolvePlayerSelection,
   shouldFallbackEpisodeToFirst,
+  type TmdbSelectionLock,
   validatePlayerRoute,
 } from '@/features/player/lib'
 
@@ -146,6 +150,7 @@ export default function UnifiedPlayer() {
   const detailRef = useRef<DetailResult | null>(null)
   const pendingSeekRef = useRef<number | null>(null)
   const detailRequestSeqRef = useRef(0)
+  const tmdbSelectionLockRef = useRef<TmdbSelectionLock | null>(null)
 
   useEffect(() => {
     viewingHistoryRef.current = viewingHistory
@@ -240,8 +245,19 @@ export default function UnifiedPlayer() {
     }
   }, [])
 
-  const resolvedSourceCode = isCmsRoute ? routeSourceCode : tmdbPlayback.resolvedSourceCode
-  const resolvedVodId = isCmsRoute ? routeVodId : tmdbPlayback.resolvedVodId
+  const currentTmdbSelectionScopeKey = buildTmdbSelectionScopeKey(tmdbMediaType, parsedTmdbId, querySeasonNumber)
+  const { resolvedSourceCode, resolvedVodId } = resolvePlayerSelection({
+    isCmsRoute,
+    isTmdbRoute,
+    routeSourceCode,
+    routeVodId,
+    querySourceCode,
+    queryVodId,
+    tmdbResolvedSourceCode: tmdbPlayback.resolvedSourceCode,
+    tmdbResolvedVodId: tmdbPlayback.resolvedVodId,
+    currentScopeKey: currentTmdbSelectionScopeKey,
+    lock: tmdbSelectionLockRef.current,
+  })
   const canUseTmdbHistory = Boolean(
     isTmdbRoute && tmdbMediaType && Number.isInteger(parsedTmdbId) && parsedTmdbId > 0,
   )
@@ -262,6 +278,30 @@ export default function UnifiedPlayer() {
     () => videoAPIs.find(api => api.id === resolvedSourceCode),
     [resolvedSourceCode, videoAPIs],
   )
+
+  useEffect(() => {
+    if (!isTmdbRoute) {
+      tmdbSelectionLockRef.current = null
+      return
+    }
+
+    tmdbSelectionLockRef.current = getNextTmdbSelectionLock({
+      isTmdbRoute,
+      currentScopeKey: currentTmdbSelectionScopeKey,
+      querySourceCode,
+      queryVodId,
+      tmdbResolvedSourceCode: tmdbPlayback.resolvedSourceCode,
+      tmdbResolvedVodId: tmdbPlayback.resolvedVodId,
+      lock: tmdbSelectionLockRef.current,
+    })
+  }, [
+    currentTmdbSelectionScopeKey,
+    isTmdbRoute,
+    querySourceCode,
+    queryVodId,
+    tmdbPlayback.resolvedSourceCode,
+    tmdbPlayback.resolvedVodId,
+  ])
 
   const buildCurrentPlayPath = useCallback(
     (
@@ -306,22 +346,22 @@ export default function UnifiedPlayer() {
     if (tmdbPlayback.tmdbLoading || tmdbPlayback.playlist.loading) return
     if (!tmdbPlayback.playlist.searched) return
 
-    if (!tmdbPlayback.resolvedSourceCode || !tmdbPlayback.resolvedVodId) return
+    if (!resolvedSourceCode || !resolvedVodId) return
 
     const currentSeason = parsePositiveNumber(searchParams.get('season'))
     const targetSeason = tmdbPlayback.selectedSeasonNumber || null
     const episodeFromUrl = parseEpisodeIndex(episodeIndexParam)
 
-    const sourceUnchanged = querySourceCode === tmdbPlayback.resolvedSourceCode
-    const vodUnchanged = queryVodId === tmdbPlayback.resolvedVodId
+    const sourceUnchanged = querySourceCode === resolvedSourceCode
+    const vodUnchanged = queryVodId === resolvedVodId
     const seasonUnchanged = currentSeason === targetSeason
 
     if (sourceUnchanged && vodUnchanged && seasonUnchanged) return
 
     navigate(
       buildTmdbPlayPath(tmdbMediaType, parsedTmdbId, {
-        sourceCode: tmdbPlayback.resolvedSourceCode,
-        vodId: tmdbPlayback.resolvedVodId,
+        sourceCode: resolvedSourceCode,
+        vodId: resolvedVodId,
         episodeIndex: episodeFromUrl,
         seasonNumber: targetSeason || undefined,
       }),
@@ -339,8 +379,8 @@ export default function UnifiedPlayer() {
     tmdbMediaType,
     tmdbPlayback.playlist.loading,
     tmdbPlayback.playlist.searched,
-    tmdbPlayback.resolvedSourceCode,
-    tmdbPlayback.resolvedVodId,
+    resolvedSourceCode,
+    resolvedVodId,
     tmdbPlayback.selectedSeasonNumber,
     tmdbPlayback.tmdbLoading,
   ])
