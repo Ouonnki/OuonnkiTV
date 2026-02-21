@@ -5,8 +5,6 @@ import {
   clampValue,
   computeSeekPreviewTime,
   computeVolumeFromSwipe,
-  getEdgeGuardSize,
-  isPointInGestureSafeArea,
   resolveDoubleTapAction,
   resolveGestureDirection,
   shouldHandleVolumeGesture,
@@ -155,11 +153,6 @@ export function useMobilePlayerGestures({
       const rect = art.template.$player.getBoundingClientRect()
       const localX = event.clientX - rect.left
       const localY = event.clientY - rect.top
-      const edgeGuardPx = getEdgeGuardSize(rect.width, mergedConfig.edgeGuardRatio, mergedConfig.edgeGuardMinPx)
-
-      if (!isPointInGestureSafeArea(localX, rect.width, edgeGuardPx)) {
-        return
-      }
 
       sessionRef.current = {
         pointerId: event.pointerId,
@@ -206,7 +199,7 @@ export function useMobilePlayerGestures({
         const isVolumeZone = shouldHandleVolumeGesture(
           session.startX,
           session.playerWidth,
-          mergedConfig.rightVolumeZoneRatio,
+          mergedConfig.volumeSideZoneRatio,
         )
         const absX = Math.abs(deltaX)
         const absY = Math.abs(deltaY)

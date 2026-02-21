@@ -4,7 +4,7 @@ export interface MobileGestureRuntimeConfig {
   gestureActivationPx: number
   seekSecondsPer100Px: number
   volumeFullRangeSwipeRatio: number
-  rightVolumeZoneRatio: number
+  volumeSideZoneRatio: number
   doubleTapSideZoneRatio: number
   doubleTapSeekSeconds: number
   doubleTapWindowMs: number
@@ -13,13 +13,13 @@ export interface MobileGestureRuntimeConfig {
 }
 
 export const MOBILE_GESTURE_BALANCED_CONFIG: MobileGestureRuntimeConfig = {
-  edgeGuardRatio: 0.08,
-  edgeGuardMinPx: 24,
+  edgeGuardRatio: 0,
+  edgeGuardMinPx: 0,
   gestureActivationPx: 12,
   seekSecondsPer100Px: 12,
   volumeFullRangeSwipeRatio: 0.9,
-  rightVolumeZoneRatio: 0.7,
-  doubleTapSideZoneRatio: 0.25,
+  volumeSideZoneRatio: 0.32,
+  doubleTapSideZoneRatio: 0.22,
   doubleTapSeekSeconds: 10,
   doubleTapWindowMs: 280,
   longPressDurationMs: 380,
@@ -60,11 +60,11 @@ export const resolveGestureDirection = (
 export const shouldHandleVolumeGesture = (
   x: number,
   width: number,
-  rightZoneRatio: number,
+  sideZoneRatio: number,
 ): boolean => {
   if (width <= 0) return false
-  const boundary = width * (1 - rightZoneRatio)
-  return x >= boundary
+  const sideZoneWidth = width * sideZoneRatio
+  return x <= sideZoneWidth || x >= width - sideZoneWidth
 }
 
 export const computeSeekPreviewTime = (

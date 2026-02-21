@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router'
+import { createPortal } from 'react-dom'
 import Artplayer from 'artplayer'
 import type Hls from 'hls.js'
 import type { HlsConfig } from 'hls.js'
@@ -210,6 +211,7 @@ export default function UnifiedPlayer() {
   const [gestureVolumeLevel, setGestureVolumeLevel] = useState<number | null>(null)
   const [gestureSeekPreviewTime, setGestureSeekPreviewTime] = useState<number | null>(null)
   const [isLandscapeViewport, setIsLandscapeViewport] = useState(false)
+  const [activeArt, setActiveArt] = useState<Artplayer | null>(null)
   const selectedEpisode = parseEpisodeIndex(episodeIndexParam)
   const playerNoticeTimerRef = useRef<number | null>(null)
   const playerNoticeAnimationFrameRef = useRef<number | null>(null)
@@ -275,6 +277,29 @@ export default function UnifiedPlayer() {
       window.removeEventListener('orientationchange', syncOrientation)
     }
   }, [])
+  const playerOverlayContainer = activeArt?.template?.$player ?? null
+  const seekPreviewOverlay =
+    gestureSeekPreviewTime !== null ? (
+      <div className="pointer-events-none absolute top-3 left-3 z-[160]">
+        <div className="rounded-md border border-white/15 bg-black/65 px-2.5 py-1.5 text-xs text-white shadow-lg backdrop-blur-sm">
+          预览 {formatDurationLabel(gestureSeekPreviewTime)}
+        </div>
+      </div>
+    ) : null
+  const volumeOverlay =
+    isLandscapeViewport && gestureVolumeLevel !== null ? (
+      <div className="pointer-events-none absolute top-3 left-1/2 z-[160] w-[min(52vw,300px)] -translate-x-1/2">
+        <div className="rounded-full border border-white/15 bg-black/70 px-2.5 py-2 shadow-lg backdrop-blur-sm">
+          <div className="mb-1 text-center text-xs text-white">{Math.round(gestureVolumeLevel * 100)}%</div>
+          <div className="h-1.5 overflow-hidden rounded-full bg-white/20">
+            <div
+              className="h-full rounded-full bg-white transition-[width] duration-75"
+              style={{ width: `${Math.round(gestureVolumeLevel * 100)}%` }}
+            />
+          </div>
+        </div>
+      </div>
+    ) : null
 
   const currentTmdbSelectionScopeKey = buildTmdbSelectionScopeKey(tmdbMediaType, parsedTmdbId, querySeasonNumber)
   const { resolvedSourceCode, resolvedVodId } = resolvePlayerSelection({
@@ -607,7 +632,6 @@ export default function UnifiedPlayer() {
 
   const playerRef = useRef<Artplayer | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
-  const [activeArt, setActiveArt] = useState<Artplayer | null>(null)
   const handleVolumeGestureChange = useCallback((volume: number) => {
     if (gestureVolumeTimerRef.current) {
       window.clearTimeout(gestureVolumeTimerRef.current)
@@ -739,7 +763,7 @@ export default function UnifiedPlayer() {
       const fullscreenControl = art.controls['fullscreen'] as HTMLElement | undefined
       const fullscreenWebControl = art.controls['fullscreenWeb'] as HTMLElement | undefined
       const preferredFullscreenControl = isMobileNow
-        ? (fullscreenControl ?? fullscreenWebControl)
+        ? (fullscreenWebControl ?? fullscreenControl)
         : (fullscreenControl ?? fullscreenWebControl)
       const rightControls = Array.from(
         art.template.$controlsRight.querySelectorAll<HTMLElement>('.art-control'),
@@ -1314,26 +1338,12 @@ export default function UnifiedPlayer() {
               ref={containerRef}
               className="aspect-video min-h-[180px] w-full bg-black sm:h-[clamp(240px,56vw,74vh)] sm:min-h-[220px] sm:aspect-auto [&_.art-video-player]:!h-full [&_.art-video-player]:!w-full [&_.artplayer-app]:!h-full [&_.artplayer-app]:!w-full [&_video]:!h-full [&_video]:!w-full"
             />
-            {gestureSeekPreviewTime !== null && (
-              <div className="pointer-events-none absolute top-3 left-3 z-30">
-                <div className="rounded-md border border-white/15 bg-black/65 px-2.5 py-1.5 text-xs text-white shadow-lg backdrop-blur-sm">
-                  预览 {formatDurationLabel(gestureSeekPreviewTime)}
-                </div>
-              </div>
-            )}
-            {isLandscapeViewport && gestureVolumeLevel !== null && (
-              <div className="pointer-events-none absolute top-3 left-1/2 z-30 w-[min(52vw,300px)] -translate-x-1/2">
-                <div className="rounded-full border border-white/15 bg-black/70 px-2.5 py-2 shadow-lg backdrop-blur-sm">
-                  <div className="mb-1 text-center text-xs text-white">{Math.round(gestureVolumeLevel * 100)}%</div>
-                  <div className="h-1.5 overflow-hidden rounded-full bg-white/20">
-                    <div
-                      className="h-full rounded-full bg-white transition-[width] duration-75"
-                      style={{ width: `${Math.round(gestureVolumeLevel * 100)}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
+            {seekPreviewOverlay &&
+              (playerOverlayContainer
+                ? createPortal(seekPreviewOverlay, playerOverlayContainer)
+                : seekPreviewOverlay)}
+            {volumeOverlay &&
+              (playerOverlayContainer ? createPortal(volumeOverlay, playerOverlayContainer) : volumeOverlay)}
             {playerNotice && (
               <div className="pointer-events-none absolute top-3 right-3 z-30 w-[min(78vw,340px)]">
                 <div className="overflow-hidden rounded-md border border-white/15 bg-black/65 shadow-lg backdrop-blur-sm">

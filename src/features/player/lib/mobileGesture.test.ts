@@ -11,9 +11,10 @@ import {
 } from './mobileGesture'
 
 describe('mobileGesture', () => {
-  it('按平衡档计算边缘留白，且最小值生效', () => {
-    expect(getEdgeGuardSize(360, MOBILE_GESTURE_BALANCED_CONFIG.edgeGuardRatio, 24)).toBe(29)
-    expect(getEdgeGuardSize(200, MOBILE_GESTURE_BALANCED_CONFIG.edgeGuardRatio, 24)).toBe(24)
+  it('边缘留白尺寸按比例和最小值计算', () => {
+    expect(getEdgeGuardSize(360, 0.08, 24)).toBe(29)
+    expect(getEdgeGuardSize(200, 0.08, 24)).toBe(24)
+    expect(getEdgeGuardSize(360, 0, 0)).toBe(0)
   })
 
   it('边缘留白区域外才允许手势', () => {
@@ -70,7 +71,7 @@ describe('mobileGesture', () => {
     expect(upperBound).toBe(1)
   })
 
-  it('双击分区和右侧 70% 音量区判定正确', () => {
+  it('双击分区和两侧音量区判定正确', () => {
     expect(resolveDoubleTapAction(60, 360, MOBILE_GESTURE_BALANCED_CONFIG.doubleTapSideZoneRatio)).toBe(
       'backward',
     )
@@ -81,7 +82,8 @@ describe('mobileGesture', () => {
       'forward',
     )
 
-    expect(shouldHandleVolumeGesture(90, 360, MOBILE_GESTURE_BALANCED_CONFIG.rightVolumeZoneRatio)).toBe(false)
-    expect(shouldHandleVolumeGesture(150, 360, MOBILE_GESTURE_BALANCED_CONFIG.rightVolumeZoneRatio)).toBe(true)
+    expect(shouldHandleVolumeGesture(80, 360, MOBILE_GESTURE_BALANCED_CONFIG.volumeSideZoneRatio)).toBe(true)
+    expect(shouldHandleVolumeGesture(180, 360, MOBILE_GESTURE_BALANCED_CONFIG.volumeSideZoneRatio)).toBe(false)
+    expect(shouldHandleVolumeGesture(300, 360, MOBILE_GESTURE_BALANCED_CONFIG.volumeSideZoneRatio)).toBe(true)
   })
 })
