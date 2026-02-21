@@ -200,9 +200,12 @@ export default function UnifiedPlayer() {
   const [playerNoticeProgress, setPlayerNoticeProgress] = useState(0)
   const [playerNoticeDuration, setPlayerNoticeDuration] = useState(2200)
   const [activeRightPanel, setActiveRightPanel] = useState<'episode' | 'source' | 'season' | null>('episode')
+  const [gestureVolumeLevel, setGestureVolumeLevel] = useState<number | null>(null)
+  const [isLandscapeViewport, setIsLandscapeViewport] = useState(false)
   const selectedEpisode = parseEpisodeIndex(episodeIndexParam)
   const playerNoticeTimerRef = useRef<number | null>(null)
   const playerNoticeAnimationFrameRef = useRef<number | null>(null)
+  const gestureVolumeTimerRef = useRef<number | null>(null)
 
   useEffect(() => {
     detailRef.current = detail
@@ -242,6 +245,26 @@ export default function UnifiedPlayer() {
       if (playerNoticeAnimationFrameRef.current) {
         window.cancelAnimationFrame(playerNoticeAnimationFrameRef.current)
       }
+      if (gestureVolumeTimerRef.current) {
+        window.clearTimeout(gestureVolumeTimerRef.current)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    const syncOrientation = () => {
+      const isLandscape =
+        window.matchMedia('(orientation: landscape)').matches || window.innerWidth > window.innerHeight
+      setIsLandscapeViewport(isLandscape)
+    }
+
+    syncOrientation()
+    window.addEventListener('resize', syncOrientation, { passive: true })
+    window.addEventListener('orientationchange', syncOrientation)
+
+    return () => {
+      window.removeEventListener('resize', syncOrientation)
+      window.removeEventListener('orientationchange', syncOrientation)
     }
   }, [])
 
@@ -577,10 +600,28 @@ export default function UnifiedPlayer() {
   const playerRef = useRef<Artplayer | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [activeArt, setActiveArt] = useState<Artplayer | null>(null)
+  const handleVolumeGestureChange = useCallback((volume: number) => {
+    if (gestureVolumeTimerRef.current) {
+      window.clearTimeout(gestureVolumeTimerRef.current)
+      gestureVolumeTimerRef.current = null
+    }
+    setGestureVolumeLevel(volume)
+  }, [])
+  const handleVolumeGestureEnd = useCallback(() => {
+    if (gestureVolumeTimerRef.current) {
+      window.clearTimeout(gestureVolumeTimerRef.current)
+    }
+    gestureVolumeTimerRef.current = window.setTimeout(() => {
+      setGestureVolumeLevel(null)
+      gestureVolumeTimerRef.current = null
+    }, 360)
+  }, [])
 
   useMobilePlayerGestures({
     art: activeArt,
     enabled: playback.isMobileGestureEnabled,
+    onVolumeGestureChange: handleVolumeGestureChange,
+    onVolumeGestureEnd: handleVolumeGestureEnd,
   })
 
   useEffect(() => {
@@ -1257,6 +1298,19 @@ export default function UnifiedPlayer() {
               ref={containerRef}
               className="aspect-video min-h-[180px] w-full bg-black sm:h-[clamp(240px,56vw,74vh)] sm:min-h-[220px] sm:aspect-auto [&_.art-video-player]:!h-full [&_.art-video-player]:!w-full [&_.artplayer-app]:!h-full [&_.artplayer-app]:!w-full [&_video]:!h-full [&_video]:!w-full"
             />
+            {isLandscapeViewport && gestureVolumeLevel !== null && (
+              <div className="pointer-events-none absolute top-3 left-1/2 z-30 w-[min(52vw,300px)] -translate-x-1/2">
+                <div className="rounded-full border border-white/15 bg-black/70 px-2.5 py-2 shadow-lg backdrop-blur-sm">
+                  <div className="mb-1 text-center text-xs text-white">{Math.round(gestureVolumeLevel * 100)}%</div>
+                  <div className="h-1.5 overflow-hidden rounded-full bg-white/20">
+                    <div
+                      className="h-full rounded-full bg-white transition-[width] duration-75"
+                      style={{ width: `${Math.round(gestureVolumeLevel * 100)}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
             {playerNotice && (
               <div className="pointer-events-none absolute top-3 right-3 z-30 w-[min(78vw,340px)]">
                 <div className="overflow-hidden rounded-md border border-white/15 bg-black/65 shadow-lg backdrop-blur-sm">

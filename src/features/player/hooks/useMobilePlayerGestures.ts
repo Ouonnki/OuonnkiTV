@@ -17,6 +17,8 @@ interface UseMobilePlayerGesturesParams {
   art: Artplayer | null
   enabled: boolean
   config?: Partial<MobileGestureRuntimeConfig>
+  onVolumeGestureChange?: (volume: number) => void
+  onVolumeGestureEnd?: () => void
 }
 
 type GestureAxis = 'horizontal' | 'vertical' | 'blocked' | null
@@ -28,6 +30,7 @@ interface GestureSession {
   startTime: number
   startVolume: number
   playerWidth: number
+  playerHeight: number
   axis: GestureAxis
   pendingSeekTime: number | null
   longPressTriggered: boolean
@@ -52,7 +55,13 @@ const formatTime = (seconds: number): string => {
 
 const isMobileViewport = () => window.innerWidth < MOBILE_BREAKPOINT
 
-export function useMobilePlayerGestures({ art, enabled, config }: UseMobilePlayerGesturesParams) {
+export function useMobilePlayerGestures({
+  art,
+  enabled,
+  config,
+  onVolumeGestureChange,
+  onVolumeGestureEnd,
+}: UseMobilePlayerGesturesParams) {
   const mergedConfig = useMemo<MobileGestureRuntimeConfig>(
     () => ({
       ...MOBILE_GESTURE_BALANCED_CONFIG,
@@ -85,6 +94,9 @@ export function useMobilePlayerGestures({ art, enabled, config }: UseMobilePlaye
     }
 
     const resetSession = () => {
+      if (sessionRef.current?.axis === 'vertical') {
+        onVolumeGestureEnd?.()
+      }
       clearLongPressTimer()
       restorePlaybackRate()
       sessionRef.current = null
@@ -144,8 +156,9 @@ export function useMobilePlayerGestures({ art, enabled, config }: UseMobilePlaye
         startX: localX,
         startY: localY,
         startTime: art.currentTime || 0,
-        startVolume: art.volume,
+        startVolume: art.video.volume,
         playerWidth: rect.width,
+        playerHeight: rect.height,
         axis: null,
         pendingSeekTime: null,
         longPressTriggered: false,
@@ -210,10 +223,19 @@ export function useMobilePlayerGestures({ art, enabled, config }: UseMobilePlaye
       }
 
       if (session.axis === 'vertical') {
-        const nextVolume = computeVolumeFromSwipe(session.startVolume, deltaY, mergedConfig.volumePer100Px)
-        if (Math.abs(nextVolume - art.volume) >= 0.005) {
-          art.volume = nextVolume
+        const nextVolume = computeVolumeFromSwipe(
+          session.startVolume,
+          deltaY,
+          session.playerHeight,
+          mergedConfig.volumeFullRangeSwipeRatio,
+        )
+        if (Math.abs(nextVolume - art.video.volume) >= 0.005) {
+          art.video.volume = nextVolume
+          if (nextVolume > 0 && art.video.muted) {
+            art.video.muted = false
+          }
         }
+        onVolumeGestureChange?.(nextVolume)
         if (event.cancelable) {
           event.preventDefault()
         }
@@ -256,11 +278,15 @@ export function useMobilePlayerGestures({ art, enabled, config }: UseMobilePlaye
           if (event.cancelable) {
             event.preventDefault()
           }
-          const action = resolveDoubleTapAction(localX, rect.width)
+          const action = resolveDoubleTapAction(localX, rect.width, mergedConfig.doubleTapSideZoneRatio)
           if (action === 'forward') {
             art.forward = mergedConfig.doubleTapSeekSeconds
-          } else {
+            art.notice.show = `快进 ${mergedConfig.doubleTapSeekSeconds} 秒`
+          } else if (action === 'backward') {
             art.backward = mergedConfig.doubleTapSeekSeconds
+            art.notice.show = `后退 ${mergedConfig.doubleTapSeekSeconds} 秒`
+          } else {
+            art.toggle()
           }
           lastTapRef.current = null
           sessionRef.current = null
@@ -282,6 +308,9 @@ export function useMobilePlayerGestures({ art, enabled, config }: UseMobilePlaye
         }, TAP_TIME_TOLERANCE + 10)
       }
 
+      if (session.axis === 'vertical') {
+        onVolumeGestureEnd?.()
+      }
       sessionRef.current = null
     }
 
@@ -313,5 +342,5 @@ export function useMobilePlayerGestures({ art, enabled, config }: UseMobilePlaye
       window.removeEventListener('resize', onResize)
       window.removeEventListener('orientationchange', onResize)
     }
-  }, [art, enabled, mergedConfig])
+  }, [art, enabled, mergedConfig, onVolumeGestureChange, onVolumeGestureEnd])
 }

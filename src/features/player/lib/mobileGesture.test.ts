@@ -39,20 +39,47 @@ describe('mobileGesture', () => {
   })
 
   it('垂直滑动调节音量并钳制 0~1', () => {
-    const up = computeVolumeFromSwipe(0.5, -100, MOBILE_GESTURE_BALANCED_CONFIG.volumePer100Px)
-    const down = computeVolumeFromSwipe(0.5, 100, MOBILE_GESTURE_BALANCED_CONFIG.volumePer100Px)
-    const lowerBound = computeVolumeFromSwipe(0.05, 500, MOBILE_GESTURE_BALANCED_CONFIG.volumePer100Px)
-    const upperBound = computeVolumeFromSwipe(0.95, -500, MOBILE_GESTURE_BALANCED_CONFIG.volumePer100Px)
+    const up = computeVolumeFromSwipe(
+      0.5,
+      -180,
+      360,
+      MOBILE_GESTURE_BALANCED_CONFIG.volumeFullRangeSwipeRatio,
+    )
+    const down = computeVolumeFromSwipe(
+      0.5,
+      180,
+      360,
+      MOBILE_GESTURE_BALANCED_CONFIG.volumeFullRangeSwipeRatio,
+    )
+    const lowerBound = computeVolumeFromSwipe(
+      0.05,
+      500,
+      360,
+      MOBILE_GESTURE_BALANCED_CONFIG.volumeFullRangeSwipeRatio,
+    )
+    const upperBound = computeVolumeFromSwipe(
+      0.95,
+      -500,
+      360,
+      MOBILE_GESTURE_BALANCED_CONFIG.volumeFullRangeSwipeRatio,
+    )
 
-    expect(up).toBeCloseTo(0.7, 6)
-    expect(down).toBeCloseTo(0.3, 6)
+    expect(up).toBeCloseTo(1, 6)
+    expect(down).toBeCloseTo(0, 6)
     expect(lowerBound).toBe(0)
     expect(upperBound).toBe(1)
   })
 
   it('双击分区和右侧 70% 音量区判定正确', () => {
-    expect(resolveDoubleTapAction(100, 360)).toBe('backward')
-    expect(resolveDoubleTapAction(260, 360)).toBe('forward')
+    expect(resolveDoubleTapAction(60, 360, MOBILE_GESTURE_BALANCED_CONFIG.doubleTapSideZoneRatio)).toBe(
+      'backward',
+    )
+    expect(resolveDoubleTapAction(180, 360, MOBILE_GESTURE_BALANCED_CONFIG.doubleTapSideZoneRatio)).toBe(
+      'toggle',
+    )
+    expect(resolveDoubleTapAction(320, 360, MOBILE_GESTURE_BALANCED_CONFIG.doubleTapSideZoneRatio)).toBe(
+      'forward',
+    )
 
     expect(shouldHandleVolumeGesture(90, 360, MOBILE_GESTURE_BALANCED_CONFIG.rightVolumeZoneRatio)).toBe(false)
     expect(shouldHandleVolumeGesture(150, 360, MOBILE_GESTURE_BALANCED_CONFIG.rightVolumeZoneRatio)).toBe(true)

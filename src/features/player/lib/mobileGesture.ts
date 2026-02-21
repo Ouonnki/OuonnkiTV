@@ -3,8 +3,9 @@ export interface MobileGestureRuntimeConfig {
   edgeGuardMinPx: number
   gestureActivationPx: number
   seekSecondsPer100Px: number
-  volumePer100Px: number
+  volumeFullRangeSwipeRatio: number
   rightVolumeZoneRatio: number
+  doubleTapSideZoneRatio: number
   doubleTapSeekSeconds: number
   doubleTapWindowMs: number
   longPressDurationMs: number
@@ -16,8 +17,9 @@ export const MOBILE_GESTURE_BALANCED_CONFIG: MobileGestureRuntimeConfig = {
   edgeGuardMinPx: 24,
   gestureActivationPx: 12,
   seekSecondsPer100Px: 12,
-  volumePer100Px: 0.2,
+  volumeFullRangeSwipeRatio: 0.9,
   rightVolumeZoneRatio: 0.7,
+  doubleTapSideZoneRatio: 0.25,
   doubleTapSeekSeconds: 10,
   doubleTapWindowMs: 280,
   longPressDurationMs: 380,
@@ -79,14 +81,24 @@ export const computeSeekPreviewTime = (
 export const computeVolumeFromSwipe = (
   startVolume: number,
   deltaY: number,
-  volumePer100Px: number,
+  playerHeight: number,
+  fullRangeSwipeRatio: number,
 ): number => {
-  const offset = (-deltaY / 100) * volumePer100Px
+  const effectiveHeight = Math.max(1, playerHeight * fullRangeSwipeRatio)
+  const offset = -deltaY / effectiveHeight
   return clampValue(startVolume + offset, 0, 1)
 }
 
-export type DoubleTapAction = 'backward' | 'forward'
+export type DoubleTapAction = 'backward' | 'forward' | 'toggle'
 
-export const resolveDoubleTapAction = (x: number, width: number): DoubleTapAction => {
-  return x < width / 2 ? 'backward' : 'forward'
+export const resolveDoubleTapAction = (
+  x: number,
+  width: number,
+  sideZoneRatio: number,
+): DoubleTapAction => {
+  const safeWidth = Math.max(1, width)
+  const sideZoneWidth = safeWidth * sideZoneRatio
+  if (x <= sideZoneWidth) return 'backward'
+  if (x >= safeWidth - sideZoneWidth) return 'forward'
+  return 'toggle'
 }
