@@ -19,6 +19,8 @@ interface UseMobilePlayerGesturesParams {
   config?: Partial<MobileGestureRuntimeConfig>
   onVolumeGestureChange?: (volume: number) => void
   onVolumeGestureEnd?: () => void
+  onSeekGesturePreviewChange?: (previewTime: number) => void
+  onSeekGesturePreviewEnd?: () => void
 }
 
 type GestureAxis = 'horizontal' | 'vertical' | 'blocked' | null
@@ -46,13 +48,6 @@ const MOBILE_BREAKPOINT = 768
 const TAP_MOVE_TOLERANCE = 12
 const TAP_TIME_TOLERANCE = 320
 
-const formatTime = (seconds: number): string => {
-  const safeSeconds = Math.max(0, Math.floor(seconds))
-  const mins = Math.floor(safeSeconds / 60)
-  const secs = safeSeconds % 60
-  return `${mins}:${secs.toString().padStart(2, '0')}`
-}
-
 const isMobileViewport = () => window.innerWidth < MOBILE_BREAKPOINT
 
 export function useMobilePlayerGestures({
@@ -61,6 +56,8 @@ export function useMobilePlayerGestures({
   config,
   onVolumeGestureChange,
   onVolumeGestureEnd,
+  onSeekGesturePreviewChange,
+  onSeekGesturePreviewEnd,
 }: UseMobilePlayerGesturesParams) {
   const mergedConfig = useMemo<MobileGestureRuntimeConfig>(
     () => ({
@@ -75,6 +72,7 @@ export function useMobilePlayerGestures({
   const lastTapRef = useRef<TapRecord | null>(null)
   const lockStateRef = useRef(false)
   const playbackRateBeforeLongPressRef = useRef<number>(1)
+  const suppressClickUntilRef = useRef(0)
 
   useEffect(() => {
     if (!art) return
@@ -97,9 +95,27 @@ export function useMobilePlayerGestures({
       if (sessionRef.current?.axis === 'vertical') {
         onVolumeGestureEnd?.()
       }
+      if (sessionRef.current?.axis === 'horizontal') {
+        onSeekGesturePreviewEnd?.()
+      }
       clearLongPressTimer()
       restorePlaybackRate()
       sessionRef.current = null
+    }
+
+    const shouldIgnoreTarget = (target: EventTarget | null) => {
+      const element = target as HTMLElement | null
+      if (!element) return false
+
+      return Boolean(
+        element.closest(
+          '.art-control, .art-progress, .art-setting, .art-contextmenu, .art-selector-list, .art-settings, button, [role="button"], input, select, textarea, label',
+        ),
+      )
+    }
+
+    const suppressFollowupClicks = (durationMs: number) => {
+      suppressClickUntilRef.current = Date.now() + durationMs
     }
 
     const canHandleGesture = () => {
@@ -132,13 +148,7 @@ export function useMobilePlayerGestures({
       if (!canHandleGesture()) return
       if (sessionRef.current) return
 
-      const target = event.target as HTMLElement | null
-      if (
-        target &&
-        (art.template.$controls.contains(target) ||
-          art.template.$setting.contains(target) ||
-          art.template.$contextmenu.contains(target))
-      ) {
+      if (shouldIgnoreTarget(event.target)) {
         return
       }
 
@@ -193,13 +203,22 @@ export function useMobilePlayerGestures({
         const direction = resolveGestureDirection(deltaX, deltaY, mergedConfig.gestureActivationPx)
         if (!direction) return
 
+        const isVolumeZone = shouldHandleVolumeGesture(
+          session.startX,
+          session.playerWidth,
+          mergedConfig.rightVolumeZoneRatio,
+        )
+        const absX = Math.abs(deltaX)
+        const absY = Math.abs(deltaY)
+
+        if (isVolumeZone && absY >= mergedConfig.gestureActivationPx && absY * 1.15 >= absX) {
+          session.axis = 'vertical'
+          clearLongPressTimer()
+          return
+        }
+
         if (direction === 'vertical') {
-          const allowVolume = shouldHandleVolumeGesture(
-            session.startX,
-            session.playerWidth,
-            mergedConfig.rightVolumeZoneRatio,
-          )
-          session.axis = allowVolume ? 'vertical' : 'blocked'
+          session.axis = isVolumeZone ? 'vertical' : 'blocked'
         } else {
           session.axis = 'horizontal'
         }
@@ -215,7 +234,7 @@ export function useMobilePlayerGestures({
           mergedConfig.seekSecondsPer100Px,
         )
         session.pendingSeekTime = previewTime
-        art.notice.show = `预览 ${formatTime(previewTime)}`
+        onSeekGesturePreviewChange?.(previewTime)
         if (event.cancelable) {
           event.preventDefault()
         }
@@ -257,6 +276,7 @@ export function useMobilePlayerGestures({
 
       if (session.axis === 'horizontal' && session.pendingSeekTime !== null) {
         art.seek = session.pendingSeekTime
+        onSeekGesturePreviewEnd?.()
         sessionRef.current = null
         return
       }
@@ -278,6 +298,7 @@ export function useMobilePlayerGestures({
           if (event.cancelable) {
             event.preventDefault()
           }
+          suppressFollowupClicks(380)
           const action = resolveDoubleTapAction(localX, rect.width, mergedConfig.doubleTapSideZoneRatio)
           if (action === 'forward') {
             art.forward = mergedConfig.doubleTapSeekSeconds
@@ -287,6 +308,13 @@ export function useMobilePlayerGestures({
             art.notice.show = `后退 ${mergedConfig.doubleTapSeekSeconds} 秒`
           } else {
             art.toggle()
+            // 中间双击仅控制播放状态，不应触发底部控制栏停留
+            art.controls.show = false
+            art.setting.show = false
+            window.requestAnimationFrame(() => {
+              art.controls.show = false
+              art.setting.show = false
+            })
           }
           lastTapRef.current = null
           sessionRef.current = null
@@ -321,10 +349,22 @@ export function useMobilePlayerGestures({
       resetSession()
     }
 
+    const onClickCapture = (event: Event) => {
+      if (Date.now() > suppressClickUntilRef.current) return
+      if (shouldIgnoreTarget(event.target)) return
+      event.preventDefault()
+      event.stopPropagation()
+      const stopImmediatePropagation = (event as Event & { stopImmediatePropagation?: () => void })
+        .stopImmediatePropagation
+      stopImmediatePropagation?.call(event)
+    }
+
     art.template.$player.addEventListener('pointerdown', onPointerDown)
     art.template.$player.addEventListener('pointermove', onPointerMove, { passive: false })
     art.template.$player.addEventListener('pointerup', onPointerEnd)
     art.template.$player.addEventListener('pointercancel', onPointerCancel)
+    art.template.$player.addEventListener('click', onClickCapture, true)
+    art.template.$player.addEventListener('dblclick', onClickCapture, true)
 
     art.on('lock', onLock)
     art.on('fullscreenWeb', onFullscreenWebChange)
@@ -337,10 +377,20 @@ export function useMobilePlayerGestures({
       art.template.$player.removeEventListener('pointermove', onPointerMove)
       art.template.$player.removeEventListener('pointerup', onPointerEnd)
       art.template.$player.removeEventListener('pointercancel', onPointerCancel)
+      art.template.$player.removeEventListener('click', onClickCapture, true)
+      art.template.$player.removeEventListener('dblclick', onClickCapture, true)
       art.off('lock', onLock)
       art.off('fullscreenWeb', onFullscreenWebChange)
       window.removeEventListener('resize', onResize)
       window.removeEventListener('orientationchange', onResize)
     }
-  }, [art, enabled, mergedConfig, onVolumeGestureChange, onVolumeGestureEnd])
+  }, [
+    art,
+    enabled,
+    mergedConfig,
+    onSeekGesturePreviewChange,
+    onSeekGesturePreviewEnd,
+    onVolumeGestureChange,
+    onVolumeGestureEnd,
+  ])
 }

@@ -102,6 +102,13 @@ const parsePositiveNumber = (value: string | null): number | null => {
   return parsed
 }
 
+const formatDurationLabel = (seconds: number): string => {
+  const safe = Math.max(0, Math.floor(seconds))
+  const mins = Math.floor(safe / 60)
+  const secs = safe % 60
+  return `${mins}:${secs.toString().padStart(2, '0')}`
+}
+
 const stripHtmlTags = (value: string) => {
   const stripped = value
     .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, ' ')
@@ -201,6 +208,7 @@ export default function UnifiedPlayer() {
   const [playerNoticeDuration, setPlayerNoticeDuration] = useState(2200)
   const [activeRightPanel, setActiveRightPanel] = useState<'episode' | 'source' | 'season' | null>('episode')
   const [gestureVolumeLevel, setGestureVolumeLevel] = useState<number | null>(null)
+  const [gestureSeekPreviewTime, setGestureSeekPreviewTime] = useState<number | null>(null)
   const [isLandscapeViewport, setIsLandscapeViewport] = useState(false)
   const selectedEpisode = parseEpisodeIndex(episodeIndexParam)
   const playerNoticeTimerRef = useRef<number | null>(null)
@@ -616,12 +624,20 @@ export default function UnifiedPlayer() {
       gestureVolumeTimerRef.current = null
     }, 360)
   }, [])
+  const handleSeekGesturePreviewChange = useCallback((previewTime: number) => {
+    setGestureSeekPreviewTime(previewTime)
+  }, [])
+  const handleSeekGesturePreviewEnd = useCallback(() => {
+    setGestureSeekPreviewTime(null)
+  }, [])
 
   useMobilePlayerGestures({
     art: activeArt,
     enabled: playback.isMobileGestureEnabled,
     onVolumeGestureChange: handleVolumeGestureChange,
     onVolumeGestureEnd: handleVolumeGestureEnd,
+    onSeekGesturePreviewChange: handleSeekGesturePreviewChange,
+    onSeekGesturePreviewEnd: handleSeekGesturePreviewEnd,
   })
 
   useEffect(() => {
@@ -1298,6 +1314,13 @@ export default function UnifiedPlayer() {
               ref={containerRef}
               className="aspect-video min-h-[180px] w-full bg-black sm:h-[clamp(240px,56vw,74vh)] sm:min-h-[220px] sm:aspect-auto [&_.art-video-player]:!h-full [&_.art-video-player]:!w-full [&_.artplayer-app]:!h-full [&_.artplayer-app]:!w-full [&_video]:!h-full [&_video]:!w-full"
             />
+            {gestureSeekPreviewTime !== null && (
+              <div className="pointer-events-none absolute top-3 left-3 z-30">
+                <div className="rounded-md border border-white/15 bg-black/65 px-2.5 py-1.5 text-xs text-white shadow-lg backdrop-blur-sm">
+                  预览 {formatDurationLabel(gestureSeekPreviewTime)}
+                </div>
+              </div>
+            )}
             {isLandscapeViewport && gestureVolumeLevel !== null && (
               <div className="pointer-events-none absolute top-3 left-1/2 z-30 w-[min(52vw,300px)] -translate-x-1/2">
                 <div className="rounded-full border border-white/15 bg-black/70 px-2.5 py-2 shadow-lg backdrop-blur-sm">
