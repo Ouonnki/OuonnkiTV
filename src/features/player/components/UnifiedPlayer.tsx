@@ -618,8 +618,8 @@ export default function UnifiedPlayer() {
       flip: true,
       playbackRate: true,
       aspectRatio: true,
-      fullscreen: !isMobileViewport,
-      fullscreenWeb: true,
+      fullscreen: true,
+      fullscreenWeb: !isMobileViewport,
       lock: isMobileViewport,
       gesture: false,
       fastForward: false,
@@ -682,7 +682,7 @@ export default function UnifiedPlayer() {
       const fullscreenControl = art.controls['fullscreen'] as HTMLElement | undefined
       const fullscreenWebControl = art.controls['fullscreenWeb'] as HTMLElement | undefined
       const preferredFullscreenControl = isMobileNow
-        ? (fullscreenWebControl ?? fullscreenControl)
+        ? (fullscreenControl ?? fullscreenWebControl)
         : (fullscreenControl ?? fullscreenWebControl)
       const rightControls = Array.from(
         art.template.$controlsRight.querySelectorAll<HTMLElement>('.art-control'),

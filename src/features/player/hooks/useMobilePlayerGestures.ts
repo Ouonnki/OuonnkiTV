@@ -91,7 +91,7 @@ export function useMobilePlayerGestures({ art, enabled, config }: UseMobilePlaye
     }
 
     const canHandleGesture = () => {
-      return enabled && isMobileViewport() && art.fullscreenWeb && !lockStateRef.current
+      return enabled && isMobileViewport() && (art.fullscreenWeb || art.fullscreen) && !lockStateRef.current
     }
 
     lockStateRef.current = art.isLock
