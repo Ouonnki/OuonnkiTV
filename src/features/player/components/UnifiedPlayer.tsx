@@ -110,6 +110,9 @@ const formatDurationLabel = (seconds: number): string => {
   return `${mins}:${secs.toString().padStart(2, '0')}`
 }
 
+const isTouchDevice = () =>
+  window.matchMedia('(hover: none) and (pointer: coarse)').matches || navigator.maxTouchPoints > 0
+
 const stripHtmlTags = (value: string) => {
   const stripped = value
     .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, ' ')
@@ -671,7 +674,7 @@ export default function UnifiedPlayer() {
       playerRef.current.destroy(false)
     }
 
-    const isMobileViewport = window.matchMedia('(max-width: 639px)').matches
+    const isMobileDevice = isTouchDevice()
 
     const nextEpisode = () => {
       if (!playbackRef.current.isAutoPlayEnabled) return
@@ -700,8 +703,8 @@ export default function UnifiedPlayer() {
       playbackRate: true,
       aspectRatio: true,
       fullscreen: true,
-      fullscreenWeb: !isMobileViewport,
-      lock: isMobileViewport,
+      fullscreenWeb: !isMobileDevice,
+      lock: isMobileDevice,
       gesture: false,
       fastForward: false,
       subtitleOffset: true,
@@ -709,7 +712,7 @@ export default function UnifiedPlayer() {
       mutex: true,
       backdrop: true,
       playsInline: true,
-      airplay: !isMobileViewport,
+      airplay: !isMobileDevice,
       theme: playbackRef.current.playerThemeColor,
       lang: 'zh-cn',
       moreVideoAttr: {
@@ -758,12 +761,12 @@ export default function UnifiedPlayer() {
 
     const syncMobileControlBar = () => {
       const isFullscreenActive = art.fullscreen || art.fullscreenWeb
-      const isMobileNow = window.matchMedia('(max-width: 639px)').matches
+      const isMobileNow = isTouchDevice()
 
       const fullscreenControl = art.controls['fullscreen'] as HTMLElement | undefined
       const fullscreenWebControl = art.controls['fullscreenWeb'] as HTMLElement | undefined
       const preferredFullscreenControl = isMobileNow
-        ? (fullscreenWebControl ?? fullscreenControl)
+        ? (fullscreenControl ?? fullscreenWebControl)
         : (fullscreenControl ?? fullscreenWebControl)
       const rightControls = Array.from(
         art.template.$controlsRight.querySelectorAll<HTMLElement>('.art-control'),

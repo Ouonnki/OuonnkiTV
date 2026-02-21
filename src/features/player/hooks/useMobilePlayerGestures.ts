@@ -42,11 +42,11 @@ interface TapRecord {
   y: number
 }
 
-const MOBILE_BREAKPOINT = 768
 const TAP_MOVE_TOLERANCE = 12
 const TAP_TIME_TOLERANCE = 320
 
-const isMobileViewport = () => window.innerWidth < MOBILE_BREAKPOINT
+const isTouchDevice = () =>
+  window.matchMedia('(hover: none) and (pointer: coarse)').matches || navigator.maxTouchPoints > 0
 
 export function useMobilePlayerGestures({
   art,
@@ -117,7 +117,7 @@ export function useMobilePlayerGestures({
     }
 
     const canHandleGesture = () => {
-      return enabled && isMobileViewport() && (art.fullscreenWeb || art.fullscreen) && !lockStateRef.current
+      return enabled && isTouchDevice() && (art.fullscreenWeb || art.fullscreen) && !lockStateRef.current
     }
 
     lockStateRef.current = art.isLock
