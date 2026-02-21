@@ -665,7 +665,41 @@ export default function UnifiedPlayer() {
 
     playerRef.current = art
 
+    const syncMobileControlBar = () => {
+      const isFullscreenActive = art.fullscreen || art.fullscreenWeb
+      const isMobileNow = window.matchMedia('(max-width: 639px)').matches
+
+      const fullscreenControl = art.controls['fullscreen'] as HTMLElement | undefined
+      const rightControls = Array.from(
+        art.template.$controlsRight.querySelectorAll<HTMLElement>('.art-control'),
+      )
+
+      if (isMobileNow && !isFullscreenActive) {
+        rightControls.forEach(control => {
+          control.style.display = control === fullscreenControl ? '' : 'none'
+        })
+      } else {
+        rightControls.forEach(control => {
+          control.style.display = ''
+        })
+      }
+      if (fullscreenControl) {
+        fullscreenControl.style.display = ''
+      }
+    }
+
+    const handleControlViewportChange = _.throttle(() => {
+      syncMobileControlBar()
+    }, 120)
+
+    art.on('fullscreen', syncMobileControlBar)
+    art.on('fullscreenWeb', syncMobileControlBar)
+    window.addEventListener('resize', handleControlViewportChange, { passive: true })
+    window.addEventListener('orientationchange', handleControlViewportChange)
+
     art.on('ready', () => {
+      syncMobileControlBar()
+
       if (art.video) {
         art.video.style.objectFit = 'contain'
         art.video.style.objectPosition = 'center center'
@@ -869,6 +903,11 @@ export default function UnifiedPlayer() {
     return () => {
       miniCleanup?.()
       throttledTimeUpdate.cancel()
+      handleControlViewportChange.cancel()
+      window.removeEventListener('resize', handleControlViewportChange)
+      window.removeEventListener('orientationchange', handleControlViewportChange)
+      art.off('fullscreen', syncMobileControlBar)
+      art.off('fullscreenWeb', syncMobileControlBar)
       if (playerRef.current && playerRef.current.destroy) {
         addHistorySnapshot()
         playerRef.current.destroy(false)
@@ -1190,7 +1229,7 @@ export default function UnifiedPlayer() {
       )}
 
       <section className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="space-y-3">
+        <div className="min-w-0 space-y-3">
           {error && (
             <div className="rounded-lg border border-red-400/35 bg-red-500/10 px-3 py-2 text-sm text-red-500">
               {error}
@@ -1230,7 +1269,7 @@ export default function UnifiedPlayer() {
           </section>
         </div>
 
-        <aside className="xl:sticky xl:top-20 xl:h-[clamp(240px,56vw,74vh)] xl:min-h-[220px] xl:pr-1">
+        <aside className="min-w-0 xl:sticky xl:top-20 xl:h-[clamp(240px,56vw,74vh)] xl:min-h-[220px] xl:pr-1">
           {isCmsRoute ? (
             <section className="space-y-3 rounded-lg border border-border/60 bg-card/55 p-3 md:p-4 xl:h-full xl:min-h-0">
               <div className="flex items-center justify-between">
@@ -1265,11 +1304,11 @@ export default function UnifiedPlayer() {
                   <button
                     type="button"
                     aria-label="展开或收起换源面板"
-                    className="flex w-full items-center justify-between px-3 py-3 text-sm font-semibold md:px-4"
+                    className="flex min-w-0 w-full items-center justify-between gap-2 px-3 py-3 text-sm font-semibold md:px-4"
                   >
-                    <span className="flex items-center gap-1.5">
-                      换源
-                      <span className="text-muted-foreground text-xs">{sourceOptions.length} 源</span>
+                    <span className="flex min-w-0 items-center gap-1.5">
+                      <span className="truncate">换源</span>
+                      <span className="text-muted-foreground truncate text-xs">{sourceOptions.length} 源</span>
                     </span>
                     <ChevronDown
                       className={`size-4 transition-transform ${activeRightPanel === 'source' ? 'rotate-180' : ''}`}
@@ -1282,7 +1321,7 @@ export default function UnifiedPlayer() {
                     activeRightPanel === 'source' && 'xl:flex-1 xl:min-h-0',
                   )}
                 >
-                  <div className="flex flex-wrap gap-2">
+                  <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
                     {sourceOptions.map(option => {
                       const active = option.sourceCode === resolvedSourceCode
                       return (
@@ -1290,13 +1329,13 @@ export default function UnifiedPlayer() {
                           key={option.sourceCode}
                           size="sm"
                           variant={active ? 'default' : 'secondary'}
-                          className="rounded-full"
+                          className="min-w-0 max-w-full justify-between rounded-full sm:w-auto sm:max-w-[240px]"
                           aria-current={active ? 'true' : undefined}
                           aria-label={`切换到视频源 ${option.sourceName}`}
                           onClick={() => handleSourceChange(option.sourceCode)}
                         >
-                          {option.sourceName}
-                          {isTmdbRoute && <span className="text-[11px] opacity-70">{option.bestScore}</span>}
+                          <span className="truncate">{option.sourceName}</span>
+                          {isTmdbRoute && <span className="shrink-0 text-[11px] opacity-70">{option.bestScore}</span>}
                         </Button>
                       )
                     })}
@@ -1314,11 +1353,11 @@ export default function UnifiedPlayer() {
                   <button
                     type="button"
                     aria-label="展开或收起选季面板"
-                    className="flex w-full items-center justify-between px-3 py-3 text-sm font-semibold md:px-4"
+                    className="flex min-w-0 w-full items-center justify-between gap-2 px-3 py-3 text-sm font-semibold md:px-4"
                   >
-                    <span className="flex items-center gap-1.5">
-                      选季
-                      <span className="text-muted-foreground text-xs">
+                    <span className="flex min-w-0 items-center gap-1.5">
+                      <span className="truncate">选季</span>
+                      <span className="text-muted-foreground truncate text-xs">
                         {tmdbPlayback.seasonOptions.length} 季
                       </span>
                     </span>
@@ -1333,7 +1372,7 @@ export default function UnifiedPlayer() {
                     activeRightPanel === 'season' && 'xl:flex-1 xl:min-h-0',
                   )}
                 >
-                  <div className="flex flex-wrap gap-2">
+                  <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
                     {tmdbPlayback.seasonOptions.map(option => {
                       const active = option.seasonNumber === tmdbPlayback.selectedSeasonNumber
                       return (
@@ -1341,13 +1380,13 @@ export default function UnifiedPlayer() {
                           key={option.seasonNumber}
                           size="sm"
                           variant={active ? 'default' : 'secondary'}
-                          className="rounded-full"
+                          className="min-w-0 max-w-full justify-between rounded-full sm:w-auto sm:max-w-[240px]"
                           aria-current={active ? 'true' : undefined}
                           aria-label={`切换到第 ${option.seasonNumber} 季`}
                           onClick={() => handleSeasonChange(option.seasonNumber)}
                         >
-                          S{option.seasonNumber}
-                          <span className="text-[11px] opacity-70">{option.matchedSourceCount}</span>
+                          <span className="truncate">S{option.seasonNumber}</span>
+                          <span className="shrink-0 text-[11px] opacity-70">{option.matchedSourceCount}</span>
                         </Button>
                       )
                     })}
@@ -1365,11 +1404,11 @@ export default function UnifiedPlayer() {
                     <button
                       type="button"
                       aria-label="展开或收起选集面板"
-                      className="flex w-full items-center justify-between px-3 py-3 text-sm font-semibold md:px-4"
+                      className="flex min-w-0 w-full items-center justify-between gap-2 px-3 py-3 text-sm font-semibold md:px-4"
                     >
-                      <span className="flex items-center gap-1.5">
-                        选集
-                        <span className="text-muted-foreground text-xs">
+                      <span className="flex min-w-0 items-center gap-1.5">
+                        <span className="shrink-0">选集</span>
+                        <span className="text-muted-foreground truncate text-xs">
                           第 {selectedEpisode + 1} 集 / 共 {detail.episodes.length} 集
                         </span>
                       </span>
