@@ -288,7 +288,7 @@ export default function UnifiedPlayer() {
     ) : null
 
   const currentTmdbSelectionScopeKey = buildTmdbSelectionScopeKey(tmdbMediaType, parsedTmdbId, querySeasonNumber)
-  const { resolvedSourceCode, resolvedVodId } = resolvePlayerSelection({
+  const { resolvedSourceCode, resolvedVodId, hasExplicitTmdbSelection } = resolvePlayerSelection({
     isCmsRoute,
     isTmdbRoute,
     routeSourceCode,
@@ -443,18 +443,23 @@ export default function UnifiedPlayer() {
         return
       }
 
-      if (!resolvedSourceCode || !resolvedVodId) {
-        if (isTmdbRoute && (tmdbPlayback.tmdbLoading || tmdbPlayback.playlist.loading)) {
-          if (!canCommit()) return
-          if (detailRef.current) {
-            setIsDetailRefreshing(true)
-          } else {
-            setLoading(true)
-          }
-          setError(null)
-          return
-        }
+      const shouldWaitForTmdbSelection =
+        isTmdbRoute &&
+        !hasExplicitTmdbSelection &&
+        (tmdbPlayback.tmdbLoading || tmdbPlayback.playlist.loading || !tmdbPlayback.playlist.searched)
 
+      if (shouldWaitForTmdbSelection) {
+        if (!canCommit()) return
+        if (detailRef.current) {
+          setIsDetailRefreshing(true)
+        } else {
+          setLoading(true)
+        }
+        setError(null)
+        return
+      }
+
+      if (!resolvedSourceCode || !resolvedVodId) {
         if (isTmdbRoute && tmdbPlayback.playlist.searched) {
           if (!canCommit()) return
           setDetail(null)
@@ -511,6 +516,7 @@ export default function UnifiedPlayer() {
     }
   }, [
     cmsClient,
+    hasExplicitTmdbSelection,
     isTmdbRoute,
     routeError,
     resolvedSourceCode,
@@ -1224,6 +1230,7 @@ export default function UnifiedPlayer() {
     routeError,
     isTmdbRoute,
     tmdbLoading: tmdbPlayback.tmdbLoading,
+    tmdbPlaylistLoading: tmdbPlayback.playlist.loading,
     tmdbError: tmdbPlayback.tmdbError,
     tmdbPlaylistSearched: tmdbPlayback.playlist.searched,
   })

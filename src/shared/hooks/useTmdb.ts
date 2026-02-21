@@ -1,9 +1,36 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { AppendToResponseMovieKey, AppendToResponseTvKey } from 'tmdb-ts'
 import { useTmdbStore } from '../store/tmdbStore'
 import { getTmdbClient, normalizeToMediaItem } from '../lib/tmdb'
 import { useSettingStore } from '../store/settingStore'
 import type { TmdbMediaType, TmdbMovieDetail, TmdbTvDetail } from '../types/tmdb'
+
+interface RecommendationSource {
+  id: number
+  mediaType: TmdbMediaType
+}
+
+const EMPTY_RECOMMENDATION_SOURCES: RecommendationSource[] = []
+
+const buildRecommendationSourceKey = (source: RecommendationSource) => `${source.mediaType}:${source.id}`
+
+export function selectRecommendationSource(
+  previous: RecommendationSource | null,
+  candidates: RecommendationSource[],
+  randomFn: () => number = Math.random,
+): RecommendationSource | null {
+  if (candidates.length === 0) return null
+
+  if (previous) {
+    const previousKey = buildRecommendationSourceKey(previous)
+    const exists = candidates.some(candidate => buildRecommendationSourceKey(candidate) === previousKey)
+    if (exists) return previous
+  }
+
+  const randomIndex = Math.floor(randomFn() * candidates.length)
+  const safeIndex = Math.max(0, Math.min(candidates.length - 1, randomIndex))
+  return candidates[safeIndex]
+}
 
 /**
  * 搜索功能 Hook
@@ -170,10 +197,11 @@ export function useTmdbTvLists() {
 
 /**
  * 猜你喜欢 Hook
- * 优先从传入的 TMDB 候选来源中随机选择一条；若没有候选来源则随机回退到 trending。
+ * 优先从传入的 TMDB 候选来源中随机选择一条；若没有候选来源则回退到 trending。
+ * 为避免重渲染时随机抖动，候选集合不变时会优先复用上一次已选中的来源。
  */
 export function useTmdbRecommendations(
-  preferredSources: Array<{ id: number; mediaType: TmdbMediaType }> = [],
+  preferredSources: RecommendationSource[] = EMPTY_RECOMMENDATION_SOURCES,
 ) {
   const recommendations = useTmdbStore(s => s.recommendations)
   const loading = useTmdbStore(s => s.loading.recommendations)
@@ -182,24 +210,32 @@ export function useTmdbRecommendations(
   const fetchRecommendations = useTmdbStore(s => s.fetchRecommendations)
   const recommendationSourceId = useTmdbStore(s => s.recommendationSourceId)
   const recommendationSourceMediaType = useTmdbStore(s => s.recommendationSourceMediaType)
+  const selectedSourceRef = useRef<RecommendationSource | null>(null)
+
+  const sourceCandidates = useMemo<RecommendationSource[]>(() => {
+    const sourceMap = new Map<string, RecommendationSource>()
+
+    if (preferredSources.length > 0) {
+      preferredSources.forEach(source => {
+        sourceMap.set(buildRecommendationSourceKey(source), source)
+      })
+      return Array.from(sourceMap.values())
+    }
+
+    trending.forEach(item => {
+      sourceMap.set(buildRecommendationSourceKey({ id: item.id, mediaType: item.mediaType }), {
+        id: item.id,
+        mediaType: item.mediaType,
+      })
+    })
+    return Array.from(sourceMap.values())
+  }, [preferredSources, trending])
 
   const selectedSource = useMemo(() => {
-    if (preferredSources.length > 0) {
-      const randomIndex = Math.floor(Math.random() * preferredSources.length)
-      return preferredSources[randomIndex]
-    }
-
-    if (trending.length > 0) {
-      const randomIndex = Math.floor(Math.random() * trending.length)
-      const randomTrendingItem = trending[randomIndex]
-      return {
-        id: randomTrendingItem.id,
-        mediaType: randomTrendingItem.mediaType,
-      }
-    }
-
-    return null
-  }, [preferredSources, trending])
+    const next = selectRecommendationSource(selectedSourceRef.current, sourceCandidates)
+    selectedSourceRef.current = next
+    return next
+  }, [sourceCandidates])
 
   useEffect(() => {
     if (!selectedSource) return

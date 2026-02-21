@@ -10,6 +10,7 @@ describe('derivePlayerViewState', () => {
       routeError: null,
       isTmdbRoute: true,
       tmdbLoading: false,
+      tmdbPlaylistLoading: false,
       tmdbError: null,
       tmdbPlaylistSearched: true,
     })
@@ -26,6 +27,7 @@ describe('derivePlayerViewState', () => {
       routeError: null,
       isTmdbRoute: true,
       tmdbLoading: false,
+      tmdbPlaylistLoading: false,
       tmdbError: null,
       tmdbPlaylistSearched: true,
     })
@@ -42,6 +44,7 @@ describe('derivePlayerViewState', () => {
       routeError: '无效的播放地址',
       isTmdbRoute: true,
       tmdbLoading: true,
+      tmdbPlaylistLoading: true,
       tmdbError: null,
       tmdbPlaylistSearched: false,
     })
@@ -58,8 +61,25 @@ describe('derivePlayerViewState', () => {
       routeError: null,
       isTmdbRoute: true,
       tmdbLoading: false,
+      tmdbPlaylistLoading: false,
       tmdbError: null,
       tmdbPlaylistSearched: false,
+    })
+
+    expect(state.shouldShowLoading).toBe(true)
+  })
+
+  it('TMDB 匹配中（playlist loading）应持续显示 loading', () => {
+    const state = derivePlayerViewState({
+      hasDetail: false,
+      loading: false,
+      error: null,
+      routeError: null,
+      isTmdbRoute: true,
+      tmdbLoading: false,
+      tmdbPlaylistLoading: true,
+      tmdbError: null,
+      tmdbPlaylistSearched: true,
     })
 
     expect(state.shouldShowLoading).toBe(true)

@@ -133,7 +133,6 @@ export function usePlaylistMatches({
   const enabledSources = useMemo(() => videoAPIs.filter(source => source.isEnabled), [videoAPIs])
 
   const [state, setState] = useState<PlaylistMatchesState>(initialState)
-  const searchedRef = useRef(false)
   const abortRef = useRef<AbortController | null>(null)
   const searchKeyRef = useRef('')
   const sessionRef = useRef<{
@@ -206,7 +205,6 @@ export function usePlaylistMatches({
       ].join('::')
 
       if (!keyword) {
-        searchedRef.current = true
         setState(prev => ({
           ...prev,
           loading: false,
@@ -217,7 +215,6 @@ export function usePlaylistMatches({
       }
 
       if (enabledSources.length === 0) {
-        searchedRef.current = true
         setState(prev => ({
           ...prev,
           loading: false,
@@ -245,7 +242,7 @@ export function usePlaylistMatches({
         return
       }
 
-      if (!force && searchKeyRef.current === currentKey && searchedRef.current) {
+      if (!force && searchKeyRef.current === currentKey && state.searched) {
         return
       }
 
@@ -256,7 +253,6 @@ export function usePlaylistMatches({
           clearSubscriptions()
           clearRecomputeTimer()
           searchKeyRef.current = currentKey
-          searchedRef.current = true
           setState(prev => ({
             ...prev,
             loading: false,
@@ -305,7 +301,6 @@ export function usePlaylistMatches({
         sourceIdSet: new Set(sourceMetaList.map(source => source.id)),
       }
 
-      searchedRef.current = true
       setState(prev => ({
         ...prev,
         loading: true,
@@ -502,6 +497,7 @@ export function usePlaylistMatches({
       seasons,
       scheduleRecompute,
       setTmdbMatchCacheEntry,
+      state.searched,
       title,
       tmdbMatchCacheTTLHours,
       tmdbId,
