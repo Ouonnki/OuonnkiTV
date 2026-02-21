@@ -35,7 +35,7 @@ import {
   PlayerInfoAndRecommendations,
   PlayerLoadingSkeleton,
 } from '@/features/player/components'
-import { useEpisodePagination, useTmdbPlayback } from '@/features/player/hooks'
+import { useEpisodePagination, useMobilePlayerGestures, useTmdbPlayback } from '@/features/player/hooks'
 import {
   buildTmdbSelectionScopeKey,
   computeMiniPlayerRect,
@@ -576,6 +576,12 @@ export default function UnifiedPlayer() {
 
   const playerRef = useRef<Artplayer | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const [activeArt, setActiveArt] = useState<Artplayer | null>(null)
+
+  useMobilePlayerGestures({
+    art: activeArt,
+    enabled: playback.isMobileGestureEnabled,
+  })
 
   useEffect(() => {
     if (!detail?.episodes || !detail.episodes[selectedEpisode] || !containerRef.current) return
@@ -612,8 +618,11 @@ export default function UnifiedPlayer() {
       flip: true,
       playbackRate: true,
       aspectRatio: true,
-      fullscreen: true,
-      fullscreenWeb: !isMobileViewport,
+      fullscreen: !isMobileViewport,
+      fullscreenWeb: true,
+      lock: isMobileViewport,
+      gesture: false,
+      fastForward: false,
       subtitleOffset: true,
       miniProgressBar: true,
       mutex: true,
@@ -664,27 +673,32 @@ export default function UnifiedPlayer() {
     })
 
     playerRef.current = art
+    setActiveArt(art)
 
     const syncMobileControlBar = () => {
       const isFullscreenActive = art.fullscreen || art.fullscreenWeb
       const isMobileNow = window.matchMedia('(max-width: 639px)').matches
 
       const fullscreenControl = art.controls['fullscreen'] as HTMLElement | undefined
+      const fullscreenWebControl = art.controls['fullscreenWeb'] as HTMLElement | undefined
+      const preferredFullscreenControl = isMobileNow
+        ? (fullscreenWebControl ?? fullscreenControl)
+        : (fullscreenControl ?? fullscreenWebControl)
       const rightControls = Array.from(
         art.template.$controlsRight.querySelectorAll<HTMLElement>('.art-control'),
       )
 
       if (isMobileNow && !isFullscreenActive) {
         rightControls.forEach(control => {
-          control.style.display = control === fullscreenControl ? '' : 'none'
+          control.style.display = control === preferredFullscreenControl ? '' : 'none'
         })
       } else {
         rightControls.forEach(control => {
           control.style.display = ''
         })
       }
-      if (fullscreenControl) {
-        fullscreenControl.style.display = ''
+      if (preferredFullscreenControl) {
+        preferredFullscreenControl.style.display = ''
       }
     }
 
@@ -910,6 +924,7 @@ export default function UnifiedPlayer() {
       art.off('fullscreenWeb', syncMobileControlBar)
       if (playerRef.current && playerRef.current.destroy) {
         addHistorySnapshot()
+        setActiveArt(current => (current === art ? null : current))
         playerRef.current.destroy(false)
         playerRef.current = null
       }

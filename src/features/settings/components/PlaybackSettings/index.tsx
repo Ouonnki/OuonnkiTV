@@ -198,6 +198,17 @@ export default function PlaybackSettings() {
           }
         />
         <SettingsItem
+          title="移动端手势操作"
+          description="仅在移动端网页全屏下启用滑动、双击和长按手势。"
+          controlClassName="self-end mt-1"
+          control={
+            <Switch
+              checked={playback.isMobileGestureEnabled}
+              onCheckedChange={checked => setPlaybackSettings({ isMobileGestureEnabled: checked })}
+            />
+          }
+        />
+        <SettingsItem
           title="截图"
           description="在播放器中显示截图按钮。"
           controlClassName="self-end mt-1"

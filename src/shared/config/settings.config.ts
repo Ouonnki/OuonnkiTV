@@ -51,6 +51,7 @@ export const DEFAULT_SETTINGS = {
     isPipEnabled: envSettings?.playback?.isPipEnabled ?? true,
     isAutoMiniEnabled: envSettings?.playback?.isAutoMiniEnabled ?? true,
     isScreenshotEnabled: envSettings?.playback?.isScreenshotEnabled ?? true,
+    isMobileGestureEnabled: envSettings?.playback?.isMobileGestureEnabled ?? true,
   },
   system: {
     isUpdateLogEnabled:

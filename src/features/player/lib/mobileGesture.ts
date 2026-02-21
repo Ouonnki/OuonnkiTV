@@ -1,0 +1,92 @@
+export interface MobileGestureRuntimeConfig {
+  edgeGuardRatio: number
+  edgeGuardMinPx: number
+  gestureActivationPx: number
+  seekSecondsPer100Px: number
+  volumePer100Px: number
+  rightVolumeZoneRatio: number
+  doubleTapSeekSeconds: number
+  doubleTapWindowMs: number
+  longPressDurationMs: number
+  longPressPlaybackRate: number
+}
+
+export const MOBILE_GESTURE_BALANCED_CONFIG: MobileGestureRuntimeConfig = {
+  edgeGuardRatio: 0.08,
+  edgeGuardMinPx: 24,
+  gestureActivationPx: 12,
+  seekSecondsPer100Px: 12,
+  volumePer100Px: 0.2,
+  rightVolumeZoneRatio: 0.7,
+  doubleTapSeekSeconds: 10,
+  doubleTapWindowMs: 280,
+  longPressDurationMs: 380,
+  longPressPlaybackRate: 2,
+}
+
+export type MobileGestureDirection = 'horizontal' | 'vertical'
+
+export const clampValue = (value: number, min: number, max: number): number => {
+  return Math.min(max, Math.max(min, value))
+}
+
+export const getEdgeGuardSize = (viewportWidth: number, ratio: number, minPx: number): number => {
+  if (viewportWidth <= 0) return minPx
+  return Math.max(minPx, Math.round(viewportWidth * ratio))
+}
+
+export const isPointInGestureSafeArea = (x: number, width: number, edgeGuardPx: number): boolean => {
+  if (width <= 0) return false
+  return x > edgeGuardPx && x < width - edgeGuardPx
+}
+
+export const resolveGestureDirection = (
+  deltaX: number,
+  deltaY: number,
+  activationThreshold: number,
+): MobileGestureDirection | null => {
+  const absX = Math.abs(deltaX)
+  const absY = Math.abs(deltaY)
+
+  if (absX < activationThreshold && absY < activationThreshold) {
+    return null
+  }
+
+  return absX >= absY ? 'horizontal' : 'vertical'
+}
+
+export const shouldHandleVolumeGesture = (
+  x: number,
+  width: number,
+  rightZoneRatio: number,
+): boolean => {
+  if (width <= 0) return false
+  const boundary = width * (1 - rightZoneRatio)
+  return x >= boundary
+}
+
+export const computeSeekPreviewTime = (
+  startTime: number,
+  deltaX: number,
+  duration: number,
+  seekSecondsPer100Px: number,
+): number => {
+  const offset = (deltaX / 100) * seekSecondsPer100Px
+  const maxDuration = Number.isFinite(duration) && duration > 0 ? duration : Number.MAX_SAFE_INTEGER
+  return clampValue(startTime + offset, 0, maxDuration)
+}
+
+export const computeVolumeFromSwipe = (
+  startVolume: number,
+  deltaY: number,
+  volumePer100Px: number,
+): number => {
+  const offset = (-deltaY / 100) * volumePer100Px
+  return clampValue(startVolume + offset, 0, 1)
+}
+
+export type DoubleTapAction = 'backward' | 'forward'
+
+export const resolveDoubleTapAction = (x: number, width: number): DoubleTapAction => {
+  return x < width / 2 ? 'backward' : 'forward'
+}

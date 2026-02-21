@@ -30,6 +30,7 @@ interface PlaybackSettings {
   isPipEnabled: boolean
   isAutoMiniEnabled: boolean
   isScreenshotEnabled: boolean
+  isMobileGestureEnabled: boolean
 }
 
 interface SystemSettings {
@@ -108,7 +109,7 @@ export const useSettingStore = create<SettingStore>()(
       })),
       {
         name: 'ouonnki-tv-setting-store',
-        version: 6,
+        version: 7,
         migrate: (persistedState: unknown, version: number) => {
           const state = persistedState as Record<string, unknown>
           if (version < 2 && state.playback) {
@@ -152,6 +153,11 @@ export const useSettingStore = create<SettingStore>()(
           if (version < 6) {
             const playback = (state.playback ?? {}) as Record<string, unknown>
             playback.tmdbMatchCacheTTLHours ??= DEFAULT_SETTINGS.playback.tmdbMatchCacheTTLHours
+            state.playback = playback
+          }
+          if (version < 7) {
+            const playback = (state.playback ?? {}) as Record<string, unknown>
+            playback.isMobileGestureEnabled ??= DEFAULT_SETTINGS.playback.isMobileGestureEnabled
             state.playback = playback
           }
           return state

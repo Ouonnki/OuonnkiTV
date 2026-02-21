@@ -24,6 +24,7 @@ interface SettingsConfig {
     isPipEnabled?: boolean
     isAutoMiniEnabled?: boolean
     isScreenshotEnabled?: boolean
+    isMobileGestureEnabled?: boolean
   }
   system?: {
     isUpdateLogEnabled?: boolean

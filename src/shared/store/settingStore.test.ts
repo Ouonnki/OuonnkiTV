@@ -42,4 +42,44 @@ describe('settingStore migrate', () => {
 
     expect(migrated.playback.tmdbMatchCacheTTLHours).toBe(72)
   })
+
+  it('v6 -> v7 会补齐 isMobileGestureEnabled 默认值', async () => {
+    const migrate = useSettingStore.persist.getOptions().migrate
+
+    const legacyState = {
+      network: DEFAULT_SETTINGS.network,
+      search: DEFAULT_SETTINGS.search,
+      playback: {
+        ...DEFAULT_SETTINGS.playback,
+      },
+      system: DEFAULT_SETTINGS.system,
+    }
+    delete (legacyState.playback as Record<string, unknown>).isMobileGestureEnabled
+
+    const migrated = (await Promise.resolve(migrate?.(legacyState, 6))) as {
+      playback: { isMobileGestureEnabled?: boolean }
+    }
+
+    expect(migrated.playback.isMobileGestureEnabled).toBe(true)
+  })
+
+  it('已有 isMobileGestureEnabled 时不覆盖', async () => {
+    const migrate = useSettingStore.persist.getOptions().migrate
+
+    const legacyState = {
+      network: DEFAULT_SETTINGS.network,
+      search: DEFAULT_SETTINGS.search,
+      playback: {
+        ...DEFAULT_SETTINGS.playback,
+        isMobileGestureEnabled: false,
+      },
+      system: DEFAULT_SETTINGS.system,
+    }
+
+    const migrated = (await Promise.resolve(migrate?.(legacyState, 6))) as {
+      playback: { isMobileGestureEnabled?: boolean }
+    }
+
+    expect(migrated.playback.isMobileGestureEnabled).toBe(false)
+  })
 })
