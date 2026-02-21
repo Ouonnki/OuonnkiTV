@@ -8,6 +8,10 @@ import {
   usePlaylistMatches,
 } from '@/features/media/components'
 
+import type { DetailSeason } from '@/features/media/components/tmdb-detail/types'
+
+const EMPTY_SEASONS: DetailSeason[] = []
+
 interface TmdbPlaybackParams {
   enabled: boolean
   mediaType: TmdbMediaType | null
@@ -57,13 +61,11 @@ export function useTmdbPlayback({
   )
 
   const richDetail = detail as TmdbRichDetail | null
-  const seasons = useMemo(
-    () =>
-      mediaType === 'tv'
-        ? (richDetail?.seasons || []).filter(season => season.season_number > 0)
-        : [],
-    [mediaType, richDetail?.seasons],
-  )
+  const seasons = useMemo(() => {
+    if (mediaType !== 'tv' || !richDetail?.seasons) return EMPTY_SEASONS
+    const filtered = richDetail.seasons.filter(season => season.season_number > 0)
+    return filtered.length > 0 ? filtered : EMPTY_SEASONS
+  }, [mediaType, richDetail?.seasons])
 
   const playlist = usePlaylistMatches({
     active: shouldEnableTmdbPlayback && Boolean(detail),
