@@ -32,6 +32,14 @@ export function selectRecommendationSource(
   return candidates[safeIndex]
 }
 
+export function findNextRecommendationSource(
+  candidates: RecommendationSource[],
+  attemptedSourceKeys: Set<string>,
+): RecommendationSource | null {
+  const next = candidates.find(candidate => !attemptedSourceKeys.has(buildRecommendationSourceKey(candidate)))
+  return next || null
+}
+
 /**
  * 搜索功能 Hook
  */
@@ -208,9 +216,8 @@ export function useTmdbRecommendations(
   const trending = useTmdbStore(s => s.trending)
 
   const fetchRecommendations = useTmdbStore(s => s.fetchRecommendations)
-  const recommendationSourceId = useTmdbStore(s => s.recommendationSourceId)
-  const recommendationSourceMediaType = useTmdbStore(s => s.recommendationSourceMediaType)
-  const selectedSourceRef = useRef<RecommendationSource | null>(null)
+  const attemptedSourceKeysRef = useRef<Set<string>>(new Set())
+  const [selectedSource, setSelectedSource] = useState<RecommendationSource | null>(null)
 
   const sourceCandidates = useMemo<RecommendationSource[]>(() => {
     const sourceMap = new Map<string, RecommendationSource>()
@@ -231,27 +238,65 @@ export function useTmdbRecommendations(
     return Array.from(sourceMap.values())
   }, [preferredSources, trending])
 
-  const selectedSource = useMemo(() => {
-    const next = selectRecommendationSource(selectedSourceRef.current, sourceCandidates)
-    selectedSourceRef.current = next
-    return next
+  useEffect(() => {
+    attemptedSourceKeysRef.current = new Set()
+    setSelectedSource(previous => selectRecommendationSource(previous, sourceCandidates))
   }, [sourceCandidates])
 
   useEffect(() => {
     if (!selectedSource) return
 
-    const sourceUnchanged =
-      recommendationSourceId === selectedSource.id &&
-      recommendationSourceMediaType === selectedSource.mediaType
-    if (sourceUnchanged && recommendations.length > 0) return
+    const sourceKey = buildRecommendationSourceKey(selectedSource)
+    if (attemptedSourceKeysRef.current.has(sourceKey)) {
+      return
+    }
 
-    fetchRecommendations(selectedSource.id, selectedSource.mediaType)
+    const currentState = useTmdbStore.getState()
+    const sourceUnchangedAndHasData =
+      currentState.recommendationSourceId === selectedSource.id &&
+      currentState.recommendationSourceMediaType === selectedSource.mediaType &&
+      currentState.recommendations.length > 0
+    if (sourceUnchangedAndHasData) {
+      attemptedSourceKeysRef.current.add(sourceKey)
+      return
+    }
+
+    attemptedSourceKeysRef.current.add(sourceKey)
+    let cancelled = false
+
+    const fetchBySource = async () => {
+      try {
+        await fetchRecommendations(selectedSource.id, selectedSource.mediaType)
+      } catch {
+        // fetchRecommendations 已在 store 内处理错误状态，这里仅做降级切源。
+      }
+
+      if (cancelled) return
+
+      const latestState = useTmdbStore.getState()
+      const hasDataFromSelectedSource =
+        latestState.recommendationSourceId === selectedSource.id &&
+        latestState.recommendationSourceMediaType === selectedSource.mediaType &&
+        latestState.recommendations.length > 0
+      if (hasDataFromSelectedSource) {
+        return
+      }
+
+      const nextSource = findNextRecommendationSource(sourceCandidates, attemptedSourceKeysRef.current)
+      if (nextSource) {
+        setSelectedSource(nextSource)
+      }
+    }
+
+    void fetchBySource()
+
+    return () => {
+      cancelled = true
+    }
   }, [
     selectedSource,
     fetchRecommendations,
-    recommendationSourceId,
-    recommendationSourceMediaType,
-    recommendations.length,
+    sourceCandidates,
   ])
 
   return {
