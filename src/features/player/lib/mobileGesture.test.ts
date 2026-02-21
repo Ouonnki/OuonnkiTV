@@ -3,26 +3,12 @@ import {
   MOBILE_GESTURE_BALANCED_CONFIG,
   computeSeekPreviewTime,
   computeVolumeFromSwipe,
-  getEdgeGuardSize,
-  isPointInGestureSafeArea,
   resolveDoubleTapAction,
   resolveGestureDirection,
   shouldHandleVolumeGesture,
 } from './mobileGesture'
 
 describe('mobileGesture', () => {
-  it('边缘留白尺寸按比例和最小值计算', () => {
-    expect(getEdgeGuardSize(360, 0.08, 24)).toBe(29)
-    expect(getEdgeGuardSize(200, 0.08, 24)).toBe(24)
-    expect(getEdgeGuardSize(360, 0, 0)).toBe(0)
-  })
-
-  it('边缘留白区域外才允许手势', () => {
-    expect(isPointInGestureSafeArea(10, 360, 24)).toBe(false)
-    expect(isPointInGestureSafeArea(180, 360, 24)).toBe(true)
-    expect(isPointInGestureSafeArea(350, 360, 24)).toBe(false)
-  })
-
   it('达到阈值后可判定水平或垂直手势方向', () => {
     expect(resolveGestureDirection(4, 5, 12)).toBeNull()
     expect(resolveGestureDirection(24, 8, 12)).toBe('horizontal')

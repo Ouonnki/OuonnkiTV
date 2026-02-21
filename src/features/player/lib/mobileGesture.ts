@@ -1,20 +1,25 @@
 export interface MobileGestureRuntimeConfig {
-  edgeGuardRatio: number
-  edgeGuardMinPx: number
+  /** 手势激活所需的最小滑动距离（像素） */
   gestureActivationPx: number
+  /** 每 100px 水平滑动对应的 seek 秒数 */
   seekSecondsPer100Px: number
+  /** 音量全程滑动占屏幕高度的比例 */
   volumeFullRangeSwipeRatio: number
+  /** 屏幕两侧用于触发音量调节的区域宽度比例 */
   volumeSideZoneRatio: number
+  /** 屏幕两侧用于双击快进/后退的区域宽度比例 */
   doubleTapSideZoneRatio: number
+  /** 双击快进/后退的秒数 */
   doubleTapSeekSeconds: number
+  /** 双击判定时间窗口（毫秒） */
   doubleTapWindowMs: number
+  /** 长按判定阈值（毫秒） */
   longPressDurationMs: number
+  /** 长按加速播放倍速 */
   longPressPlaybackRate: number
 }
 
 export const MOBILE_GESTURE_BALANCED_CONFIG: MobileGestureRuntimeConfig = {
-  edgeGuardRatio: 0,
-  edgeGuardMinPx: 0,
   gestureActivationPx: 12,
   seekSecondsPer100Px: 12,
   volumeFullRangeSwipeRatio: 0.9,
@@ -30,16 +35,6 @@ export type MobileGestureDirection = 'horizontal' | 'vertical'
 
 export const clampValue = (value: number, min: number, max: number): number => {
   return Math.min(max, Math.max(min, value))
-}
-
-export const getEdgeGuardSize = (viewportWidth: number, ratio: number, minPx: number): number => {
-  if (viewportWidth <= 0) return minPx
-  return Math.max(minPx, Math.round(viewportWidth * ratio))
-}
-
-export const isPointInGestureSafeArea = (x: number, width: number, edgeGuardPx: number): boolean => {
-  if (width <= 0) return false
-  return x > edgeGuardPx && x < width - edgeGuardPx
 }
 
 export const resolveGestureDirection = (

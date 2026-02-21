@@ -213,7 +213,6 @@ export default function UnifiedPlayer() {
   const [activeRightPanel, setActiveRightPanel] = useState<'episode' | 'source' | 'season' | null>('episode')
   const [gestureVolumeLevel, setGestureVolumeLevel] = useState<number | null>(null)
   const [gestureSeekPreviewTime, setGestureSeekPreviewTime] = useState<number | null>(null)
-  const [isLandscapeViewport, setIsLandscapeViewport] = useState(false)
   const [activeArt, setActiveArt] = useState<Artplayer | null>(null)
   const selectedEpisode = parseEpisodeIndex(episodeIndexParam)
   const playerNoticeTimerRef = useRef<number | null>(null)
@@ -264,22 +263,6 @@ export default function UnifiedPlayer() {
     }
   }, [])
 
-  useEffect(() => {
-    const syncOrientation = () => {
-      const isLandscape =
-        window.matchMedia('(orientation: landscape)').matches || window.innerWidth > window.innerHeight
-      setIsLandscapeViewport(isLandscape)
-    }
-
-    syncOrientation()
-    window.addEventListener('resize', syncOrientation, { passive: true })
-    window.addEventListener('orientationchange', syncOrientation)
-
-    return () => {
-      window.removeEventListener('resize', syncOrientation)
-      window.removeEventListener('orientationchange', syncOrientation)
-    }
-  }, [])
   const playerOverlayContainer = activeArt?.template?.$player ?? null
   const seekPreviewOverlay =
     gestureSeekPreviewTime !== null ? (
@@ -290,7 +273,7 @@ export default function UnifiedPlayer() {
       </div>
     ) : null
   const volumeOverlay =
-    isLandscapeViewport && gestureVolumeLevel !== null ? (
+    gestureVolumeLevel !== null ? (
       <div className="pointer-events-none absolute top-3 left-1/2 z-[160] w-[min(52vw,300px)] -translate-x-1/2">
         <div className="rounded-full border border-white/15 bg-black/70 px-2.5 py-2 shadow-lg backdrop-blur-sm">
           <div className="mb-1 text-center text-xs text-white">{Math.round(gestureVolumeLevel * 100)}%</div>
