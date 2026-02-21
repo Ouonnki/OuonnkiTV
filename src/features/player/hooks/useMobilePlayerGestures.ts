@@ -116,8 +116,25 @@ export function useMobilePlayerGestures({
       suppressClickUntilRef.current = Date.now() + durationMs
     }
 
+    const isFullscreenActive = () => {
+      const doc = document as Document & { webkitFullscreenElement?: Element | null }
+      const video = art.video as HTMLVideoElement & {
+        webkitDisplayingFullscreen?: boolean
+        webkitPresentationMode?: string
+      }
+
+      return Boolean(
+        art.fullscreenWeb ||
+          art.fullscreen ||
+          doc.fullscreenElement ||
+          doc.webkitFullscreenElement ||
+          video?.webkitDisplayingFullscreen ||
+          video?.webkitPresentationMode === 'fullscreen',
+      )
+    }
+
     const canHandleGesture = () => {
-      return enabled && isTouchDevice() && (art.fullscreenWeb || art.fullscreen) && !lockStateRef.current
+      return enabled && isTouchDevice() && isFullscreenActive() && !lockStateRef.current
     }
 
     lockStateRef.current = art.isLock
@@ -129,8 +146,8 @@ export function useMobilePlayerGestures({
       }
     }
 
-    const onFullscreenWebChange = (state: boolean) => {
-      if (!state) {
+    const onFullscreenChange = (state: boolean) => {
+      if (!state && !isFullscreenActive()) {
         resetSession()
       }
     }
@@ -342,6 +359,55 @@ export function useMobilePlayerGestures({
       resetSession()
     }
 
+    const createPointerEventFromTouch = (event: TouchEvent, touch: Touch): PointerEvent => {
+      return {
+        pointerType: 'touch',
+        pointerId: touch.identifier,
+        clientX: touch.clientX,
+        clientY: touch.clientY,
+        target: event.target,
+        cancelable: event.cancelable,
+        preventDefault: () => event.preventDefault(),
+      } as unknown as PointerEvent
+    }
+
+    const findChangedTouchById = (event: TouchEvent, pointerId?: number) => {
+      if (pointerId === undefined) return event.changedTouches.item(0)
+
+      for (let i = 0; i < event.changedTouches.length; i += 1) {
+        const touch = event.changedTouches.item(i)
+        if (touch?.identifier === pointerId) {
+          return touch
+        }
+      }
+
+      return null
+    }
+
+    const onTouchStart = (event: TouchEvent) => {
+      const touch = event.changedTouches.item(0)
+      if (!touch) return
+      onPointerDown(createPointerEventFromTouch(event, touch))
+    }
+
+    const onTouchMove = (event: TouchEvent) => {
+      const touch = findChangedTouchById(event, sessionRef.current?.pointerId)
+      if (!touch) return
+      onPointerMove(createPointerEventFromTouch(event, touch))
+    }
+
+    const onTouchEnd = (event: TouchEvent) => {
+      const touch = findChangedTouchById(event, sessionRef.current?.pointerId)
+      if (!touch) return
+      onPointerEnd(createPointerEventFromTouch(event, touch))
+    }
+
+    const onTouchCancel = (event: TouchEvent) => {
+      const touch = findChangedTouchById(event, sessionRef.current?.pointerId)
+      if (!touch) return
+      onPointerCancel(createPointerEventFromTouch(event, touch))
+    }
+
     const onClickCapture = (event: Event) => {
       if (Date.now() > suppressClickUntilRef.current) return
       if (shouldIgnoreTarget(event.target)) return
@@ -356,11 +422,16 @@ export function useMobilePlayerGestures({
     art.template.$player.addEventListener('pointermove', onPointerMove, { passive: false })
     art.template.$player.addEventListener('pointerup', onPointerEnd)
     art.template.$player.addEventListener('pointercancel', onPointerCancel)
+    art.template.$player.addEventListener('touchstart', onTouchStart, { passive: false })
+    art.template.$player.addEventListener('touchmove', onTouchMove, { passive: false })
+    art.template.$player.addEventListener('touchend', onTouchEnd)
+    art.template.$player.addEventListener('touchcancel', onTouchCancel)
     art.template.$player.addEventListener('click', onClickCapture, true)
     art.template.$player.addEventListener('dblclick', onClickCapture, true)
 
     art.on('lock', onLock)
-    art.on('fullscreenWeb', onFullscreenWebChange)
+    art.on('fullscreenWeb', onFullscreenChange)
+    art.on('fullscreen', onFullscreenChange)
     window.addEventListener('resize', onResize, { passive: true })
     window.addEventListener('orientationchange', onResize)
 
@@ -370,10 +441,15 @@ export function useMobilePlayerGestures({
       art.template.$player.removeEventListener('pointermove', onPointerMove)
       art.template.$player.removeEventListener('pointerup', onPointerEnd)
       art.template.$player.removeEventListener('pointercancel', onPointerCancel)
+      art.template.$player.removeEventListener('touchstart', onTouchStart)
+      art.template.$player.removeEventListener('touchmove', onTouchMove)
+      art.template.$player.removeEventListener('touchend', onTouchEnd)
+      art.template.$player.removeEventListener('touchcancel', onTouchCancel)
       art.template.$player.removeEventListener('click', onClickCapture, true)
       art.template.$player.removeEventListener('dblclick', onClickCapture, true)
       art.off('lock', onLock)
-      art.off('fullscreenWeb', onFullscreenWebChange)
+      art.off('fullscreenWeb', onFullscreenChange)
+      art.off('fullscreen', onFullscreenChange)
       window.removeEventListener('resize', onResize)
       window.removeEventListener('orientationchange', onResize)
     }
