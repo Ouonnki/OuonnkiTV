@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom'
 import Artplayer from 'artplayer'
 import type Hls from 'hls.js'
 import type { HlsConfig } from 'hls.js'
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown, X } from 'lucide-react'
 import { type DetailResult } from '@ouonnki/cms-core'
 import { createM3u8Processor, createHlsLoaderClass } from '@ouonnki/cms-core/m3u8'
 import { Button } from '@/shared/components/ui/button'
@@ -60,8 +60,16 @@ interface PlayerRouteParams {
   vodId?: string
 }
 
+interface PlayerTransientNotice {
+  id: string
+  message: string
+  duration: number
+  progress: number
+}
+
 const m3u8Processor = createM3u8Processor({ filterAds: true })
 type HlsConstructor = typeof import('hls.js')['default']
+const BETTER_SOURCE_NOTICE_DURATION = 8000
 
 let hlsConstructorPromise: Promise<HlsConstructor> | null = null
 let customHlsLoaderClass: ReturnType<typeof createHlsLoaderClass> | null = null
@@ -207,16 +215,18 @@ export default function UnifiedPlayer() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isDetailRefreshing, setIsDetailRefreshing] = useState(false)
-  const [playerNotice, setPlayerNotice] = useState('')
-  const [playerNoticeProgress, setPlayerNoticeProgress] = useState(0)
-  const [playerNoticeDuration, setPlayerNoticeDuration] = useState(2200)
+  const [transientNotices, setTransientNotices] = useState<PlayerTransientNotice[]>([])
+  const [dismissedBetterNoticeKeys, setDismissedBetterNoticeKeys] = useState<string[]>([])
+  const [betterNoticeProgress, setBetterNoticeProgress] = useState(100)
   const [activeRightPanel, setActiveRightPanel] = useState<'episode' | 'source' | 'season' | null>('episode')
   const [gestureVolumeLevel, setGestureVolumeLevel] = useState<number | null>(null)
   const [gestureSeekPreviewTime, setGestureSeekPreviewTime] = useState<number | null>(null)
   const [activeArt, setActiveArt] = useState<Artplayer | null>(null)
   const selectedEpisode = parseEpisodeIndex(episodeIndexParam)
-  const playerNoticeTimerRef = useRef<number | null>(null)
-  const playerNoticeAnimationFrameRef = useRef<number | null>(null)
+  const noticeTimersRef = useRef<Map<string, number>>(new Map())
+  const noticeAnimationFramesRef = useRef<Map<string, number>>(new Map())
+  const betterNoticeTimerRef = useRef<number | null>(null)
+  const betterNoticeAnimationFrameRef = useRef<number | null>(null)
   const gestureVolumeTimerRef = useRef<number | null>(null)
 
   useEffect(() => {
@@ -224,38 +234,49 @@ export default function UnifiedPlayer() {
   }, [detail])
 
   const showPlayerNotice = useCallback((message: string, duration = 2200) => {
-    setPlayerNotice(message)
-    setPlayerNoticeDuration(duration)
-    setPlayerNoticeProgress(100)
+    const noticeId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 
-    if (playerNoticeTimerRef.current) {
-      window.clearTimeout(playerNoticeTimerRef.current)
-    }
-    if (playerNoticeAnimationFrameRef.current) {
-      window.cancelAnimationFrame(playerNoticeAnimationFrameRef.current)
-    }
+    setTransientNotices(prev => [...prev, { id: noticeId, message, duration, progress: 100 }])
 
-    playerNoticeAnimationFrameRef.current = window.requestAnimationFrame(() => {
-      playerNoticeAnimationFrameRef.current = window.requestAnimationFrame(() => {
-        setPlayerNoticeProgress(0)
-        playerNoticeAnimationFrameRef.current = null
+    const firstFrame = window.requestAnimationFrame(() => {
+      const secondFrame = window.requestAnimationFrame(() => {
+        setTransientNotices(prev =>
+          prev.map(notice => (notice.id === noticeId ? { ...notice, progress: 0 } : notice)),
+        )
+        noticeAnimationFramesRef.current.delete(noticeId)
       })
+      noticeAnimationFramesRef.current.set(noticeId, secondFrame)
     })
+    noticeAnimationFramesRef.current.set(noticeId, firstFrame)
 
-    playerNoticeTimerRef.current = window.setTimeout(() => {
-      setPlayerNotice('')
-      setPlayerNoticeProgress(0)
-      playerNoticeTimerRef.current = null
+    const timerId = window.setTimeout(() => {
+      setTransientNotices(prev => prev.filter(notice => notice.id !== noticeId))
+      noticeTimersRef.current.delete(noticeId)
+      const frameId = noticeAnimationFramesRef.current.get(noticeId)
+      if (frameId) {
+        window.cancelAnimationFrame(frameId)
+        noticeAnimationFramesRef.current.delete(noticeId)
+      }
     }, duration)
+    noticeTimersRef.current.set(noticeId, timerId)
   }, [])
 
   useEffect(() => {
+    const noticeTimers = noticeTimersRef.current
+    const noticeAnimationFrames = noticeAnimationFramesRef.current
+
     return () => {
-      if (playerNoticeTimerRef.current) {
-        window.clearTimeout(playerNoticeTimerRef.current)
+      noticeTimers.forEach(timerId => window.clearTimeout(timerId))
+      noticeTimers.clear()
+      noticeAnimationFrames.forEach(frameId => window.cancelAnimationFrame(frameId))
+      noticeAnimationFrames.clear()
+      if (betterNoticeTimerRef.current) {
+        window.clearTimeout(betterNoticeTimerRef.current)
+        betterNoticeTimerRef.current = null
       }
-      if (playerNoticeAnimationFrameRef.current) {
-        window.cancelAnimationFrame(playerNoticeAnimationFrameRef.current)
+      if (betterNoticeAnimationFrameRef.current) {
+        window.cancelAnimationFrame(betterNoticeAnimationFrameRef.current)
+        betterNoticeAnimationFrameRef.current = null
       }
       if (gestureVolumeTimerRef.current) {
         window.clearTimeout(gestureVolumeTimerRef.current)
@@ -1028,24 +1049,36 @@ export default function UnifiedPlayer() {
     navigate(buildCurrentPlayPath(actualIndex), { replace: true })
   }
 
-  const handleSourceChange = (sourceCode: string) => {
-    if (!isTmdbRoute || !tmdbMediaType) return
+  const handleSourceChange = useCallback(
+    (sourceCode: string) => {
+      if (!isTmdbRoute || !tmdbMediaType) return
 
-    const nextOption = tmdbPlayback.sourceOptions.find(option => option.sourceCode === sourceCode)
-    if (!nextOption || !nextOption.bestVodId) return
+      const nextOption = tmdbPlayback.sourceOptions.find(option => option.sourceCode === sourceCode)
+      if (!nextOption || !nextOption.bestVodId) return
 
-    pendingSeekRef.current = playerRef.current?.currentTime || null
+      pendingSeekRef.current = playerRef.current?.currentTime || null
 
-    const nextPath = buildTmdbPlayPath(tmdbMediaType, parsedTmdbId, {
-      sourceCode: nextOption.sourceCode,
-      vodId: nextOption.bestVodId,
-      episodeIndex: selectedEpisode,
-      seasonNumber: tmdbPlayback.selectedSeasonNumber || undefined,
-    })
+      const nextPath = buildTmdbPlayPath(tmdbMediaType, parsedTmdbId, {
+        sourceCode: nextOption.sourceCode,
+        vodId: nextOption.bestVodId,
+        episodeIndex: selectedEpisode,
+        seasonNumber: tmdbPlayback.selectedSeasonNumber || undefined,
+      })
 
-    navigate(nextPath, { replace: true })
-    showPlayerNotice(`已切换到 ${nextOption.sourceName}`)
-  }
+      navigate(nextPath, { replace: true })
+      showPlayerNotice(`已切换到 ${nextOption.sourceName}`)
+    },
+    [
+      isTmdbRoute,
+      navigate,
+      parsedTmdbId,
+      selectedEpisode,
+      showPlayerNotice,
+      tmdbMediaType,
+      tmdbPlayback.selectedSeasonNumber,
+      tmdbPlayback.sourceOptions,
+    ],
+  )
 
   const handleSeasonChange = (seasonNumber: number) => {
     if (!isTmdbRoute || tmdbMediaType !== 'tv') return
@@ -1174,6 +1207,121 @@ export default function UnifiedPlayer() {
     sourceConfig?.name,
     tmdbPlayback.sourceOptions,
   ])
+
+  useEffect(() => {
+    setDismissedBetterNoticeKeys([])
+  }, [isTmdbRoute, parsedTmdbId, querySeasonNumber, tmdbMediaType])
+
+  const currentSourceOption = useMemo(() => {
+    if (!isTmdbRoute || !resolvedSourceCode) return null
+    return sourceOptions.find(option => option.sourceCode === resolvedSourceCode) || null
+  }, [isTmdbRoute, resolvedSourceCode, sourceOptions])
+
+  const bestSourceOption = useMemo(() => {
+    if (!isTmdbRoute || sourceOptions.length === 0) return null
+    return sourceOptions.reduce((best, option) => (option.bestScore > best.bestScore ? option : best), sourceOptions[0])
+  }, [isTmdbRoute, sourceOptions])
+
+  const betterSourceNoticeKey = useMemo(() => {
+    if (!isTmdbRoute || !bestSourceOption) return ''
+
+    const currentScore = currentSourceOption?.bestScore ?? -1
+    const hasDifferentTarget =
+      bestSourceOption.sourceCode !== resolvedSourceCode || bestSourceOption.bestVodId !== resolvedVodId
+    if (!hasDifferentTarget || bestSourceOption.bestScore <= currentScore) return ''
+
+    const seasonScope =
+      tmdbMediaType === 'tv' ? (tmdbPlayback.selectedSeasonNumber ?? querySeasonNumber ?? 0) : 0
+
+    return [
+      tmdbMediaType || 'movie',
+      parsedTmdbId,
+      seasonScope,
+      `${resolvedSourceCode}:${resolvedVodId}`,
+      `${bestSourceOption.sourceCode}:${bestSourceOption.bestVodId}:${bestSourceOption.bestScore}`,
+    ].join('|')
+  }, [
+    currentSourceOption?.bestScore,
+    isTmdbRoute,
+    bestSourceOption,
+    parsedTmdbId,
+    querySeasonNumber,
+    resolvedSourceCode,
+    resolvedVodId,
+    tmdbMediaType,
+    tmdbPlayback.selectedSeasonNumber,
+  ])
+
+  const shouldShowBetterSourceNotice =
+    Boolean(betterSourceNoticeKey) && !dismissedBetterNoticeKeys.includes(betterSourceNoticeKey)
+
+  const clearBetterNoticeRuntime = useCallback(() => {
+    if (betterNoticeTimerRef.current) {
+      window.clearTimeout(betterNoticeTimerRef.current)
+      betterNoticeTimerRef.current = null
+    }
+    if (betterNoticeAnimationFrameRef.current) {
+      window.cancelAnimationFrame(betterNoticeAnimationFrameRef.current)
+      betterNoticeAnimationFrameRef.current = null
+    }
+  }, [])
+
+  const dismissBetterSourceNotice = useCallback(() => {
+    if (!betterSourceNoticeKey) return
+    setDismissedBetterNoticeKeys(prev =>
+      prev.includes(betterSourceNoticeKey) ? prev : [...prev.slice(-29), betterSourceNoticeKey],
+    )
+  }, [betterSourceNoticeKey])
+
+  useEffect(() => {
+    clearBetterNoticeRuntime()
+
+    if (!shouldShowBetterSourceNotice || !betterSourceNoticeKey) {
+      setBetterNoticeProgress(100)
+      return
+    }
+
+    setBetterNoticeProgress(100)
+
+    betterNoticeAnimationFrameRef.current = window.requestAnimationFrame(() => {
+      betterNoticeAnimationFrameRef.current = window.requestAnimationFrame(() => {
+        setBetterNoticeProgress(0)
+        betterNoticeAnimationFrameRef.current = null
+      })
+    })
+
+    betterNoticeTimerRef.current = window.setTimeout(() => {
+      dismissBetterSourceNotice()
+    }, BETTER_SOURCE_NOTICE_DURATION)
+
+    return () => {
+      clearBetterNoticeRuntime()
+    }
+  }, [betterSourceNoticeKey, clearBetterNoticeRuntime, dismissBetterSourceNotice, shouldShowBetterSourceNotice])
+
+  const handleSwitchToBetterSource = useCallback(() => {
+    if (!bestSourceOption) return
+    if (betterSourceNoticeKey) {
+      setDismissedBetterNoticeKeys(prev =>
+        prev.includes(betterSourceNoticeKey) ? prev : [...prev.slice(-29), betterSourceNoticeKey],
+      )
+    }
+    handleSourceChange(bestSourceOption.sourceCode)
+  }, [bestSourceOption, betterSourceNoticeKey, handleSourceChange])
+
+  const shouldShowMatchingNotice = Boolean(
+    isTmdbRoute && tmdbPlayback.playlist.loading && tmdbPlayback.playlist.searched,
+  )
+
+  const matchingNoticeText = useMemo(() => {
+    const { completed, total, currentSourceName, lastResultSourceName } = tmdbPlayback.playlist.progress
+    const progressText = total > 0 ? `${Math.min(completed, total)}/${total}` : '--/--'
+    const sourceText = currentSourceName || lastResultSourceName
+    return sourceText ? `持续匹配中 ${progressText} · ${sourceText}` : `持续匹配中 ${progressText}`
+  }, [tmdbPlayback.playlist.progress])
+
+  const shouldShowOverlayNotices =
+    shouldShowMatchingNotice || shouldShowBetterSourceNotice || transientNotices.length > 0
 
   const title = detail?.videoInfo?.title || tmdbPlayback.tmdbDetail?.title || '未知视频'
   const sourceName =
@@ -1338,20 +1486,74 @@ export default function UnifiedPlayer() {
                 : seekPreviewOverlay)}
             {volumeOverlay &&
               (playerOverlayContainer ? createPortal(volumeOverlay, playerOverlayContainer) : volumeOverlay)}
-            {playerNotice && (
-              <div className="pointer-events-none absolute top-3 right-3 z-30 w-[min(78vw,340px)]">
-                <div className="overflow-hidden rounded-md border border-white/15 bg-black/65 shadow-lg backdrop-blur-sm">
-                  <div className="px-3 py-1.5 text-xs text-white">{playerNotice}</div>
-                  <div className="h-0.5 bg-white/20">
-                    <div
-                      className="h-full bg-red-500 transition-[width] ease-linear"
-                      style={{
-                        width: `${playerNoticeProgress}%`,
-                        transitionDuration: `${playerNoticeDuration}ms`,
-                      }}
-                    />
+            {shouldShowOverlayNotices && (
+              <div className="pointer-events-none absolute top-3 right-3 z-30 flex max-w-[min(92vw,420px)] flex-col items-end gap-2">
+                {shouldShowMatchingNotice && (
+                  <div className="pointer-events-auto w-[min(86vw,320px)] overflow-hidden rounded-md border border-amber-300/35 bg-black/68 shadow-lg backdrop-blur-sm">
+                    <div className="flex items-center gap-2 px-3 py-2 text-xs text-white">
+                      <span className="inline-flex size-3.5 animate-spin rounded-full border border-amber-200 border-t-transparent" />
+                      <span className="truncate">{matchingNoticeText}</span>
+                    </div>
                   </div>
-                </div>
+                )}
+
+                {shouldShowBetterSourceNotice && bestSourceOption && (
+                  <div className="pointer-events-auto w-[min(90vw,360px)] overflow-hidden rounded-md border border-emerald-300/35 bg-black/72 shadow-lg backdrop-blur-sm">
+                    <div className="flex items-center justify-between gap-2 px-3 py-2 text-xs text-white">
+                      <div className="min-w-0">
+                        <p className="truncate text-[12px] font-semibold">匹配到更优结果</p>
+                        <p className="mt-0.5 truncate text-[11px] text-white/80">
+                          {bestSourceOption.sourceName}（{bestSourceOption.bestScore} 分）
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-1.5">
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="h-7 rounded-full px-3 text-[11px]"
+                          onClick={handleSwitchToBetterSource}
+                        >
+                          切换
+                        </Button>
+                        <button
+                          type="button"
+                          className="text-white/70 transition-colors hover:text-white"
+                          aria-label="关闭更优匹配提示"
+                          onClick={dismissBetterSourceNotice}
+                        >
+                          <X className="size-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="h-0.5 border-t border-white/12 bg-white/20">
+                      <div
+                        className="h-full bg-emerald-400 transition-[width] ease-linear"
+                        style={{
+                          width: `${betterNoticeProgress}%`,
+                          transitionDuration: `${BETTER_SOURCE_NOTICE_DURATION}ms`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {transientNotices.map(notice => (
+                  <div
+                    key={notice.id}
+                    className="pointer-events-auto w-[min(78vw,340px)] overflow-hidden rounded-md border border-white/15 bg-black/65 shadow-lg backdrop-blur-sm"
+                  >
+                    <div className="px-3 py-1.5 text-xs text-white">{notice.message}</div>
+                    <div className="h-0.5 bg-white/20">
+                      <div
+                        className="h-full bg-red-500 transition-[width] ease-linear"
+                        style={{
+                          width: `${notice.progress}%`,
+                          transitionDuration: `${notice.duration}ms`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
             {isDetailRefreshing && (
