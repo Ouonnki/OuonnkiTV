@@ -10,6 +10,7 @@ import {
   SidebarMenuButton,
   SidebarGroupLabel,
   SidebarHeader,
+  useSidebar,
 } from '@/shared/components/ui/sidebar'
 import { NavLink } from 'react-router'
 import { motion } from 'framer-motion'
@@ -30,6 +31,14 @@ export default function SideBar({
   hidden = false,
 }: SideBarProps) {
   const location = useLocation()
+  const { isMobile, setOpenMobile } = useSidebar()
+
+  const handleNavLinkClick = () => {
+    if (isMobile) {
+      setOpenMobile(false)
+    }
+  }
+
   // Menu items.
   const items = {
     header: [],
@@ -79,7 +88,7 @@ export default function SideBar({
       collapsible={collapsibleMode}
     >
       <SidebarHeader className="sm:hidden">
-        <NavLink to="/" className="flex items-center">
+        <NavLink to="/" className="flex items-center" onClick={handleNavLinkClick}>
           <div className="flex items-end">
             <div>
               <OkiLogo />
@@ -98,6 +107,7 @@ export default function SideBar({
                   <SidebarMenuButton asChild>
                     <NavLink
                       to={item.url}
+                      onClick={handleNavLinkClick}
                       className="group data-[mactive=true]:text-sidebar-primary-foreground relative h-10 overflow-visible"
                       data-mactive={location.pathname === item.url}
                     >
@@ -127,7 +137,7 @@ export default function SideBar({
           {items.footer.map(item => (
             <SidebarMenuItem key={item.title}>
               <SidebarMenuButton asChild>
-                <NavLink to={item.url}>
+                <NavLink to={item.url} onClick={handleNavLinkClick}>
                   <item.icon />
                   <span className="flex w-full items-center justify-between">
                     <span>{item.title}</span>
