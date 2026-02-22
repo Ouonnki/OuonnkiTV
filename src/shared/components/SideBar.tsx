@@ -16,8 +16,19 @@ import { motion } from 'framer-motion'
 import { Home, Search, Star, History, Settings } from 'lucide-react'
 import { OkiLogo } from '@/shared/components/icons'
 import { useVersionStore } from '../store'
+import { cn } from '@/shared/lib'
 
-export default function SideBar({ className }: { className?: string }) {
+interface SideBarProps {
+  className?: string
+  collapsibleMode?: 'icon' | 'offcanvas'
+  hidden?: boolean
+}
+
+export default function SideBar({
+  className,
+  collapsibleMode = 'icon',
+  hidden = false,
+}: SideBarProps) {
   const location = useLocation()
   // Menu items.
   const items = {
@@ -55,7 +66,18 @@ export default function SideBar({ className }: { className?: string }) {
   // 获取版本信息
   const { currentVersion } = useVersionStore()
   return (
-    <Sidebar className={className} variant="floating" collapsible="icon">
+    <Sidebar
+      className={cn(
+        '[&_[data-slot=sidebar-gap]]:duration-300 [&_[data-slot=sidebar-gap]]:ease-in-out',
+        '[&_[data-slot=sidebar-container]]:duration-300 [&_[data-slot=sidebar-container]]:ease-in-out',
+        '[&_[data-slot=sidebar-inner]]:transition-opacity [&_[data-slot=sidebar-inner]]:duration-300',
+        hidden &&
+          '[&_[data-slot=sidebar-gap]]:!w-0 [&_[data-slot=sidebar-container]]:!w-0 [&_[data-slot=sidebar-container]]:overflow-hidden [&_[data-slot=sidebar-inner]]:opacity-0',
+        className,
+      )}
+      variant="floating"
+      collapsible={collapsibleMode}
+    >
       <SidebarHeader className="sm:hidden">
         <NavLink to="/" className="flex items-center">
           <div className="flex items-end">

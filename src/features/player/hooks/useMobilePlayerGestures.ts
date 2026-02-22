@@ -392,7 +392,7 @@ export function useMobilePlayerGestures({
       sessionRef.current = null
     }
 
-    const onTouchCancel = (_event: TouchEvent) => {
+    const onTouchCancel = () => {
       resetSession()
     }
 
