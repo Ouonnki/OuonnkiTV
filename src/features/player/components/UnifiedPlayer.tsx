@@ -385,7 +385,7 @@ export default function UnifiedPlayer() {
   useEffect(() => {
     if (!location.pathname.startsWith('/play/')) return
     if (!isTmdbRoute || !tmdbMediaType) return
-    if (tmdbPlayback.tmdbLoading || tmdbPlayback.playlist.loading) return
+    if (tmdbPlayback.tmdbLoading) return
     if (!tmdbPlayback.playlist.searched) return
 
     if (!resolvedSourceCode || !resolvedVodId) return
@@ -419,7 +419,6 @@ export default function UnifiedPlayer() {
     searchParams,
     parsedTmdbId,
     tmdbMediaType,
-    tmdbPlayback.playlist.loading,
     tmdbPlayback.playlist.searched,
     resolvedSourceCode,
     resolvedVodId,
@@ -443,9 +442,11 @@ export default function UnifiedPlayer() {
         return
       }
 
+      const hasResolvedTmdbSelection = Boolean(resolvedSourceCode && resolvedVodId)
       const shouldWaitForTmdbSelection =
         isTmdbRoute &&
         !hasExplicitTmdbSelection &&
+        !hasResolvedTmdbSelection &&
         (tmdbPlayback.tmdbLoading || tmdbPlayback.playlist.loading || !tmdbPlayback.playlist.searched)
 
       if (shouldWaitForTmdbSelection) {
