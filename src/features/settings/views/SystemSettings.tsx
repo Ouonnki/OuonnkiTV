@@ -3,6 +3,7 @@ import SearchSettings from '../components/SearchSettings'
 import ThemeSettings from '../components/ThemeSettings'
 import { useSettingStore } from '@/shared/store/settingStore'
 import { Switch } from '@/shared/components/ui/switch'
+import { Input } from '@/shared/components/ui/input'
 import {
   Select,
   SelectContent,
@@ -10,13 +11,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select'
-import { Cog } from 'lucide-react'
+import { Cog, KeyRound } from 'lucide-react'
 import { SettingsItem, SettingsPageShell, SettingsSection } from '../components/common'
-
-const hasTmdbToken = Boolean(import.meta.env.OKI_TMDB_API_TOKEN)
 
 export default function SystemSettings() {
   const { system, setSystemSettings } = useSettingStore()
+
+  const hasEnvToken = Boolean(import.meta.env.OKI_TMDB_API_TOKEN)
+  const hasUserToken = Boolean(system.tmdbApiToken)
+  const hasTmdbToken = hasEnvToken || hasUserToken
 
   return (
     <SettingsPageShell
@@ -44,12 +47,30 @@ export default function SystemSettings() {
             />
           }
         />
+        {!hasEnvToken && (
+          <SettingsItem
+            title="TMDB API Token"
+            description="未检测到环境变量 Token，可手动输入以启用 TMDB 功能。从 themoviedb.org 获取。"
+            control={
+              <div className="relative w-full sm:w-[340px]">
+                <KeyRound className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+                <Input
+                  type="password"
+                  className="pl-9"
+                  value={system.tmdbApiToken}
+                  placeholder="输入 TMDB API Token"
+                  onChange={e => setSystemSettings({ tmdbApiToken: e.target.value.trim() })}
+                />
+              </div>
+            }
+          />
+        )}
         <SettingsItem
           title="TMDB 智能模式"
           description={
             hasTmdbToken
               ? '启用后通过 TMDB 获取影片元数据、海报和推荐内容，关闭后仅使用视频源数据。'
-              : '未检测到 TMDB API Token，请配置 OKI_TMDB_API_TOKEN 环境变量后启用。'
+              : '请先在上方输入 TMDB API Token 后启用。'
           }
           controlClassName="self-end mt-1"
           control={

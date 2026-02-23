@@ -32,6 +32,7 @@ export const DEFAULT_SETTINGS = {
   },
   system: {
     tmdbEnabled: envSettings?.system?.tmdbEnabled ?? Boolean(import.meta.env.OKI_TMDB_API_TOKEN),
+    tmdbApiToken: '',
     isUpdateLogEnabled: envSettings?.system?.isUpdateLogEnabled ?? false,
     tmdbLanguage: envSettings?.system?.tmdbLanguage ?? 'zh-CN',
     tmdbImageQuality: (envSettings?.system?.tmdbImageQuality ?? 'medium') as

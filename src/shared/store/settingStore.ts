@@ -35,6 +35,7 @@ interface PlaybackSettings {
 
 interface SystemSettings {
   tmdbEnabled: boolean
+  tmdbApiToken: string
   isUpdateLogEnabled: boolean
   tmdbLanguage: string
   tmdbImageQuality: 'low' | 'medium' | 'high'
@@ -95,7 +96,12 @@ export const useSettingStore = create<SettingStore>()(
 
         setSystemSettings: settings => {
           set(state => {
-            state.system = { ...state.system, ...settings }
+            const merged = { ...state.system, ...settings }
+            // 清空 token 且无环境变量 token 时，自动关闭 tmdbEnabled
+            if ('tmdbApiToken' in settings && !settings.tmdbApiToken && !import.meta.env.OKI_TMDB_API_TOKEN) {
+              merged.tmdbEnabled = false
+            }
+            state.system = merged
           })
         },
 
@@ -110,7 +116,7 @@ export const useSettingStore = create<SettingStore>()(
       })),
       {
         name: 'ouonnki-tv-setting-store',
-        version: 8,
+        version: 9,
         migrate: (persistedState: unknown, version: number) => {
           const state = persistedState as Record<string, unknown>
           if (version < 2 && state.playback) {
@@ -164,6 +170,11 @@ export const useSettingStore = create<SettingStore>()(
           if (version < 8) {
             const system = (state.system ?? {}) as Record<string, unknown>
             system.tmdbEnabled ??= DEFAULT_SETTINGS.system.tmdbEnabled
+            state.system = system
+          }
+          if (version < 9) {
+            const system = (state.system ?? {}) as Record<string, unknown>
+            system.tmdbApiToken ??= ''
             state.system = system
           }
           return state

@@ -2,17 +2,33 @@ import { TMDB } from 'tmdb-ts'
 import { useSettingStore } from '@/shared/store/settingStore'
 import type { TmdbMediaItem, TmdbMediaType } from '../types/tmdb'
 
-// 单例客户端
+// 单例客户端及其对应的 token，用于检测 token 变化并重建
 let tmdbClient: TMDB | null = null
+let currentToken: string | null = null
+
+/**
+ * 获取有效的 TMDB token
+ * 优先使用用户手动配置的 token，其次使用环境变量 token
+ */
+function resolveTmdbToken(): string | undefined {
+  const userToken = useSettingStore.getState().system.tmdbApiToken
+  if (userToken) return userToken
+  const envToken = import.meta.env.OKI_TMDB_API_TOKEN
+  if (envToken) return envToken
+  return undefined
+}
 
 export function getTmdbClient(): TMDB {
-  if (!tmdbClient) {
-    const token = import.meta.env.OKI_TMDB_API_TOKEN
-    if (!token) {
-      throw new Error('TMDB API Token 未配置，请在环境变量中设置 OKI_TMDB_API_TOKEN')
-    }
-    tmdbClient = new TMDB(token)
+  const token = resolveTmdbToken()
+  if (!token) {
+    throw new Error('TMDB API Token 未配置，请在设置中手动输入或配置 OKI_TMDB_API_TOKEN 环境变量')
   }
+  // token 变化时销毁旧单例并重建
+  if (tmdbClient && currentToken === token) {
+    return tmdbClient
+  }
+  tmdbClient = new TMDB(token)
+  currentToken = token
   return tmdbClient
 }
 
