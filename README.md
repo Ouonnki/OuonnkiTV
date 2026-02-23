@@ -1,10 +1,10 @@
 <h1 align="center">
-  <img src="https://ouonnki.site/upload/logo.svg" alt="OuonnkiTV Logo" width="80"/><br/>
+  <img src="https://cdn.ouonnki.site/gh/Ouonnki/blog-pictures/posts/logo.svg" alt="OuonnkiTV Logo" width="80"/><br/>
   OuonnkiTV
 </h1>
 
 <p align="center">
-  现代化、可扩展的视频搜索与播放前端。
+  现代化视频聚合搜索与播放前端
 </p>
 
 <p align="center">
@@ -15,571 +15,56 @@
   <a href="https://github.com/Ouonnki/OuonnkiTV/stargazers"><img src="https://img.shields.io/github/stars/Ouonnki/OuonnkiTV?style=social" alt="GitHub stars"/></a>
 </p>
 
-<p align="center">
-  <a href="#-简介">简介</a> ·
-  <a href="#-特性">特性</a> ·
-  <a href="#-部署">部署</a> ·
-  <a href="#-更新同步">更新</a> ·
-  <a href="#-视频源导入">导入</a> ·
-  <a href="#-给开发者">开发</a>
-</p>
-
 ---
-
-<details>
-<summary><strong>📑 目录</strong></summary>
-
-- [📖 简介](#-简介)
-- [✨ 特性](#-特性)
-- [🚀 部署](#-部署)
-  - [Vercel 部署](#vercel-部署)
-  - [Cloudflare Pages 部署](#cloudflare-pages-部署)
-  - [Netlify 部署](#netlify-部署)
-  - [Docker 部署](#docker-部署)
-    - [方式一：Docker Compose（推荐）](#方式一docker-compose推荐)
-    - [方式二：预构建镜像（快速启动）](#方式二预构建镜像快速启动)
-  - [本地运行](#本地运行)
-- [🔄 更新同步](#-更新同步)
-  - [Vercel 更新](#vercel-更新)
-  - [Docker 更新](#docker-更新)
-  - [本地更新](#本地更新)
-  - [Fork 同步](#fork-同步)
-    - [方式一：GitHub Action 自动同步（已内置）](#方式一github-action-自动同步已内置)
-    - [方式二：GitHub 原生同步](#方式二github-原生同步)
-- [📥 视频源导入](#-视频源导入)
-  - [应用内导入](#应用内导入)
-    - [📁 本地文件导入](#-本地文件导入)
-    - [📝 JSON 文本导入](#-json-文本导入)
-    - [🌐 URL 导入](#-url-导入)
-  - [JSON 格式说明](#json-格式说明)
-- [⚙️ 配置管理](#️-配置管理)
-  - [核心功能](#核心功能)
-  - [环境变量参考](#环境变量参考)
-    - [1. 默认视频源](#1-默认视频源)
-    - [2. 应用默认设置](#2-应用默认设置)
-    - [3. 其他配置](#3-其他配置)
-  - [操作指南](#操作指南)
-- [👨‍💻 给开发者](#-给开发者)
-  - [技术栈](#技术栈)
-  - [项目结构](#项目结构)
-  - [开发指南](#开发指南)
-  - [常用命令](#常用命令)
-- [📜 其他](#-其他)
-  - [贡献指南](#贡献指南)
-  - [许可证](#许可证)
-  - [免责声明](#免责声明)
-
-</details>
-
-## 📖 简介
-
-**OuonnkiTV** 是一个现代化的视频聚合搜索与播放前端应用，基于 **React 19 + Vite 6 + TypeScript** 构建。
-
-本项目在 LibreSpark/LibreTV 的基础上进行了全面重构，采用现代化的技术栈和架构设计，提升了代码质量、性能表现和用户体验。
 
 ## ✨ 特性
 
-- **🔍 聚合搜索** - 多源并发搜索，自动去重，快速定位内容
-- **▶️ 流畅播放** - 基于 Artplayer，支持 HLS/MP4，自适应码率
-- **📥 批量导入** - 支持文件/文本/URL 多种方式导入视频源
-- **🕒 智能记录** - 自动保存观看历史与搜索记录，便于追溯
-- **📱 响应式设计** - 移动端/桌面端自适应布局
-- **🚀 高性能优化** - 代码分割、懒加载、并发控制
-- **💾 状态持久化** - 基于 Zustand 的状态管理，数据本地存储
+聚合搜索 · 流畅播放· TMDB 智能匹配 · 收藏管理 · 视频源订阅 · 观看历史 · 响应式设计 · 高性能· 多端适配· 出色的UI/UX
 
-
-
-## 🚀 部署
-
-
-### Vercel 部署
-
-点击下方按钮，一键部署到 Vercel：
+## 🚀 快速开始
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Ouonnki/OuonnkiTV&build-command=pnpm%20build&install-command=pnpm%20install&output-directory=dist)
 
-**部署步骤：**
-1. Fork 本仓库到您的 GitHub 账户
-2. 登录 Vercel，点击 "New Project"
-3. 导入您的 GitHub 仓库
-4. 配置构建选项（通常自动识别）：
-   - Install Command: `pnpm install`
-   - Build Command: `pnpm build`
-   - Output Directory: `dist`
-5. （可选）配置环境变量：
-   - `OKI_INITIAL_VIDEO_SOURCES`: 初始视频源配置
-   - `OKI_ACCESS_PASSWORD`: 访问密码（留空则公开访问）
-6. 点击 "Deploy" 开始部署
+> Docker、Cloudflare Pages、Netlify、本地开发等完整部署指南 → [docs/deployment.md](docs/deployment.md)
 
----
+## 📖 文档
 
-### Cloudflare Pages 部署
-
-**部署步骤：**
-1. Fork 本仓库到您的 GitHub 账户
-2. 登录 Cloudflare Dashboard，进入 **Workers & Pages**
-3. 点击 **Create application** -> **Pages** -> **Connect to Git**
-4. 选择您的仓库
-5. 配置构建选项：
-   - **Framework preset**: 选择 `Vite`
-   - **Build command**: `pnpm run build`
-   - **Build output directory**: `dist`
-6. 点击 **Save and Deploy**
-
----
-
-### Netlify 部署
-
-[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/Ouonnki/OuonnkiTV)
-
-**部署步骤：**
-1. 点击上方按钮，或登录 Netlify 点击 "Add new site" -> "Import an existing project"
-2. 连接 GitHub 并选择您的仓库
-3. Netlify 会自动识别配置文件 (`netlify.toml`)，无需手动配置构建命令
-4. 点击 **Deploy site**
-
----
-
-### Docker 部署
-
-#### 方式一：Docker Compose（推荐）
-
-```bash
-# 首次部署或修改配置后启动（重新构建）
-docker-compose up -d --build
-```
-
-**环境变量配置**（可选）：
-
-1. 复制环境变量示例文件：
-   ```bash
-   copy .env.example .env
-   ```
-
-2. 编辑 `.env` 文件进行自定义配置：
-   ```env
-   # 初始视频源（单行 JSON 格式）
-   OKI_INITIAL_VIDEO_SOURCES=[{"name":"示例源","url":"https://api.example.com","isEnabled":true}]
-   
-   # 禁用分析（建议开启）
-   OKI_DISABLE_ANALYTICS=true
-
-   # 访问密码（可选）
-   OKI_ACCESS_PASSWORD=your_secure_password
-   ```
-
-3. 构建并启动：
-   ```bash
-   docker-compose up -d --build
-   ```
-
-> ⚠️ **重要提示**：
-> - 环境变量在**构建时**注入，修改后必须使用 `--build` 参数重新构建
-> - 如果只运行 `docker-compose up -d`，环境变量的修改不会生效
-
-#### 方式二：预构建镜像（快速启动）
-
-```bash
-# 拉取并运行最新版本
-docker pull ghcr.io/ouonnki/ouonnkitv:latest
-docker run -d -p 3000:80 ghcr.io/ouonnki/ouonnkitv:latest
-
-# 访问 http://localhost:3000
-```
-
-**可用镜像标签：**
-- `latest` - 最新稳定版
-- `main` - 主分支最新代码
-> ⚠️ **限制说明**：预构建镜像**无法通过环境变量修改初始配置**，只能使用镜像构建时的默认值。
-> **如需自定义视频源，请在应用内手动导入，或使用 Docker Compose 方式本地构建。**
-
----
-
-### 本地运行
-
-**环境要求：**
-- Node.js >= 20.0.0
-- pnpm >= 9.15.4
-
-**启动步骤：**
-```bash
-# 克隆仓库
-git clone https://github.com/Ouonnki/OuonnkiTV.git
-cd OuonnkiTV
-
-# 安装依赖
-pnpm install
-
-# 启动开发服务器
-pnpm dev
-
-# 访问 http://localhost:3000
-```
-
-**构建生产版本：**
-```bash
-pnpm build       # 构建
-pnpm preview     # 预览，访问 http://localhost:4173
-```
-
----
-
-## 🔄 更新同步
-
-### Vercel 更新
-
-Vercel 部署的项目会自动跟踪 GitHub 仓库变化：
-
-1. **自动更新**：每次推送到主分支时自动重新部署
-2. **手动更新**：
-   - 进入 Vercel 项目控制台
-   - 点击 "Deployments" 标签
-   - 点击右上角 "Redeploy" 按钮
-
-### Docker 更新
-
-**Docker Compose 方式：**
-```bash
-# 拉取最新镜像
-docker-compose pull
-
-# 重启服务
-docker-compose up -d
-```
-
-**预构建镜像方式：**
-```bash
-# 停止并删除旧容器
-docker stop <container_id>
-docker rm <container_id>
-
-# 拉取最新镜像
-docker pull ghcr.io/ouonnki/ouonnkitv:latest
-
-# 运行新容器
-docker run -d -p 3000:80 ghcr.io/ouonnki/ouonnkitv:latest
-```
-
-### 本地更新
-
-```bash
-# 拉取最新代码
-git pull origin main
-
-# 更新依赖
-pnpm install
-
-# 重启开发服务器
-pnpm dev
-```
-
-### Fork 同步
-
-保持 Fork 仓库与上游同步：
-
-#### 方式一：GitHub Action 自动同步（已内置）
-
-项目内置了自动同步工作流（`.github/workflows/sync.yml`）：
-
-- **触发时间**：每日 UTC 02:00 自动运行
-- **手动触发**：进入 Fork 仓库的 Actions → 选择 "Sync Upstream" → Run workflow
-- **同步策略**：若 `main` 分支无独立提交，则强制同步；否则跳过
-- **注意事项**：自定义修改建议放在独立分支，避免在 `main` 分支直接修改
-
-#### 方式二：GitHub 原生同步
-
-1. 进入你的 Fork 仓库主页
-2. 点击 "Sync fork" 按钮
-3. 选择 "Update branch" 完成同步
-
-**CLI 手动同步：**
-```bash
-git remote add upstream https://github.com/Ouonnki/OuonnkiTV.git  # 仅首次
-git fetch upstream
-git checkout main
-git merge upstream/main  # 或使用 rebase
-git push origin main
-```
-
----
-
-## 📥 视频源导入
-
-OuonnkiTV 支持多种方式批量导入视频源配置，方便快速部署和分享。
-
-### 应用内导入
-
-应用内提供三种导入方式：
-
-#### 📁 本地文件导入
-- 支持 `.json` 格式文件
-- 拖拽或点击选择文件
-- 自动验证格式与字段
-
-#### 📝 JSON 文本导入
-- 直接粘贴 JSON 配置
-- 实时语法检查
-- 支持格式化或压缩的 JSON
-
-#### 🌐 URL 导入
-- 从远程 URL 获取配置
-- 支持 GitHub Raw、Gitee、个人服务器等
-- 自动处理网络请求
-
-**使用方法：**
-1. 点击右上角设置图标进入设置页面
-2. 点击"导入源"按钮
-3. 选择导入方式并提供数据
-4. 点击"开始导入"
-
-**导入特性：**
-- ✅ 自动去重，避免重复源
-- ✅ 格式验证，确保数据正确
-- ✅ 批量处理，一次导入多个源
-- ✅ 实时反馈，详细的错误提示
-
----
-
-### JSON 格式说明
-
-**标准格式：**
-```json
-[
-  {
-    "id": "source1",
-    "name": "示例视频源",
-    "url": "https://api.example.com/search",
-    "detailUrl": "https://api.example.com/detail",
-    "isEnabled": true
-  }
-]
-```
-
-**字段说明：**
-| 字段 | 必需 | 说明 |
-| ---- | ---- | ---- |
-| `id` | 否 | 唯一标识符（自动生成） |
-| `name` | 是 | 视频源显示名称 |
-| `url` | 是 | 搜索 API 地址 |
-| `detailUrl` | 否 | 详情 API 地址（默认使用 url） |
-| `isEnabled` | 否 | 是否启用（默认 true） |
-
-**支持格式：**
-- 单个对象：`{"name":"源名称","url":"API地址"}`
-- 对象数组：`[{...},{...}]`
-- 多行格式化或压缩单行均可
-
----
-
-## ⚙️ 配置管理
-
-OuonnkiTV 支持一键恢复默认配置，方便您快速重置应用状态。初始状态由构建时的环境变量决定，方便统一部署和分发。
-
-### 核心功能
-你可以通过设置环境变量来预定义应用的默认配置（包括视频源和应用设置）。当用户点击 **设置** -> **关于项目** -> **配置操作** -> **恢复默认配置** 时，应用将重置为这些预定义的默认值。
-
-### 环境变量参考
-
-以下环境变量仅在**构建时**生效。
-
-| 变量名 | 必需 | 说明 |
-| ------ | ---- | ---- |
-| `OKI_INITIAL_VIDEO_SOURCES` | 否 | 初始视频源（JSON 字符串或远程 URL） |
-| `OKI_TMDB_API_TOKEN` | 否 | TMDB API Token，用于获取影片元数据 |
-| `OKI_ACCESS_PASSWORD` | 否 | 访问密码（留空则公开访问） |
-| `OKI_DISABLE_ANALYTICS` | 否 | 设为 `true` 禁用 Vercel Analytics |
-| `OKI_INITIAL_CONFIG` | 否 | 完整 JSON 配置（包含所有设置和视频源，详见下方说明） |
-
-#### 完整配置导入（`OKI_INITIAL_CONFIG`）
-
-使用 `OKI_INITIAL_CONFIG` 可一次性导入完整配置（包含所有应用设置和视频源），格式与应用内”导出个人配置”生成的 JSON 一致。
-
-```env
-OKI_INITIAL_CONFIG='{“settings”:{...},”videoSources”:[...],”meta”:{...}}'
-```
-
-> **优先级说明**：`OKI_INITIAL_CONFIG` 中的视频源和设置优先于 `OKI_INITIAL_VIDEO_SOURCES` 及代码默认值。
-
-### 操作指南
-
-1. **导出模版**：在应用中配置好理想状态，点击 **导出个人配置** -> **导出为文本**。
-2. **设置变量**：将复制的 JSON 内容赋值给 `OKI_INITIAL_CONFIG` 环境变量。
-3. **构建应用**：重新构建。
-4. **恢复默认**：执行“恢复默认配置”，应用将加载该 JSON 中的状态。
-
-## 👨‍💻 给开发者
-
-<details>
-<summary><strong>点击展开开发者文档</strong></summary>
-
-### 技术栈
-
-| 技术 | 版本 | 用途 |
-| ---- | ---- | ---- |
-| React | 19 | 前端框架 |
-| TypeScript | 5.x | 类型系统 |
-| Vite | 6 | 构建工具 |
-| TailwindCSS | 4 | 样式框架 |
-| HeroUI | - | UI 组件库 |
-| Framer Motion | - | 动画库 |
-| Artplayer | - | 视频播放器 |
-| Zustand | - | 状态管理 |
-| React Router | 7 | 路由管理 |
-
-**代理架构：**
-- **本地开发**：Vite 中间件代理
-- **Vercel**：Serverless Function
-- **Docker**：Nginx + Node.js Express
-
----
-
-### 项目结构
-
-```text
-OuonnkiTV/
-├─ api/                      # Vercel Serverless Functions
-│  └─ proxy.ts              # Vercel 代理接口
-├─ src/
-│  ├─ middleware/           # 中间件
-│  │  └─ proxy.dev.ts      # Vite 开发代理
-│  ├─ utils/               # 工具函数
-│  │  └─ proxy.ts          # 统一代理逻辑
-│  ├─ components/          # React 组件
-│  ├─ config/              # 配置文件
-│  │  ├─ api.config.ts     # API 配置
-│  │  └─ analytics.config.ts
-│  ├─ hooks/               # 自定义 Hooks
-│  ├─ pages/               # 页面组件
-│  ├─ services/            # API 服务层
-│  ├─ store/               # Zustand 状态管理
-│  └─ types/               # TypeScript 类型定义
-├─ proxy-server.js          # Docker 代理服务器
-├─ nginx.conf               # Nginx 配置
-├─ Dockerfile               # Docker 镜像
-└─ docker-compose.yml       # Docker Compose 配置
-```
-
-**核心文件说明：**
-- `src/utils/proxy.ts` - 统一代理逻辑，供所有环境复用
-- `src/config/api.config.ts` - API 配置与代理 URL
-- `src/services/api.service.ts` - API 请求封装与 URL 构建
-
----
-
-### 开发指南
-
-**环境准备：**
-```bash
-# 安装依赖
-pnpm install
-
-# 启动开发服务器
-pnpm dev
-```
-
-**代码规范：**
-```bash
-# ESLint 检查
-pnpm lint
-
-# 类型检查
-pnpm type-check
-```
-
-**构建部署：**
-```bash
-# 生产构建
-pnpm build
-
-# 本地预览
-pnpm preview
-
-# Docker 构建
-pnpm docker:build
-
-# Docker 运行
-pnpm docker:up
-```
-
-**提交规范：**
-- `feat:` 新功能
-- `fix:` 修复 Bug
-- `docs:` 文档更新
-- `style:` 代码格式调整
-- `refactor:` 重构代码
-- `perf:` 性能优化
-- `test:` 测试相关
-- `chore:` 构建/工具链更新
-
----
-
-### 常用命令
-
-| 命令 | 说明 |
+| 文档 | 说明 |
 | ---- | ---- |
-| `pnpm dev` | 启动开发服务器 |
-| `pnpm build` | 生产环境构建 |
-| `pnpm preview` | 预览构建结果 |
-| `pnpm lint` | ESLint 代码检查 |
-| `pnpm docker:build` | 构建 Docker 镜像 |
-| `pnpm docker:up` | 启动 Docker 容器 |
-| `pnpm docker:down` | 停止 Docker 容器 |
-| `pnpm docker:logs` | 查看 Docker 日志 |
-
-</details>
+| [部署指南](docs/deployment.md) | Docker / Vercel / Cloudflare / Netlify / 本地开发 / 更新同步 |
+| [配置管理](docs/configuration.md) | 环境变量、TMDB 配置、完整配置导入 |
+| [TMDB Key 申请](docs/tmdb-key.md) | TMDB API Token 注册与获取教程 |
+| [视频源导入](docs/video-sources.md) | 导入方式、JSON 格式说明 |
+| [开发者指南](docs/development.md) | 技术栈、项目结构、代理架构、@ouonnki/cms-core |
 
 ---
 
-## 📜 其他
+## 📜 贡献与许可
 
-### 贡献指南
+欢迎通过 [Issue](https://github.com/Ouonnki/OuonnkiTV/issues) 或 [Pull Request](https://github.com/Ouonnki/OuonnkiTV/pulls) 参与贡献。本项目采用 [Apache License 2.0](LICENSE) 开源协议。
 
-欢迎贡献代码、文档或提出建议！
+## ⚠️ 免责声明
 
-**参与方式：**
-1. 提交 [Issue](https://github.com/Ouonnki/OuonnkiTV/issues) 报告问题或建议功能
-2. 提交 [Pull Request](https://github.com/Ouonnki/OuonnkiTV/pulls) 贡献代码
+本项目（以下简称「本项目」）是一个开源的视频搜索聚合前端源代码，仅提供视频搜索结果的展示与播放功能的代码实现。本项目不提供任何可直接使用的成品软件、在线服务或托管平台，使用者需自行获取源代码并完成部署。
 
-**贡献流程：**
-1. Fork 本仓库
-2. 创建特性分支：`git checkout -b feat/your-feature`
-3. 提交更改：`git commit -m "feat: add xxx"`
-4. 推送分支：`git push origin feat/your-feature`
-5. 提交 Pull Request
+**本项目不提供、不托管、不上传、不存储、不分发、不缓存任何视频、音频、图片或其他受版权保护的内容。** 本项目源代码中不包含任何视频源地址或内容数据，所有搜索结果和播放内容均来自使用者自行配置的第三方视频源 API，本项目开发者不对这些第三方服务的合法性、可用性、安全性或内容质量承担任何责任。
 
-**注意事项：**
-- 遵循现有代码风格
-- 保持提交信息清晰简洁
-- 更新相关文档
-- 关联相关 Issue
+使用者在部署和使用本项目源代码时，应当：
+- 确保遵守所在国家或地区的法律法规
+- 自行承担部署、配置和使用第三方视频源的全部法律责任
+- 尊重内容创作者的知识产权和著作权
+- 不将本项目源代码用于任何违法、侵权或商业侵权用途
+- 对自行部署的实例及其产生的一切行为和后果承担全部责任
 
----
+如发现侵权内容，请直接联系原始内容提供方（第三方视频源运营者）处理。本项目开发者仅提供源代码，无法也无义务对使用者部署的实例或第三方内容进行审查、监控、删除或管控。
 
-### 许可证
+**本项目源代码按「现状」（AS IS）提供，不附带任何明示或暗示的保证，包括但不限于对适销性、特定用途适用性和非侵权性的保证。** 开发者不对因部署、使用或无法使用本项目源代码而导致的任何直接、间接、附带、特殊或后果性损害承担责任，包括但不限于数据丢失、业务中断、利润损失、法律纠纷或其他商业损害。
 
-本项目采用 [Apache License 2.0](LICENSE) 开源协议。
+本项目开发者保留随时修改、暂停或终止本项目的权利，且无需事先通知。
+
+使用者获取、部署或以任何方式使用本项目源代码即表示已阅读、理解并同意本免责声明的全部内容。如不同意，请立即停止使用并删除相关代码及部署实例。
 
 ---
-
-### 免责声明
-
-**重要提示：**
-
-本项目仅作为视频搜索与聚合工具，不存储、上传或分发任何视频内容。所有视频内容均来自第三方 API 的搜索结果。
-
-- ❌ 本项目不提供任何视频源
-- ❌ 本项目不托管任何视频内容
-- ❌ 本项目不对视频内容负责
-
-如发现侵权内容，请联系原始内容提供方处理。
-
-开发者不对使用本项目造成的任何直接或间接后果负责。使用前请确保遵守当地法律法规。
-
----
-
-<p align="center">
-  <strong>⭐ Star 趋势</strong>
-</p>
 
 <p align="center">
   <a href="https://star-history.com/#Ouonnki/OuonnkiTV&Date">
