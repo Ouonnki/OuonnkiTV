@@ -1,0 +1,42 @@
+name: Publish @ouonnki/cms-core
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '发布版本号（如 1.0.1），留空则使用 package.json 中的当前版本'
+        required: false
+        type: string
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Bump version
+        if: inputs.version != ''
+        working-directory: packages/cms-core
+        run: npm version ${{ inputs.version }} --no-git-tag-version
+
+      - name: Build
+        run: pnpm --filter @ouonnki/cms-core build
+
+      - name: Publish
+        working-directory: packages/cms-core
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

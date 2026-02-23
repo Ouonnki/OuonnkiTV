@@ -10,6 +10,7 @@ on:
 env:
   GITHUB_REGISTRY: ghcr.io
   IMAGE_NAME: ouonnkitv
+  DOCKERHUB_IMAGE: ouonnki/ouonnkitv
   OKI_INITIAL_VIDEO_SOURCES: ''
   OKI_TMDB_API_TOKEN: ''
   OKI_ACCESS_PASSWORD: ''
@@ -74,11 +75,19 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
+          images: |
+            ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
+            ${{ env.DOCKERHUB_IMAGE }}
           tags: |
             type=ref,event=branch
             type=semver,pattern={{version}}
