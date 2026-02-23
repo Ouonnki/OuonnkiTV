@@ -10,8 +10,9 @@ import { Button } from '@/shared/components/ui/button'
 import { Skeleton } from '@/shared/components/ui/skeleton'
 import { NavLink } from 'react-router'
 import { useViewingHistoryStore } from '@/shared/store'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
+import { useTmdbEnabled } from '@/shared/hooks/useTmdbMode'
 import { ViewingHistoryCard } from '@/shared/components/common'
 
 /**
@@ -55,6 +56,13 @@ function ContinueWatchingSkeleton() {
 export function ContinueWatching() {
   const { viewingHistory } = useViewingHistoryStore()
   const hasHydrated = useViewingHistoryStore.persist.hasHydrated()
+  const tmdbEnabled = useTmdbEnabled()
+
+  // TMDB 未启用时过滤 TMDB 记录
+  const filteredHistory = useMemo(() => {
+    if (tmdbEnabled) return viewingHistory
+    return viewingHistory.filter(item => item.recordType !== 'tmdb')
+  }, [viewingHistory, tmdbEnabled])
 
   const isMobile = useIsMobile()
   // 根据屏幕尺寸计算可见卡片数量：移动端2个、平板3个、桌面5个
@@ -63,7 +71,7 @@ export function ContinueWatching() {
     : typeof window !== 'undefined' && window.innerWidth < 1024
       ? 3
       : 5
-  const canDrag = viewingHistory.length > visibleCount
+  const canDrag = filteredHistory.length > visibleCount
 
   // Carousel API 状态
   const [carouselApi, setCarouselApi] = useState<CarouselApi>()
@@ -95,7 +103,7 @@ export function ContinueWatching() {
   }
 
   // 如果没有观看历史，不渲染任何内容
-  if (viewingHistory.length === 0) {
+  if (filteredHistory.length === 0) {
     return null
   }
 
@@ -112,7 +120,7 @@ export function ContinueWatching() {
       <div className="pt-2">
         <Carousel opts={{ watchDrag: canDrag }} setApi={setCarouselApi}>
           <CarouselContent>
-            {viewingHistory.map(item => {
+            {filteredHistory.map(item => {
               return (
                 <CarouselItem
                   key={`${item.sourceCode}-${item.vodId}-${item.episodeIndex}`}

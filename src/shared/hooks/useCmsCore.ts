@@ -7,6 +7,7 @@ import {
   type VideoSource,
   type VideoItem,
   type DetailResult,
+  type SearchResult,
   type CmsClientConfig,
   type SearchResultEvent,
   type SearchProgressEvent,
@@ -292,4 +293,77 @@ export function useCmsClient(config?: CmsClientConfig): CmsClient {
     void networkKey
     return getCmsClient(config)
   }, [config, networkKey])
+}
+
+/**
+ * CMS 视频列表状态
+ */
+export interface CmsVideoListState {
+  /** 视频列表 */
+  items: VideoItem[]
+  /** 是否正在加载 */
+  loading: boolean
+  /** 错误信息 */
+  error: string | null
+}
+
+/**
+ * CMS 视频列表 Hook
+ * 从指定视频源获取推荐/最新视频列表（不带搜索关键词）
+ */
+export function useCmsVideoList(source: VideoSource | null, config?: CmsClientConfig): CmsVideoListState {
+  const networkKey = useSettingStore(
+    state =>
+      `${state.network.concurrencyLimit}|${state.network.isProxyEnabled}|${state.network.proxyUrl}`,
+  )
+  const client = useMemo(() => {
+    void networkKey
+    return getCmsClient(config)
+  }, [config, networkKey])
+
+  const [state, setState] = useState<CmsVideoListState>({
+    items: [],
+    loading: false,
+    error: null,
+  })
+
+  useEffect(() => {
+    if (!source || !source.isEnabled) {
+      setState({ items: [], loading: false, error: null })
+      return
+    }
+
+    let cancelled = false
+
+    const fetchList = async () => {
+      setState(prev => ({ ...prev, loading: true, error: null }))
+
+      try {
+        const result: SearchResult = await client.listVideos(source)
+
+        if (cancelled) return
+
+        if (result.success) {
+          setState({ items: result.items, loading: false, error: null })
+        } else {
+          setState({ items: [], loading: false, error: result.error || '获取列表失败' })
+        }
+      } catch (error) {
+        if (cancelled) return
+        setState({
+          items: [],
+          loading: false,
+          error: error instanceof Error ? error.message : '请求失败',
+        })
+      }
+    }
+
+    fetchList()
+
+    return () => {
+      cancelled = true
+    }
+  }, [client, source])
+
+  return state
 }

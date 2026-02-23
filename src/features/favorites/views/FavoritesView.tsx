@@ -6,6 +6,7 @@ import { FavoritesGrid } from '../components/ui/favoritesGrid'
 import { ManagementPanel } from '../components/ManagementPanel'
 import { useFavorites } from '../hooks/useFavorites'
 import { usePortalToSidebarInset } from '@/shared/hooks/usePortalToSidebarInset'
+import { useTmdbEnabled } from '@/shared/hooks/useTmdbMode'
 import { FavoriteWatchStatus } from '../types/favorites'
 import { NoResultIcon } from '@/shared/components/icons'
 import {
@@ -47,13 +48,19 @@ export default function FavoritesView() {
     return matchedOption?.value || DEFAULT_FAVORITE_SORT_VALUE
   }, [filterOptions.sortBy, filterOptions.sortOrder])
 
-  // 当前显示的收藏列表（根据状态标签筛选）
+  const tmdbEnabled = useTmdbEnabled()
+
+  // 当前显示的收藏列表（根据 TMDB 模式和状态标签筛选）
   const displayFavorites = useMemo(() => {
-    if (activeTab === 'all') {
-      return filteredFavorites
+    let list = filteredFavorites
+    if (!tmdbEnabled) {
+      list = list.filter(f => f.sourceType !== 'tmdb')
     }
-    return filteredFavorites.filter(f => f.watchStatus === activeTab)
-  }, [filteredFavorites, activeTab])
+    if (activeTab !== 'all') {
+      list = list.filter(f => f.watchStatus === activeTab)
+    }
+    return list
+  }, [filteredFavorites, activeTab, tmdbEnabled])
 
   // 清空当前 tab 的所有收藏
   const handleClearAll = useCallback(() => {

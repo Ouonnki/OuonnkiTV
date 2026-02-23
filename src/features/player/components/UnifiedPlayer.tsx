@@ -18,6 +18,7 @@ import { useApiStore } from '@/shared/store/apiStore'
 import { useViewingHistoryStore } from '@/shared/store/viewingHistoryStore'
 import { useSettingStore } from '@/shared/store/settingStore'
 import { useDocumentTitle, useCmsClient } from '@/shared/hooks'
+import { useTmdbEnabled } from '@/shared/hooks/useTmdbMode'
 import { cn } from '@/shared/lib/utils'
 import { buildCmsPlayPath, buildTmdbDetailPath, buildTmdbPlayPath } from '@/shared/lib/routes'
 import { isTmdbHistoryItem } from '@/shared/lib/viewingHistory'
@@ -162,6 +163,7 @@ export default function UnifiedPlayer() {
     useParams<PlayerRouteParams>()
 
   const cmsClient = useCmsClient()
+  const tmdbEnabled = useTmdbEnabled()
   const { videoAPIs, adFilteringEnabled } = useApiStore()
   const { addViewingHistory, viewingHistory } = useViewingHistoryStore()
   const { playback } = useSettingStore()
@@ -1445,6 +1447,25 @@ export default function UnifiedPlayer() {
         tag={tag}
         primaryAction={primaryAction}
         secondaryAction={secondaryAction}
+      />
+    )
+  }
+
+  if (isTmdbRoute && !tmdbEnabled) {
+    return (
+      <PlayerErrorState
+        title="TMDB 模式未启用"
+        description="当前未开启 TMDB 智能模式，无法使用 TMDB 播放功能。请在设置中开启或返回首页。"
+        tag="模式不可用"
+        primaryAction={{
+          label: '返回首页',
+          onClick: () => navigate('/'),
+        }}
+        secondaryAction={{
+          label: '前往设置',
+          to: '/settings/system',
+          variant: 'outline' as const,
+        }}
       />
     )
   }

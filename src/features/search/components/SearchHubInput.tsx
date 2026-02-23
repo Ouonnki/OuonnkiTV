@@ -13,6 +13,8 @@ interface SearchHubInputProps {
   onSearch: (query: string) => void
   /** Callback when clear button is clicked */
   onClear?: () => void
+  /** 禁用搜索历史下拉（由外部渲染历史） */
+  hideHistoryDropdown?: boolean
   className?: string
 }
 
@@ -20,6 +22,7 @@ export function SearchHubInput({
   initialQuery,
   onSearch,
   onClear,
+  hideHistoryDropdown = false,
   className,
 }: SearchHubInputProps) {
   const [inputValue, setInputValue] = useState(initialQuery)
@@ -55,7 +58,7 @@ export function SearchHubInput({
   const hasHistory = searchHistory.length > 0
   const hasSuggestions = suggestions.length > 0
   const shouldShowDropdown =
-    isDropdownOpen && (hasContent ? hasSuggestions || suggestionsLoading : hasHistory)
+    isDropdownOpen && (hasContent ? hasSuggestions || suggestionsLoading : hasHistory && !hideHistoryDropdown)
 
   const handleInteractiveItemKeyDown = (
     event: React.KeyboardEvent<HTMLDivElement>,

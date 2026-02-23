@@ -46,6 +46,7 @@ export {
 export { createCmsClient, type CmsClient } from './core/client'
 export { searchVideos, type SearchConfig } from './core/search'
 export { getVideoDetail, type DetailConfig } from './core/detail'
+export { listVideos, type ListConfig } from './core/list'
 export {
   createAggregatedSearch,
   type AggregatorOptions,
@@ -66,4 +67,4 @@ export {
 } from './adapters/proxy.adapter'
 
 // 工具函数
-export { buildApiUrl, buildSearchUrl, buildDetailUrl } from './utils/url'
+export { buildApiUrl, buildSearchUrl, buildDetailUrl, buildListUrl } from './utils/url'

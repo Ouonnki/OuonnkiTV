@@ -15,6 +15,7 @@ import { createFetchAdapter } from '../adapters/fetch.adapter'
 import { createDirectStrategy } from '../adapters/proxy.adapter'
 import { searchVideos, type SearchConfig } from './search'
 import { getVideoDetail, type DetailConfig } from './detail'
+import { listVideos, type ListConfig } from './list'
 import { createAggregatedSearch } from './aggregator'
 import { parsePlayUrl as parsePlayUrlFn, type ParsedEpisodes } from './parser'
 
@@ -35,6 +36,9 @@ export interface CmsClient {
     page: number,
     signal?: AbortSignal,
   ): Promise<VideoItem[]>
+
+  // 列表（不带搜索关键词，获取推荐/最新内容）
+  listVideos(source: VideoSource, page?: number): Promise<SearchResult>
 
   // 详情
   getDetail(id: string, source: VideoSource): Promise<DetailResult>
@@ -85,6 +89,12 @@ export function createCmsClient(config?: CmsClientConfig): CmsClient {
     m3u8Pattern,
   }
 
+  // 列表配置
+  const listConfig: ListConfig = {
+    requestAdapter,
+    proxyStrategy,
+  }
+
   // 单源搜索（带事件）
   const searchWithEvents = async (query: string, source: VideoSource, page: number = 1): Promise<SearchResult> => {
     const sourceWithDefaults: VideoSource = {
@@ -127,6 +137,16 @@ export function createCmsClient(config?: CmsClientConfig): CmsClient {
     // 单源搜索
     async search(query: string, source: VideoSource): Promise<SearchResult> {
       return searchWithEvents(query, source)
+    },
+
+    // 获取视频列表（推荐/最新）
+    async listVideos(source: VideoSource, page: number = 1): Promise<SearchResult> {
+      const sourceWithDefaults: VideoSource = {
+        ...source,
+        timeout: source.timeout ?? defaultTimeout,
+        retry: source.retry ?? defaultRetry,
+      }
+      return listVideos(sourceWithDefaults, listConfig, page)
     },
 
     // 聚合搜索

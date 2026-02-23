@@ -27,6 +27,7 @@ interface SettingsConfig {
     isMobileGestureEnabled?: boolean
   }
   system?: {
+    tmdbEnabled?: boolean
     isUpdateLogEnabled?: boolean
     tmdbLanguage?: string
     tmdbImageQuality?: 'low' | 'medium' | 'high'

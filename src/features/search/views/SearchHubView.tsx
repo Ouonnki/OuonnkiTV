@@ -1,9 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'react-router'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useDocumentTitle } from '@/shared/hooks'
+import { X } from 'lucide-react'
+import { useDocumentTitle, useSearchHistory } from '@/shared/hooks'
+import { useTmdbEnabled } from '@/shared/hooks/useTmdbMode'
 import { useTmdbNowPlaying } from '@/shared/hooks/useTmdb'
 import { useSearchStore } from '@/shared/store/searchStore'
+import { OkiLogo } from '@/shared/components/icons'
 import { normalizeSearchMode } from '../lib/searchMode'
 
 import {
@@ -23,9 +26,11 @@ export default function SearchHubView() {
   const [searchParams, setSearchParams] = useSearchParams()
   const query = searchParams.get('q') || ''
   const modeParam = searchParams.get('mode')
+  const tmdbEnabled = useTmdbEnabled()
 
   // 搜索模式状态 - 直接从 URL 获取，作为 Single Source of Truth
-  const mode: SearchMode = normalizeSearchMode(modeParam)
+  const mode: SearchMode = normalizeSearchMode(modeParam, tmdbEnabled)
+  const defaultMode = tmdbEnabled ? 'tmdb' : 'direct'
 
   const [isDirectCentered, setIsDirectCentered] = useState(false)
 
@@ -36,12 +41,13 @@ export default function SearchHubView() {
       const timer = setTimeout(() => setIsDirectCentered(true), 400)
       return () => clearTimeout(timer)
     } else {
-      setIsDirectCentered(false) // 立即移除类名
+      setIsDirectCentered(false)
     }
   }, [mode, query])
 
   // 搜索历史写入收敛到显式搜索动作，避免 URL 被动同步导致冗余写入
   const { addSearchHistoryItem } = useSearchStore()
+  const { searchHistory, removeSearchHistoryItem, clearSearchHistory } = useSearchHistory()
 
   // 归一化 URL 中的 mode，避免非法值污染后续行为
   useEffect(() => {
@@ -49,12 +55,12 @@ export default function SearchHubView() {
 
     setSearchParams(prev => {
       const params = new URLSearchParams(prev)
-      params.set('mode', 'tmdb')
+      params.set('mode', defaultMode)
       return params
     }, { replace: true })
-  }, [modeParam, setSearchParams])
+  }, [modeParam, defaultMode, setSearchParams])
 
-  // Trending Hook（只用于热搜词展示，仍然保留在顶层）
+  // Trending Hook（仅 TMDB 模式可用时调用）
   const { trending } = useTmdbNowPlaying()
 
   // 动态更新页面标题
@@ -110,19 +116,98 @@ export default function SearchHubView() {
         className="flex w-full flex-col items-center gap-4"
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
       >
-        {/* 模式切换 */}
-        <motion.div layout>
-          <SearchModeToggle mode={mode} onChange={handleModeChange} />
-        </motion.div>
+        {/* 品牌标识 - 无搜索内容时显示 */}
+        <AnimatePresence>
+          {!query && (
+            <motion.div
+              layout
+              className="flex flex-col items-center gap-2"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+            >
+              <OkiLogo size={56} />
+              <span className="text-muted-foreground text-sm tracking-wide">发现你的下一部好剧</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* 模式切换 - 仅 TMDB 可用时显示 */}
+        {tmdbEnabled && (
+          <motion.div layout>
+            <SearchModeToggle mode={mode} onChange={handleModeChange} />
+          </motion.div>
+        )}
 
         {/* 搜索框 */}
         <motion.div layout className="flex w-full justify-center">
-          <SearchHubInput initialQuery={query} onSearch={handleSearch} onClear={handleClear} />
+          <SearchHubInput
+            initialQuery={query}
+            onSearch={handleSearch}
+            onClear={handleClear}
+            hideHistoryDropdown={!tmdbEnabled}
+          />
         </motion.div>
 
-        {/* 大家都在搜 */}
+        {/* 兼容模式下搜索历史徽标 */}
         <AnimatePresence mode="popLayout">
-          {mode === 'direct' && !query && (
+          {!tmdbEnabled && !query && searchHistory.length > 0 && (
+            <motion.div
+              layout
+              className="flex w-full max-w-3xl flex-col gap-2"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 8 }}
+              transition={{ duration: 0.2 }}
+            >
+              <div className="flex items-center justify-between px-1">
+                <span className="text-muted-foreground text-xs">最近搜索</span>
+                <button
+                  type="button"
+                  className="text-muted-foreground hover:text-foreground text-xs transition-colors"
+                  onClick={clearSearchHistory}
+                >
+                  清除
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {searchHistory.map(item => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className="bg-secondary hover:bg-secondary/80 text-secondary-foreground group inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition-colors"
+                    onClick={() => handleSearch(item.content)}
+                  >
+                    <span className="max-w-[10rem] truncate">{item.content}</span>
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      className="text-muted-foreground hover:text-destructive -mr-1 shrink-0 rounded-full p-0.5 opacity-0 transition-all group-hover:opacity-100"
+                      onClick={e => {
+                        e.stopPropagation()
+                        removeSearchHistoryItem(item.id)
+                      }}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          removeSearchHistoryItem(item.id)
+                        }
+                      }}
+                    >
+                      <X size={12} />
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* 大家都在搜 - 仅 TMDB 可用时显示 */}
+        <AnimatePresence mode="popLayout">
+          {tmdbEnabled && mode === 'direct' && !query && (
             <SearchTrending
               trending={trending}
               onSearch={handleSearch}

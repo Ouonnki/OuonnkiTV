@@ -13,6 +13,8 @@ import {
 import { Cog } from 'lucide-react'
 import { SettingsItem, SettingsPageShell, SettingsSection } from '../components/common'
 
+const hasTmdbToken = Boolean(import.meta.env.OKI_TMDB_API_TOKEN)
+
 export default function SystemSettings() {
   const { system, setSystemSettings } = useSettingStore()
 
@@ -43,50 +45,70 @@ export default function SystemSettings() {
           }
         />
         <SettingsItem
-          title="TMDB 内容语言"
-          description="影响影片标题、简介等 TMDB 数据的显示语言。"
+          title="TMDB 智能模式"
+          description={
+            hasTmdbToken
+              ? '启用后通过 TMDB 获取影片元数据、海报和推荐内容，关闭后仅使用视频源数据。'
+              : '未检测到 TMDB API Token，请配置 OKI_TMDB_API_TOKEN 环境变量后启用。'
+          }
+          controlClassName="self-end mt-1"
           control={
-            <div className="w-full sm:w-[200px]">
-              <Select
-                value={system.tmdbLanguage}
-                onValueChange={value => setSystemSettings({ tmdbLanguage: value })}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="zh-CN">简体中文</SelectItem>
-                  <SelectItem value="zh-TW">繁體中文</SelectItem>
-                  <SelectItem value="en-US">English</SelectItem>
-                  <SelectItem value="ja-JP">日本語</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <Switch
+              checked={system.tmdbEnabled}
+              disabled={!hasTmdbToken}
+              onCheckedChange={checked => setSystemSettings({ tmdbEnabled: checked })}
+            />
           }
         />
-        <SettingsItem
-          title="TMDB 图片质量"
-          description="海报和背景图的加载质量，高质量消耗更多流量。"
-          control={
-            <div className="w-full sm:w-[200px]">
-              <Select
-                value={system.tmdbImageQuality}
-                onValueChange={(value: 'low' | 'medium' | 'high') =>
-                  setSystemSettings({ tmdbImageQuality: value })
-                }
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="low">低（w342）</SelectItem>
-                  <SelectItem value="medium">中（w500/w780）</SelectItem>
-                  <SelectItem value="high">高（original）</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          }
-        />
+        {system.tmdbEnabled && (
+          <>
+            <SettingsItem
+              title="TMDB 内容语言"
+              description="影响影片标题、简介等 TMDB 数据的显示语言。"
+              control={
+                <div className="w-full sm:w-[200px]">
+                  <Select
+                    value={system.tmdbLanguage}
+                    onValueChange={value => setSystemSettings({ tmdbLanguage: value })}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="zh-CN">简体中文</SelectItem>
+                      <SelectItem value="zh-TW">繁體中文</SelectItem>
+                      <SelectItem value="en-US">English</SelectItem>
+                      <SelectItem value="ja-JP">日本語</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              }
+            />
+            <SettingsItem
+              title="TMDB 图片质量"
+              description="海报和背景图的加载质量，高质量消耗更多流量。"
+              control={
+                <div className="w-full sm:w-[200px]">
+                  <Select
+                    value={system.tmdbImageQuality}
+                    onValueChange={(value: 'low' | 'medium' | 'high') =>
+                      setSystemSettings({ tmdbImageQuality: value })
+                    }
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">低（w342）</SelectItem>
+                      <SelectItem value="medium">中（w500/w780）</SelectItem>
+                      <SelectItem value="high">高（original）</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              }
+            />
+          </>
+        )}
       </SettingsSection>
     </SettingsPageShell>
   )

@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from 'react'
 import { getTmdbClient, normalizeToMediaItem } from '@/shared/lib/tmdb'
 import { useSettingStore } from '@/shared/store/settingStore'
+import { isTmdbEnabled } from '@/shared/hooks/useTmdbMode'
 import type { TmdbMediaItem } from '@/shared/types/tmdb'
 
 type TmdbSearchMultiParams = Parameters<ReturnType<typeof getTmdbClient>['search']['multi']>[0]
@@ -35,6 +36,13 @@ export function useSearchSuggestions(): UseSearchSuggestionsReturn {
     // 清除之前的定时器
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current)
+    }
+
+    // TMDB 未启用时不提供搜索建议
+    if (!isTmdbEnabled()) {
+      setSuggestions([])
+      setIsLoading(false)
+      return
     }
 
     // 如果查询为空，直接清空建议

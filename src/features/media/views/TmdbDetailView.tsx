@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { useNavigate, useParams } from 'react-router'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useDocumentTitle } from '@/shared/hooks'
+import { useTmdbEnabled } from '@/shared/hooks/useTmdbMode'
 import { useTmdbDetail } from '@/shared/hooks/useTmdb'
 import { buildTmdbPlayPath } from '@/shared/lib/routes'
 import { buildHistoryPlayPath, isTmdbHistoryItem } from '@/shared/lib/viewingHistory'
@@ -45,7 +46,15 @@ const TMDB_SEARCH_PATH = '/search?mode=tmdb'
 
 export default function TmdbDetailView() {
   const navigate = useNavigate()
+  const tmdbEnabled = useTmdbEnabled()
   const { type = '', tmdbId = '' } = useParams<{ type: string; tmdbId: string }>()
+
+  // TMDB 未启用时重定向到首页
+  useEffect(() => {
+    if (!tmdbEnabled) {
+      navigate('/', { replace: true })
+    }
+  }, [tmdbEnabled, navigate])
 
   const mediaType = isSupportedMediaType(type) ? type : null
   const parsedTmdbId = Number(tmdbId)

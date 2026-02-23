@@ -53,3 +53,15 @@ export function buildDetailUrl(
 ): string {
   return buildApiUrl(baseUrl, apiConfig.detail.path, id)
 }
+
+/**
+ * 构建视频列表URL（不带搜索关键词，用于获取推荐/最新内容）
+ */
+export function buildListUrl(baseUrl: string, page: number = 1): string {
+  const url = baseUrl.replace(/\/+$/, '')
+  const base = url.toLowerCase().includes('/api.php/provide/vod')
+    ? url
+    : `${url}/api.php/provide/vod/`
+  const separator = base.includes('?') ? '&' : '?'
+  return page > 1 ? `${base}${separator}ac=videolist&pg=${page}` : `${base}${separator}ac=videolist`
+}

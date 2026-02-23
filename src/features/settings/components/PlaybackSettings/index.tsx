@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useSettingStore } from '@/shared/store/settingStore'
 import { useApiStore } from '@/shared/store/apiStore'
+import { useTmdbEnabled } from '@/shared/hooks/useTmdbMode'
 import { clearBusinessCaches } from '@/shared/lib/cache/businessCache'
 import { ConfirmModal } from '@/shared/components/common/ConfirmModal'
 import { Switch } from '@/shared/components/ui/switch'
@@ -31,6 +32,7 @@ import { SettingsItem, SettingsPageShell, SettingsSection } from '../common'
 export default function PlaybackSettings() {
   const { playback, setPlaybackSettings } = useSettingStore()
   const { adFilteringEnabled, setAdFilteringEnabled } = useApiStore()
+  const tmdbEnabled = useTmdbEnabled()
   const [confirmClearCacheOpen, setConfirmClearCacheOpen] = useState(false)
 
   return (
@@ -221,63 +223,67 @@ export default function PlaybackSettings() {
         />
       </SettingsSection>
 
-      <SettingsSection
-        title="TMDB 匹配缓存"
-        description="缓存详情页和播放器的匹配结果，减少重复检索。"
-        icon={<Database className="size-4" />}
-        tone="sky"
-      >
-        <SettingsItem
-          title="缓存过期时长（小时）"
-          description="缓存超过该时长后自动失效并重新请求，范围 1~168 小时。"
-          control={
-            <div className="w-full sm:w-48">
-              <Input
-                type="number"
-                min={1}
-                max={168}
-                step={1}
-                value={playback.tmdbMatchCacheTTLHours}
-                onChange={e => {
-                  const inputVal = Number.parseInt(e.target.value, 10)
-                  if (Number.isNaN(inputVal)) return
-                  setPlaybackSettings({
-                    tmdbMatchCacheTTLHours: Math.max(1, Math.min(168, inputVal)),
-                  })
-                }}
-              />
-            </div>
-          }
-        />
-        <SettingsItem
-          title="清空匹配缓存"
-          description="立即清除 TMDB 匹配缓存。当前仅清理匹配缓存，后续会纳入更多业务缓存。"
-          control={
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 px-3"
-              onClick={() => setConfirmClearCacheOpen(true)}
-            >
-              <Trash2 className="size-4" />
-              清空缓存
-            </Button>
-          }
-        />
-      </SettingsSection>
+      {tmdbEnabled && (
+        <SettingsSection
+          title="TMDB 匹配缓存"
+          description="缓存详情页和播放器的匹配结果，减少重复检索。"
+          icon={<Database className="size-4" />}
+          tone="sky"
+        >
+          <SettingsItem
+            title="缓存过期时长（小时）"
+            description="缓存超过该时长后自动失效并重新请求，范围 1~168 小时。"
+            control={
+              <div className="w-full sm:w-48">
+                <Input
+                  type="number"
+                  min={1}
+                  max={168}
+                  step={1}
+                  value={playback.tmdbMatchCacheTTLHours}
+                  onChange={e => {
+                    const inputVal = Number.parseInt(e.target.value, 10)
+                    if (Number.isNaN(inputVal)) return
+                    setPlaybackSettings({
+                      tmdbMatchCacheTTLHours: Math.max(1, Math.min(168, inputVal)),
+                    })
+                  }}
+                />
+              </div>
+            }
+          />
+          <SettingsItem
+            title="清空匹配缓存"
+            description="立即清除 TMDB 匹配缓存。当前仅清理匹配缓存，后续会纳入更多业务缓存。"
+            control={
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 px-3"
+                onClick={() => setConfirmClearCacheOpen(true)}
+              >
+                <Trash2 className="size-4" />
+                清空缓存
+              </Button>
+            }
+          />
+        </SettingsSection>
+      )}
 
-      <ConfirmModal
-        isOpen={confirmClearCacheOpen}
-        onClose={() => setConfirmClearCacheOpen(false)}
-        onConfirm={() => {
-          clearBusinessCaches()
-          toast.success('已清空 TMDB 匹配缓存')
-        }}
-        title="确认清空 TMDB 匹配缓存？"
-        description="此操作会删除所有已缓存的 TMDB 匹配结果。下次进入详情页或播放器时将重新请求匹配数据。"
-        confirmText="确认清空"
-        isDestructive
-      />
+      {tmdbEnabled && (
+        <ConfirmModal
+          isOpen={confirmClearCacheOpen}
+          onClose={() => setConfirmClearCacheOpen(false)}
+          onConfirm={() => {
+            clearBusinessCaches()
+            toast.success('已清空 TMDB 匹配缓存')
+          }}
+          title="确认清空 TMDB 匹配缓存？"
+          description="此操作会删除所有已缓存的 TMDB 匹配结果。下次进入详情页或播放器时将重新请求匹配数据。"
+          confirmText="确认清空"
+          isDestructive
+        />
+      )}
 
       <SettingsSection
         title="剧集展示"

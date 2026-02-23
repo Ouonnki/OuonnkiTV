@@ -34,6 +34,7 @@ interface PlaybackSettings {
 }
 
 interface SystemSettings {
+  tmdbEnabled: boolean
   isUpdateLogEnabled: boolean
   tmdbLanguage: string
   tmdbImageQuality: 'low' | 'medium' | 'high'
@@ -109,7 +110,7 @@ export const useSettingStore = create<SettingStore>()(
       })),
       {
         name: 'ouonnki-tv-setting-store',
-        version: 7,
+        version: 8,
         migrate: (persistedState: unknown, version: number) => {
           const state = persistedState as Record<string, unknown>
           if (version < 2 && state.playback) {
@@ -159,6 +160,11 @@ export const useSettingStore = create<SettingStore>()(
             const playback = (state.playback ?? {}) as Record<string, unknown>
             playback.isMobileGestureEnabled ??= DEFAULT_SETTINGS.playback.isMobileGestureEnabled
             state.playback = playback
+          }
+          if (version < 8) {
+            const system = (state.system ?? {}) as Record<string, unknown>
+            system.tmdbEnabled ??= DEFAULT_SETTINGS.system.tmdbEnabled
+            state.system = system
           }
           return state
         },

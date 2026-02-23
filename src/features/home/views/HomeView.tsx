@@ -7,17 +7,19 @@ import {
 import { useFavoritesStore } from '@/features/favorites/store/favoritesStore'
 import { useViewingHistoryStore } from '@/shared/store'
 import { isTmdbHistoryItem } from '@/shared/lib/viewingHistory'
+import { useTmdbEnabled } from '@/shared/hooks/useTmdbMode'
 import type { TmdbFavoriteItem } from '@/features/favorites/types/favorites'
 import type { TmdbMediaType } from '@/shared/types/tmdb'
 import { FeaturedCarousel } from '../components/FeaturedCarousel'
 import { ContinueWatching } from '../components/ContinueWatching'
 import { MediaCarousel } from '../components/MediaCarousel'
+import { CmsHomeContent } from '../components/CmsHomeContent'
 import { useMemo } from 'react'
 
 /**
- * HomeView - 首页视图
+ * TmdbHomeContent - TMDB 模式首页内容
  */
-export default function HomeView() {
+function TmdbHomeContent() {
   const favorites = useFavoritesStore(state => state.favorites)
   const viewingHistory = useViewingHistoryStore(state => state.viewingHistory)
   const { trending, loading } = useTmdbNowPlaying()
@@ -93,4 +95,18 @@ export default function HomeView() {
       <MediaCarousel title="口碑最佳的剧集" items={topRatedTv} loading={tvLoading.topRatedTv} />
     </div>
   )
+}
+
+/**
+ * HomeView - 首页视图
+ * 根据 TMDB 模式状态条件渲染不同的首页内容
+ */
+export default function HomeView() {
+  const tmdbEnabled = useTmdbEnabled()
+
+  if (!tmdbEnabled) {
+    return <CmsHomeContent />
+  }
+
+  return <TmdbHomeContent />
 }
