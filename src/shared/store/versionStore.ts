@@ -51,6 +51,25 @@ const formatDate = (dateStr: string) => {
 // 版本更新历史
 const VERSION_UPDATES: VersionUpdate[] = [
   {
+    version: '2.0.0',
+    title: '架构升级与全新体验',
+    date: formatDate('2026-02-23'),
+    features: [
+      '全新 Feature-Sliced Design 架构，代码组织更清晰',
+      '新增 TMDB 智能模式：自动匹配影片元数据、海报、评分和推荐',
+      '新增收藏管理功能，支持收藏喜欢的影片',
+      '新增视频源订阅功能，支持远程订阅自动更新',
+      '全新 UI 体系：迁移至 Radix UI + shadcn/ui，视觉与交互全面升级',
+      '新增 Docker Hub 镜像源，拉取更快更稳定',
+      '发布 @ouonnki/cms-core npm 包，支持独立构建视频搜索应用',
+    ],
+    breaking: [
+      '前端架构全面重构，不兼容 1.x 版本的自定义修改',
+      'UI 组件库从 HeroUI 迁移至 Radix UI + shadcn/ui',
+      '环境变量前缀统一为 OKI_，旧前缀不再支持',
+    ],
+  },
+  {
     version: '1.3.1',
     title: '个人配置管理',
     date: formatDate('2025-12-16'),
