@@ -118,6 +118,8 @@ const formatDurationLabel = (seconds: number): string => {
   return `${mins}:${secs.toString().padStart(2, '0')}`
 }
 
+const buildDetailRequestKey = (sourceCode: string, vodId: string) => `${sourceCode}::${vodId}`
+
 const isTouchDevice = () =>
   window.matchMedia('(hover: none) and (pointer: coarse)').matches || navigator.maxTouchPoints > 0
 
@@ -169,6 +171,7 @@ export default function UnifiedPlayer() {
   const detailRef = useRef<DetailResult | null>(null)
   const pendingSeekRef = useRef<number | null>(null)
   const detailRequestSeqRef = useRef(0)
+  const loadedDetailKeyRef = useRef('')
   const tmdbSelectionLockRef = useRef<TmdbSelectionLock | null>(null)
 
   useEffect(() => {
@@ -499,6 +502,14 @@ export default function UnifiedPlayer() {
         return
       }
 
+      const detailRequestKey = buildDetailRequestKey(resolvedSourceCode, resolvedVodId)
+      const hasLoadedCurrentDetail = Boolean(
+        detailRef.current && loadedDetailKeyRef.current === detailRequestKey,
+      )
+      if (hasLoadedCurrentDetail) {
+        return
+      }
+
       if (!canCommit()) return
       if (detailRef.current) setIsDetailRefreshing(true)
       else setLoading(true)
@@ -512,6 +523,7 @@ export default function UnifiedPlayer() {
         const response = await cmsClient.getDetail(resolvedVodId, sourceConfig)
         if (!canCommit()) return
         if (response.success && response.episodes && response.episodes.length > 0) {
+          loadedDetailKeyRef.current = detailRequestKey
           setDetail(response)
           setError(null)
           return
