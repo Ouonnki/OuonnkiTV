@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   ouonnkitv:
     build:
@@ -9,16 +7,32 @@ services:
         BUILD_DATE: ${BUILD_DATE:-}
         VCS_REF: ${VCS_REF:-}
         VERSION: ${VERSION:-dev}
-        # 构建时传入环境变量
         OKI_INITIAL_VIDEO_SOURCES: ${OKI_INITIAL_VIDEO_SOURCES:-}
+        OKI_TMDB_API_TOKEN: ${OKI_TMDB_API_TOKEN:-}
+        OKI_ACCESS_PASSWORD: ${OKI_ACCESS_PASSWORD:-}
         OKI_DISABLE_ANALYTICS: ${OKI_DISABLE_ANALYTICS:-true}
+        OKI_INITIAL_CONFIG: ${OKI_INITIAL_CONFIG:-}
     ports:
       - "3000:80"
     environment:
       - NODE_ENV=production
     restart: unless-stopped
     container_name: ouonnkitv-dev
-    
+
+    # 日志轮转
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
+
     # 健康检查
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80"]

@@ -11,10 +11,14 @@ build/
 node_modules/
 .pnpm-store/
 
-# 开发相关
+# 环境变量（防止泄露敏感信息）
+.env
 .env.local
+.env*.local
 .env.development
 .env.test
+
+# 日志
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -39,7 +43,18 @@ Thumbs.db
 # Git
 .git/
 .gitignore
+
+# CI/CD 和文档
+.github/
 README.md
+
+# 无关的 Serverless 部署目录
+api/
+netlify/
+functions/
+
+# Claude 工作目录
+.claude/
 
 # 测试相关
 coverage/
