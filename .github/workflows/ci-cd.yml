@@ -12,7 +12,6 @@ env:
   GITHUB_REGISTRY: ghcr.io
   DOCKER_REGISTRY: docker.io
   IMAGE_NAME: ouonnkitv
-  OKI_PROXY_URL: https://api.codetabs.com/v1/proxy?quest=
   OKI_INITIAL_VIDEO_SOURCES: ''
 
 jobs:
@@ -108,7 +107,6 @@ jobs:
             BUILD_DATE=${{ github.event.head_commit.timestamp }}
             VCS_REF=${{ github.sha }}
             VERSION=${{ steps.meta.outputs.version }}
-            OKI_PROXY_URL=${{ env.OKI_PROXY_URL }}
             OKI_INITIAL_VIDEO_SOURCES=${{ env.OKI_INITIAL_VIDEO_SOURCES }}
 
   # 安全扫描（可选）
