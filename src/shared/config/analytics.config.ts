@@ -22,7 +22,7 @@ export const trackEvent = (
   properties?: Record<string, string | number | boolean | null>,
 ) => {
   // 当禁用Analytics时不执行跟踪
-  if (import.meta.env.VITE_DISABLE_ANALYTICS !== 'true') {
+  if (import.meta.env.OKI_DISABLE_ANALYTICS !== 'true') {
     track(eventName, properties)
   }
 }

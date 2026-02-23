@@ -50,14 +50,14 @@ import { DEFAULT_SETTINGS } from './settings.config'
 
 // 从环境变量获取初始视频源
 export const getInitialVideoSources = async (): Promise<VideoApi[]> => {
-  // 1. First priority: Full JSON config from VITE_INITIAL_CONFIG
-  // 1. First priority: Full JSON config from VITE_INITIAL_CONFIG
+  // 1. First priority: Full JSON config from OKI_INITIAL_CONFIG
+  // 1. First priority: Full JSON config from OKI_INITIAL_CONFIG
   if (INITIAL_CONFIG?.videoSources && Array.isArray(INITIAL_CONFIG.videoSources)) {
     return parseVideoSources(INITIAL_CONFIG.videoSources)
   }
 
-  // 2. Second priority: Specific VITE_INITIAL_VIDEO_SOURCES
-  let envSources = import.meta.env.VITE_INITIAL_VIDEO_SOURCES
+  // 2. Second priority: Specific OKI_INITIAL_VIDEO_SOURCES
+  let envSources = import.meta.env.OKI_INITIAL_VIDEO_SOURCES
 
   // 验证url
   try {

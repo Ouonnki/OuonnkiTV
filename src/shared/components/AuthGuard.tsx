@@ -17,7 +17,7 @@ export default function AuthGuard({ children }: AuthGuardProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
 
-  const accessPassword = import.meta.env.VITE_ACCESS_PASSWORD
+  const accessPassword = import.meta.env.OKI_ACCESS_PASSWORD
   const isProtectionEnabled = !!accessPassword && accessPassword.trim() !== ''
 
   useEffect(() => {

@@ -140,7 +140,7 @@ const VERSION_UPDATES: VersionUpdate[] = [
       '导入过程自动进行 JSON 格式与字段校验，提供清晰错误提示',
       '自动去重：已存在的视频源不会重复添加',
       '导入结果统计与 Toast 通知（成功数 / 失败数）',
-      '支持通过环境变量 VITE_INITIAL_VIDEO_SOURCES 预加载初始视频源',
+      '支持通过环境变量 OKI_INITIAL_VIDEO_SOURCES 预加载初始视频源',
     ],
     fixes: ['导入弹窗交互细节优化，减少不必要的重复渲染'],
     breaking: [],

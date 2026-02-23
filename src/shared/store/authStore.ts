@@ -40,7 +40,7 @@ export const useAuthStore = create<AuthStore>()(
       isInitialized: false,
 
       login: async (password: string) => {
-        const correctPassword = import.meta.env.VITE_ACCESS_PASSWORD
+        const correctPassword = import.meta.env.OKI_ACCESS_PASSWORD
         // If no password configured, always allow
         if (!correctPassword) {
           return true
@@ -59,7 +59,7 @@ export const useAuthStore = create<AuthStore>()(
 
       validateSession: async () => {
         const { sessionToken, salt } = get()
-        const correctPassword = import.meta.env.VITE_ACCESS_PASSWORD
+        const correctPassword = import.meta.env.OKI_ACCESS_PASSWORD
 
         // If no password configured, always valid
         if (!correctPassword) {

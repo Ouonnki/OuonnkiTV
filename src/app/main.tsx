@@ -20,7 +20,7 @@ const app = (
     <TooltipProvider>
       <AppRouter />
       <Toaster richColors position="top-center" />
-      {import.meta.env.VITE_DISABLE_ANALYTICS !== 'true' && (
+      {import.meta.env.OKI_DISABLE_ANALYTICS !== 'true' && (
         <>
           <Analytics />
           <SpeedInsights />

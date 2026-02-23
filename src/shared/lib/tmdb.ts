@@ -7,10 +7,10 @@ let tmdbClient: TMDB | null = null
 
 export function getTmdbClient(): TMDB {
   if (!tmdbClient) {
-    const token = import.meta.env.VITE_TMDB_API_TOKEN
+    const token = import.meta.env.OKI_TMDB_API_TOKEN
     tmdbClient = new TMDB(token || '')
     if (!token) {
-      console.warn('TMDB API Token is missing! Please set VITE_TMDB_API_TOKEN in .env')
+      console.warn('TMDB API Token is missing! Please set OKI_TMDB_API_TOKEN in .env')
     }
   }
   return tmdbClient

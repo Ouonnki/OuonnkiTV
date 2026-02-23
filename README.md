@@ -107,8 +107,8 @@
    - Build Command: `pnpm build`
    - Output Directory: `dist`
 5. （可选）配置环境变量：
-   - `VITE_INITIAL_VIDEO_SOURCES`: 初始视频源配置
-   - `VITE_ACCESS_PASSWORD`: 访问密码（留空则公开访问）
+   - `OKI_INITIAL_VIDEO_SOURCES`: 初始视频源配置
+   - `OKI_ACCESS_PASSWORD`: 访问密码（留空则公开访问）
 6. 点击 "Deploy" 开始部署
 
 ---
@@ -159,13 +159,13 @@ docker-compose up -d --build
 2. 编辑 `.env` 文件进行自定义配置：
    ```env
    # 初始视频源（单行 JSON 格式）
-   VITE_INITIAL_VIDEO_SOURCES=[{"name":"示例源","url":"https://api.example.com","isEnabled":true}]
+   OKI_INITIAL_VIDEO_SOURCES=[{"name":"示例源","url":"https://api.example.com","isEnabled":true}]
    
    # 禁用分析（建议开启）
-   VITE_DISABLE_ANALYTICS=true
+   OKI_DISABLE_ANALYTICS=true
 
    # 访问密码（可选）
-   VITE_ACCESS_PASSWORD=your_secure_password
+   OKI_ACCESS_PASSWORD=your_secure_password
    ```
 
 3. 构建并启动：
@@ -384,45 +384,45 @@ OuonnkiTV 支持一键恢复默认配置，方便您快速重置应用状态。�
 
 #### 1. 全局初始配置（推荐）
 
-使用 `VITE_INITIAL_CONFIG` 变量导入完整配置（包含所有设置项和视频源）。该值的格式应与“导出个人配置”生成的 JSON 内容一致。
+使用 `OKI_INITIAL_CONFIG` 变量导入完整配置（包含所有设置项和视频源）。该值的格式应与“导出个人配置”生成的 JSON 内容一致。
 
 ```env
 # 示例：将导出的 JSON 内容压缩为单行字符串
 # 注意：如果 JSON 中包含空格，建议用单引号包裹整个字符串
-VITE_INITIAL_CONFIG='{"settings":{...},"videoSources":[...],"meta":{...}}'
+OKI_INITIAL_CONFIG='{"settings":{...},"videoSources":[...],"meta":{...}}'
 ```
 
 #### 2. 独立配置项（备选）
 
-如果您不使用 `VITE_INITIAL_CONFIG`，也可以单独配置以下项作为默认值：
+如果您不使用 `OKI_INITIAL_CONFIG`，也可以单独配置以下项作为默认值：
 
 **默认视频源：**
 ```env
-VITE_INITIAL_VIDEO_SOURCES=[{"name":"源1","url":"..."}]
+OKI_INITIAL_VIDEO_SOURCES=[{"name":"源1","url":"..."}]
 ```
 
 **应用设置：**
 ```env
-VITE_DEFAULT_TIMEOUT=5000
-VITE_DEFAULT_RETRY=3
-# ... 其他 VITE_DEFAULT_* 变量
+OKI_DEFAULT_TIMEOUT=5000
+OKI_DEFAULT_RETRY=3
+# ... 其他 OKI_DEFAULT_* 变量
 ```
 
-> **优先级说明**：如果同时配置了 `VITE_INITIAL_CONFIG` 和独立配置项，优先使用 `VITE_INITIAL_CONFIG` 中的值。
+> **优先级说明**：如果同时配置了 `OKI_INITIAL_CONFIG` 和独立配置项，优先使用 `OKI_INITIAL_CONFIG` 中的值。
 
 #### 3. 其他配置
 ```env
 # 禁用分析跟踪
-VITE_DISABLE_ANALYTICS=true
+OKI_DISABLE_ANALYTICS=true
 
 # 访问密码保护
-VITE_ACCESS_PASSWORD=your_secure_password
+OKI_ACCESS_PASSWORD=your_secure_password
 ```
 
 ### 操作指南
 
 1. **导出模版**：在应用中配置好理想状态，点击 **导出个人配置** -> **导出为文本**。
-2. **设置变量**：将复制的 JSON 内容赋值给 `VITE_INITIAL_CONFIG` 环境变量。
+2. **设置变量**：将复制的 JSON 内容赋值给 `OKI_INITIAL_CONFIG` 环境变量。
 3. **构建应用**：重新构建。
 4. **恢复默认**：执行“恢复默认配置”，应用将加载该 JSON 中的状态。
 

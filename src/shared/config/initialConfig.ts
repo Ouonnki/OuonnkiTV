@@ -56,7 +56,7 @@ interface ExportedConfig {
 }
 
 export const getInitialConfig = (): ExportedConfig | null => {
-  const envConfig = import.meta.env.VITE_INITIAL_CONFIG
+  const envConfig = import.meta.env.OKI_INITIAL_CONFIG
   if (!envConfig || typeof envConfig !== 'string') return null
 
   try {
@@ -65,7 +65,7 @@ export const getInitialConfig = (): ExportedConfig | null => {
     const parsed = JSON.parse(cleanedConfig)
     return parsed
   } catch (e) {
-    console.error('Failed to parse VITE_INITIAL_CONFIG:', e)
+    console.error('Failed to parse OKI_INITIAL_CONFIG:', e)
     return null
   }
 }
