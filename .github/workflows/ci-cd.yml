@@ -10,7 +10,6 @@ on:
 env:
   GITHUB_REGISTRY: ghcr.io
   IMAGE_NAME: ouonnkitv
-  DOCKERHUB_IMAGE: ouonnki/ouonnkitv
   OKI_INITIAL_VIDEO_SOURCES: ''
   OKI_TMDB_API_TOKEN: ''
   OKI_ACCESS_PASSWORD: ''
@@ -75,11 +74,64 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Check Docker Hub credentials
+        id: dockerhub
+        run: |
+          if [ -n "${{ secrets.DOCKERHUB_USERNAME }}" ] && [ -n "${{ secrets.DOCKERHUB_TOKEN }}" ]; then
+            echo "enabled=true" >> $GITHUB_OUTPUT
+          else
+            echo "enabled=false" >> $GITHUB_OUTPUT
+            echo "::warning::DOCKERHUB_USERNAME 或 DOCKERHUB_TOKEN 未配置，将跳过 Docker Hub 推送，仅推送 GHCR。"
+          fi
+
+      - name: Normalize Docker Hub credentials
+        if: steps.dockerhub.outputs.enabled == 'true'
+        env:
+          RAW_DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          RAW_DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          DOCKERHUB_USERNAME_CLEAN="$(printf '%s' "$RAW_DOCKERHUB_USERNAME" | tr -d '\r' | xargs)"
+          DOCKERHUB_TOKEN_CLEAN="$(printf '%s' "$RAW_DOCKERHUB_TOKEN" | tr -d '\r' | xargs)"
+
+          if [ -z "$DOCKERHUB_USERNAME_CLEAN" ] || [ -z "$DOCKERHUB_TOKEN_CLEAN" ]; then
+            echo "::warning::Docker Hub 凭据清洗后为空，将跳过 Docker Hub 推送。"
+            echo "enabled=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          echo "::add-mask::$DOCKERHUB_TOKEN_CLEAN"
+          echo "DOCKERHUB_USERNAME_CLEAN=$DOCKERHUB_USERNAME_CLEAN" >> $GITHUB_ENV
+          echo "DOCKERHUB_TOKEN_CLEAN=$DOCKERHUB_TOKEN_CLEAN" >> $GITHUB_ENV
+
       - name: Log in to Docker Hub
+        id: dockerhub-login
+        if: steps.dockerhub.outputs.enabled == 'true'
+        continue-on-error: true
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          username: ${{ env.DOCKERHUB_USERNAME_CLEAN }}
+          password: ${{ env.DOCKERHUB_TOKEN_CLEAN }}
+
+      - name: Decide Docker Hub publish
+        id: dockerhub-publish
+        run: |
+          if [ "${{ steps.dockerhub.outputs.enabled }}" != "true" ]; then
+            echo "enabled=false" >> $GITHUB_OUTPUT
+          elif [ "${{ steps.dockerhub-login.outcome }}" = "success" ]; then
+            echo "enabled=true" >> $GITHUB_OUTPUT
+          else
+            echo "enabled=false" >> $GITHUB_OUTPUT
+            echo "::warning::Docker Hub 登录失败，将仅推送 GHCR。请检查 DOCKERHUB_USERNAME 与 DOCKERHUB_TOKEN。"
+          fi
+
+      - name: Resolve Docker Hub image
+        id: dockerhub-image
+        run: |
+          if [ "${{ steps.dockerhub-publish.outputs.enabled }}" = "true" ]; then
+            echo "value=${{ env.DOCKERHUB_USERNAME_CLEAN }}/${{ env.IMAGE_NAME }}" >> $GITHUB_OUTPUT
+          else
+            echo "value=" >> $GITHUB_OUTPUT
+          fi
 
       - name: Extract metadata
         id: meta
@@ -87,7 +139,7 @@ jobs:
         with:
           images: |
             ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
-            ${{ env.DOCKERHUB_IMAGE }}
+            ${{ steps.dockerhub-image.outputs.value }}
           tags: |
             type=ref,event=branch
             type=semver,pattern={{version}}
@@ -126,7 +178,7 @@ jobs:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.34.0
         with:
-          image-ref: 'ghcr.io/ouonnki/${{ env.IMAGE_NAME }}:latest'
+          image-ref: 'ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest'
           format: 'sarif'
           output: 'trivy-results.sarif'
 
