@@ -133,12 +133,24 @@ jobs:
             echo "value=" >> $GITHUB_OUTPUT
           fi
 
+      - name: Resolve GHCR owner
+        id: ghcr-owner
+        env:
+          RAW_GHCR_OWNER: ${{ github.repository_owner }}
+        run: |
+          GHCR_OWNER_CLEAN="$(printf '%s' "$RAW_GHCR_OWNER" | tr '[:upper:]' '[:lower:]' | xargs)"
+          if [ -z "$GHCR_OWNER_CLEAN" ]; then
+            echo "::error::无法解析 GHCR 仓库所有者。"
+            exit 1
+          fi
+          echo "value=$GHCR_OWNER_CLEAN" >> $GITHUB_OUTPUT
+
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: |
-            ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
+            ghcr.io/${{ steps.ghcr-owner.outputs.value }}/${{ env.IMAGE_NAME }}
             ${{ steps.dockerhub-image.outputs.value }}
           tags: |
             type=ref,event=branch
@@ -175,10 +187,22 @@ jobs:
       security-events: write
 
     steps:
+      - name: Resolve GHCR owner
+        id: ghcr-owner
+        env:
+          RAW_GHCR_OWNER: ${{ github.repository_owner }}
+        run: |
+          GHCR_OWNER_CLEAN="$(printf '%s' "$RAW_GHCR_OWNER" | tr '[:upper:]' '[:lower:]' | xargs)"
+          if [ -z "$GHCR_OWNER_CLEAN" ]; then
+            echo "::error::无法解析 GHCR 仓库所有者。"
+            exit 1
+          fi
+          echo "value=$GHCR_OWNER_CLEAN" >> $GITHUB_OUTPUT
+
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.34.0
         with:
-          image-ref: 'ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest'
+          image-ref: 'ghcr.io/${{ steps.ghcr-owner.outputs.value }}/${{ env.IMAGE_NAME }}:latest'
           format: 'sarif'
           output: 'trivy-results.sarif'
 
