@@ -27,10 +27,50 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Resolve publish version
+        id: version
+        run: |
+          INPUT_VERSION="$(printf '%s' '${{ inputs.version }}' | xargs)"
+          CURRENT_VERSION="$(node -p \"require('./packages/cms-core/package.json').version\")"
+
+          if [ -n "$INPUT_VERSION" ]; then
+            TARGET_VERSION="$INPUT_VERSION"
+          else
+            TARGET_VERSION="$CURRENT_VERSION"
+          fi
+
+          if [ -z "$TARGET_VERSION" ]; then
+            echo "::error::无法解析发布版本号。"
+            exit 1
+          fi
+
+          echo "current=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          echo "target=$TARGET_VERSION" >> $GITHUB_OUTPUT
+
+          if [ "$TARGET_VERSION" = "$CURRENT_VERSION" ]; then
+            echo "need_bump=false" >> $GITHUB_OUTPUT
+            echo "发布版本与当前版本一致：$TARGET_VERSION（跳过版本写回）"
+          else
+            echo "need_bump=true" >> $GITHUB_OUTPUT
+            echo "将版本从 $CURRENT_VERSION 更新为 $TARGET_VERSION"
+          fi
+
       - name: Bump version
-        if: inputs.version != ''
+        if: steps.version.outputs.need_bump == 'true'
         working-directory: packages/cms-core
-        run: npm version ${{ inputs.version }} --no-git-tag-version
+        run: npm version ${{ steps.version.outputs.target }} --no-git-tag-version
+
+      - name: Check npm version availability
+        run: |
+          TARGET_VERSION='${{ steps.version.outputs.target }}'
+          PACKAGE_NAME='@ouonnki/cms-core'
+
+          if npm view "${PACKAGE_NAME}@${TARGET_VERSION}" version >/dev/null 2>&1; then
+            echo "::error::${PACKAGE_NAME}@${TARGET_VERSION} 已存在，请使用更高版本号。"
+            exit 1
+          fi
+
+          echo "${PACKAGE_NAME}@${TARGET_VERSION} 可发布。"
 
       - name: Build
         run: pnpm --filter @ouonnki/cms-core build
