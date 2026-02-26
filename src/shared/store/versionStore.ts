@@ -51,6 +51,18 @@ const formatDate = (dateStr: string) => {
 // 版本更新历史
 const VERSION_UPDATES: VersionUpdate[] = [
   {
+    version: '2.0.1',
+    title: 'TMDB 可配置能力增强',
+    date: formatDate('2026-02-26'),
+    features: [
+      '新增 TMDB API Base URL 配置，支持环境变量和设置页覆盖',
+      '新增 TMDB 图片 Base URL 配置，支持环境变量和设置页覆盖',
+      '新增 Base URL 自动补全与回退策略（设置页 > 环境变量 > 官方默认值）',
+    ],
+    fixes: ['优化 TMDB 在不同网络环境下的可访问性与稳定性'],
+    breaking: [],
+  },
+  {
     version: '2.0.0',
     title: '架构升级与全新体验',
     date: formatDate('2026-02-23'),
