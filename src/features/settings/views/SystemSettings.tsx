@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select'
-import { Cog, KeyRound } from 'lucide-react'
+import { Cog, Image, KeyRound, Link2 } from 'lucide-react'
 import { SettingsItem, SettingsPageShell, SettingsSection } from '../components/common'
 
 export default function SystemSettings() {
@@ -20,6 +20,9 @@ export default function SystemSettings() {
   const hasEnvToken = Boolean(import.meta.env.OKI_TMDB_API_TOKEN)
   const hasUserToken = Boolean(system.tmdbApiToken)
   const hasTmdbToken = hasEnvToken || hasUserToken
+  const tmdbApiBaseUrlPlaceholder = import.meta.env.OKI_TMDB_API_BASE_URL || 'https://api.themoviedb.org/3'
+  const tmdbImageBaseUrlPlaceholder =
+    import.meta.env.OKI_TMDB_IMAGE_BASE_URL || 'https://image.tmdb.org/t/p/'
 
   return (
     <SettingsPageShell
@@ -79,6 +82,38 @@ export default function SystemSettings() {
               disabled={!hasTmdbToken}
               onCheckedChange={checked => setSystemSettings({ tmdbEnabled: checked })}
             />
+          }
+        />
+        <SettingsItem
+          title="TMDB API Base URL"
+          description="支持绝对地址或相对路径，留空后自动回退到环境变量或官方默认地址。"
+          control={
+            <div className="relative w-full sm:w-[340px]">
+              <Link2 className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+              <Input
+                type="text"
+                className="pl-9"
+                value={system.tmdbApiBaseUrl}
+                placeholder={tmdbApiBaseUrlPlaceholder}
+                onChange={e => setSystemSettings({ tmdbApiBaseUrl: e.target.value })}
+              />
+            </div>
+          }
+        />
+        <SettingsItem
+          title="TMDB 图片 Base URL"
+          description="支持绝对地址或相对路径，留空后自动回退到环境变量或官方默认地址。"
+          control={
+            <div className="relative w-full sm:w-[340px]">
+              <Image className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+              <Input
+                type="text"
+                className="pl-9"
+                value={system.tmdbImageBaseUrl}
+                placeholder={tmdbImageBaseUrlPlaceholder}
+                onChange={e => setSystemSettings({ tmdbImageBaseUrl: e.target.value })}
+              />
+            </div>
           }
         />
         {system.tmdbEnabled && (

@@ -71,6 +71,8 @@ const personalConfigSchema = z.object({
     system: z
       .object({
         isUpdateLogEnabled: z.boolean().optional(),
+        tmdbApiBaseUrl: z.string().optional(),
+        tmdbImageBaseUrl: z.string().optional(),
         tmdbLanguage: z.string().optional(),
         tmdbImageQuality: z.enum(['low', 'medium', 'high']).optional(),
       })

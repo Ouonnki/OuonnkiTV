@@ -12,6 +12,8 @@ OuonnkiTV 支持通过环境变量预定义应用的默认配置。当用户点�
 | ------ | ---- | ---- |
 | `OKI_INITIAL_VIDEO_SOURCES` | 否 | 初始视频源（JSON 字符串或远程 URL） |
 | `OKI_TMDB_API_TOKEN` | 否 | TMDB API Token，启用 [TMDB 智能模式](#-tmdb-配置建议启用)获取影片元数据 |
+| `OKI_TMDB_API_BASE_URL` | 否 | TMDB API 基础地址（默认 `https://api.themoviedb.org/3`） |
+| `OKI_TMDB_IMAGE_BASE_URL` | 否 | TMDB 图片基础地址（默认 `https://image.tmdb.org/t/p/`） |
 | `OKI_ACCESS_PASSWORD` | 否 | 访问密码（留空则公开访问） |
 | `OKI_DISABLE_ANALYTICS` | 否 | 设为 `true` 禁用 Vercel Analytics（Docker 等非 Vercel 部署建议设为 `true`） |
 | `OKI_INITIAL_CONFIG` | 否 | 完整 JSON 配置（包含所有设置和视频源） |
@@ -75,9 +77,16 @@ OuonnkiTV 支持通过 [TMDB](https://www.themoviedb.org/)（The Movie Database�
 
 ```env
 OKI_TMDB_API_TOKEN=your_tmdb_api_token_here
+OKI_TMDB_API_BASE_URL=https://api.themoviedb.org/3
+OKI_TMDB_IMAGE_BASE_URL=https://image.tmdb.org/t/p/
 ```
 
 配置后应用默认启用 TMDB 智能模式。
+
+说明：
+- `OKI_TMDB_API_BASE_URL` 支持绝对地址或相对路径（如 `/tmdb-api`），会自动补齐 `/3`。
+- `OKI_TMDB_IMAGE_BASE_URL` 支持绝对地址或相对路径（如 `/tmdb-image`），会自动补齐 `/t/p/`。
+- 中国大陆网络环境如遇 TMDB 官方域名访问不稳定，建议配置 `OKI_TMDB_API_BASE_URL=https://api.tmdb.org` 与 `OKI_TMDB_IMAGE_BASE_URL=https://image.tmdb.org`。
 
 **方式二：应用内手动输入**
 
@@ -85,9 +94,11 @@ OKI_TMDB_API_TOKEN=your_tmdb_api_token_here
 
 1. 进入 **设置** → **系统设置** → **系统行为**
 2. 在「TMDB API Token」输入框中输入你的 Token
-3. 开启「TMDB 智能模式」开关
+3. （可选）在「TMDB API Base URL / TMDB 图片 Base URL」中填写自定义地址
+4. 开启「TMDB 智能模式」开关
 
 > Token 从 [themoviedb.org](https://www.themoviedb.org/settings/api) 获取（需注册账户），详细申请步骤见 [TMDB API Key 申请指南](./tmdb-key.md)。
+> Base URL 优先级：设置页填写值 > 环境变量 > 官方默认值。留空表示不覆盖，自动回退。
 
 ### TMDB 智能模式设置
 

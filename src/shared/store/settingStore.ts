@@ -36,6 +36,8 @@ interface PlaybackSettings {
 interface SystemSettings {
   tmdbEnabled: boolean
   tmdbApiToken: string
+  tmdbApiBaseUrl: string
+  tmdbImageBaseUrl: string
   isUpdateLogEnabled: boolean
   tmdbLanguage: string
   tmdbImageQuality: 'low' | 'medium' | 'high'
@@ -116,7 +118,7 @@ export const useSettingStore = create<SettingStore>()(
       })),
       {
         name: 'ouonnki-tv-setting-store',
-        version: 9,
+        version: 10,
         migrate: (persistedState: unknown, version: number) => {
           const state = persistedState as Record<string, unknown>
           if (version < 2 && state.playback) {
@@ -175,6 +177,12 @@ export const useSettingStore = create<SettingStore>()(
           if (version < 9) {
             const system = (state.system ?? {}) as Record<string, unknown>
             system.tmdbApiToken ??= ''
+            state.system = system
+          }
+          if (version < 10) {
+            const system = (state.system ?? {}) as Record<string, unknown>
+            system.tmdbApiBaseUrl ??= DEFAULT_SETTINGS.system.tmdbApiBaseUrl
+            system.tmdbImageBaseUrl ??= DEFAULT_SETTINGS.system.tmdbImageBaseUrl
             state.system = system
           }
           return state

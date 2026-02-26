@@ -28,6 +28,8 @@ interface SettingsConfig {
   }
   system?: {
     tmdbEnabled?: boolean
+    tmdbApiBaseUrl?: string
+    tmdbImageBaseUrl?: string
     isUpdateLogEnabled?: boolean
     tmdbLanguage?: string
     tmdbImageQuality?: 'low' | 'medium' | 'high'

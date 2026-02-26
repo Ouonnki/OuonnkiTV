@@ -1,6 +1,8 @@
 import { INITIAL_CONFIG } from './initialConfig'
 
 const envSettings = INITIAL_CONFIG?.settings
+const DEFAULT_TMDB_API_BASE_URL = 'https://api.themoviedb.org/3'
+const DEFAULT_TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/'
 
 export const DEFAULT_SETTINGS = {
   network: {
@@ -33,6 +35,14 @@ export const DEFAULT_SETTINGS = {
   system: {
     tmdbEnabled: envSettings?.system?.tmdbEnabled ?? Boolean(import.meta.env.OKI_TMDB_API_TOKEN),
     tmdbApiToken: '',
+    tmdbApiBaseUrl:
+      envSettings?.system?.tmdbApiBaseUrl ??
+      import.meta.env.OKI_TMDB_API_BASE_URL ??
+      DEFAULT_TMDB_API_BASE_URL,
+    tmdbImageBaseUrl:
+      envSettings?.system?.tmdbImageBaseUrl ??
+      import.meta.env.OKI_TMDB_IMAGE_BASE_URL ??
+      DEFAULT_TMDB_IMAGE_BASE_URL,
     isUpdateLogEnabled: envSettings?.system?.isUpdateLogEnabled ?? false,
     tmdbLanguage: envSettings?.system?.tmdbLanguage ?? 'zh-CN',
     tmdbImageQuality: (envSettings?.system?.tmdbImageQuality ?? 'medium') as
