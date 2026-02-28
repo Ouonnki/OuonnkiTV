@@ -51,6 +51,21 @@ const formatDate = (dateStr: string) => {
 // 版本更新历史
 const VERSION_UPDATES: VersionUpdate[] = [
   {
+    version: '2.0.2',
+    title: '移动端手势与导航体验优化',
+    date: formatDate('2026-02-28'),
+    features: [
+      '新增「滚动收起导航动画」开关，默认关闭以降低性能开销',
+      '新增移动端「长按倍速倍率」配置，支持 1~5 倍自定义',
+      '支持从配置导入/环境配置中读取长按倍速倍率',
+    ],
+    fixes: [
+      '修复平板端长按触发二倍速时会弹出播放器右键菜单的问题',
+      '优化侧边栏和导航栏收起展开时动画导致的卡顿问题',
+    ],
+    breaking: [],
+  },
+  {
     version: '2.0.1',
     title: 'TMDB 可配置能力增强',
     date: formatDate('2026-02-26'),
