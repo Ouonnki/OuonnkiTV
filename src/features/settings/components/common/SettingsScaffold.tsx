@@ -24,7 +24,7 @@ interface SettingsSectionProps {
 
 interface SettingsItemProps {
   title: string
-  description?: string
+  description?: ReactNode
   control?: ReactNode
   children?: ReactNode
   className?: string

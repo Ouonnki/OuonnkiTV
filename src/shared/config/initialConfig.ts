@@ -31,6 +31,7 @@ interface SettingsConfig {
     tmdbApiBaseUrl?: string
     tmdbImageBaseUrl?: string
     isUpdateLogEnabled?: boolean
+    isScrollChromeAnimationEnabled?: boolean
     tmdbLanguage?: string
     tmdbImageQuality?: 'low' | 'medium' | 'high'
   }

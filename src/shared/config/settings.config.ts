@@ -44,6 +44,7 @@ export const DEFAULT_SETTINGS = {
       import.meta.env.OKI_TMDB_IMAGE_BASE_URL ??
       DEFAULT_TMDB_IMAGE_BASE_URL,
     isUpdateLogEnabled: envSettings?.system?.isUpdateLogEnabled ?? false,
+    isScrollChromeAnimationEnabled: envSettings?.system?.isScrollChromeAnimationEnabled ?? false,
     tmdbLanguage: envSettings?.system?.tmdbLanguage ?? 'zh-CN',
     tmdbImageQuality: (envSettings?.system?.tmdbImageQuality ?? 'medium') as
       | 'low'

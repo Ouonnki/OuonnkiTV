@@ -130,4 +130,48 @@ describe('settingStore migrate', () => {
     expect(migrated.system.tmdbApiBaseUrl).toBe('/custom-api')
     expect(migrated.system.tmdbImageBaseUrl).toBe('/custom-image')
   })
+
+  it('v10 -> v11 会补齐 isScrollChromeAnimationEnabled 默认值', async () => {
+    const migrate = useSettingStore.persist.getOptions().migrate
+
+    const legacyState = {
+      network: DEFAULT_SETTINGS.network,
+      search: DEFAULT_SETTINGS.search,
+      playback: {
+        ...DEFAULT_SETTINGS.playback,
+      },
+      system: {
+        ...DEFAULT_SETTINGS.system,
+      },
+    }
+    delete (legacyState.system as Record<string, unknown>).isScrollChromeAnimationEnabled
+
+    const migrated = (await Promise.resolve(migrate?.(legacyState, 10))) as {
+      system: { isScrollChromeAnimationEnabled?: boolean }
+    }
+
+    expect(migrated.system.isScrollChromeAnimationEnabled).toBe(false)
+  })
+
+  it('已有 isScrollChromeAnimationEnabled 时不覆盖', async () => {
+    const migrate = useSettingStore.persist.getOptions().migrate
+
+    const legacyState = {
+      network: DEFAULT_SETTINGS.network,
+      search: DEFAULT_SETTINGS.search,
+      playback: {
+        ...DEFAULT_SETTINGS.playback,
+      },
+      system: {
+        ...DEFAULT_SETTINGS.system,
+        isScrollChromeAnimationEnabled: true,
+      },
+    }
+
+    const migrated = (await Promise.resolve(migrate?.(legacyState, 10))) as {
+      system: { isScrollChromeAnimationEnabled?: boolean }
+    }
+
+    expect(migrated.system.isScrollChromeAnimationEnabled).toBe(true)
+  })
 })

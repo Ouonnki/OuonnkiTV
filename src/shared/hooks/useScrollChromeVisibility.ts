@@ -5,6 +5,7 @@ import {
 } from '@/shared/lib/scrollChrome'
 
 interface UseScrollChromeVisibilityOptions {
+  enabled?: boolean
   scrollRootSelector?: string
   resetKey?: string
   hideThreshold?: number
@@ -26,6 +27,7 @@ const SCROLL_VIEWPORT_SELECTOR = '[data-slot="scroll-area-viewport"]'
  * 监听主滚动容器，输出导航栏/侧栏显隐状态。
  */
 export function useScrollChromeVisibility({
+  enabled = true,
   scrollRootSelector = DEFAULT_SCROLL_ROOT_SELECTOR,
   resetKey,
   hideThreshold,
@@ -41,6 +43,11 @@ export function useScrollChromeVisibility({
   })
 
   useEffect(() => {
+    if (!enabled) {
+      setIsChromeVisible(true)
+      return
+    }
+
     const root = document.querySelector<HTMLElement>(scrollRootSelector)
     const viewport = root?.querySelector<HTMLElement>(SCROLL_VIEWPORT_SELECTOR)
 
@@ -101,7 +108,7 @@ export function useScrollChromeVisibility({
         window.cancelAnimationFrame(frameId)
       }
     }
-  }, [scrollRootSelector, resetKey, hideThreshold, showThreshold, topRevealOffset])
+  }, [enabled, scrollRootSelector, resetKey, hideThreshold, showThreshold, topRevealOffset])
 
   return isChromeVisible
 }

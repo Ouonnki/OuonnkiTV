@@ -21,6 +21,7 @@ export default function MainLayout() {
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const isChromeVisible = useScrollChromeVisibility({
+    enabled: system.isScrollChromeAnimationEnabled,
     scrollRootSelector: '[data-main-scroll-area]',
     resetKey: location.pathname,
   })
@@ -55,9 +56,15 @@ export default function MainLayout() {
       }
       className="flex h-dvh flex-col overflow-hidden"
     >
-      <Navigation hidden={!isChromeVisible} />
+      <Navigation
+        hidden={!isChromeVisible}
+        enableScrollAnimation={system.isScrollChromeAnimationEnabled}
+      />
       <div className="flex flex-1 overflow-hidden">
-        <SideBar hidden={!isChromeVisible} />
+        <SideBar
+          hidden={!isChromeVisible}
+          enableScrollAnimation={system.isScrollChromeAnimationEnabled}
+        />
         <SidebarInset className="h-full overflow-hidden">
           <div className="h-full p-2 md:pl-1">
             <div className="border-border bg-sidebar relative h-full rounded-lg border py-2 shadow-sm">

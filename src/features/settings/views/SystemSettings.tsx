@@ -50,6 +50,25 @@ export default function SystemSettings() {
             />
           }
         />
+        <SettingsItem
+          title="滚动收起导航动画"
+          description={
+            <span>
+              启用后会在下滑时收起顶部导航和侧边栏，并在上滑时恢复。
+              <span className="text-destructive font-semibold">
+                {' '}
+                该动画可能带来较高性能消耗，建议仅在性能充足的设备开启。
+              </span>
+            </span>
+          }
+          controlClassName="self-end mt-1"
+          control={
+            <Switch
+              checked={system.isScrollChromeAnimationEnabled}
+              onCheckedChange={checked => setSystemSettings({ isScrollChromeAnimationEnabled: checked })}
+            />
+          }
+        />
         {!hasEnvToken && (
           <SettingsItem
             title="TMDB API Token"

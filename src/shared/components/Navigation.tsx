@@ -13,9 +13,10 @@ import { cn } from '@/shared/lib'
 
 interface NavigationProps {
   hidden?: boolean
+  enableScrollAnimation?: boolean
 }
 
-export default function Navigation({ hidden = false }: NavigationProps) {
+export default function Navigation({ hidden = false, enableScrollAnimation = false }: NavigationProps) {
   const { mode } = useThemeState()
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false)
   const location = useLocation()
@@ -26,24 +27,39 @@ export default function Navigation({ hidden = false }: NavigationProps) {
   return (
     <div
       className={cn(
-        'sticky top-0 z-50 w-full overflow-hidden transition-[height] duration-220 ease-out motion-reduce:transition-none',
+        'sticky top-0 z-50 w-full overflow-hidden',
+        enableScrollAnimation
+          ? 'transition-[height] duration-220 ease-out motion-reduce:transition-none'
+          : 'transition-none',
       )}
       style={{ height: hidden ? '0rem' : '4rem' }}
     >
       <div
         className={cn(
-          'flex w-full justify-center transform-gpu will-change-[transform,opacity] transition-[opacity,transform] duration-220 ease-out motion-reduce:transition-none',
+          'flex w-full justify-center',
+          enableScrollAnimation
+            ? 'transform-gpu will-change-[transform,opacity] transition-[opacity,transform] duration-220 ease-out motion-reduce:transition-none'
+            : 'transition-none',
           hidden ? 'pointer-events-none -translate-y-2 opacity-0' : 'translate-y-0 opacity-100',
         )}
       >
-        <Navbar className={cn('transition-[backdrop-filter,box-shadow] duration-200', hidden && 'backdrop-blur-none shadow-none')}>
+        <Navbar
+          className={cn(
+            enableScrollAnimation && 'transition-[backdrop-filter,box-shadow] duration-200',
+            enableScrollAnimation && hidden && 'backdrop-blur-none shadow-none',
+          )}
+        >
           {/* Logo 和侧边栏触发器 - 移动端搜索模式下隐藏 */}
           <NavbarBrand
-            className={`!flex-none transition-[opacity,transform] duration-220 ease-out ${
+            className={cn(
+              '!flex-none',
+              enableScrollAnimation
+                ? 'transition-[opacity,transform] duration-220 ease-out'
+                : 'transition-none',
               isMobileSearchOpen
                 ? 'pointer-events-none -translate-x-4 opacity-0 sm:pointer-events-auto sm:translate-x-0 sm:opacity-100'
-                : ''
-            }`}
+                : '',
+            )}
           >
             <SidebarTrigger />
             <NavLink to="/" className="flex items-center">
@@ -77,11 +93,15 @@ export default function Navigation({ hidden = false }: NavigationProps) {
             </AnimatePresence>
 
             <div
-              className={`flex flex-1 justify-end gap-2 transition-[opacity,transform] duration-220 ease-out sm:gap-0 ${
+              className={cn(
+                'flex flex-1 justify-end gap-2 sm:gap-0',
+                enableScrollAnimation
+                  ? 'transition-[opacity,transform] duration-220 ease-out'
+                  : 'transition-none',
                 isMobileSearchOpen
                   ? 'pointer-events-none translate-x-4 opacity-0 sm:pointer-events-auto sm:translate-x-0 sm:opacity-100'
-                  : ''
-              }`}
+                  : '',
+              )}
             >
               <ThemeToggle>
                 <Button size="icon" variant="ghost" className="size-7">
