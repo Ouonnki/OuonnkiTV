@@ -77,11 +77,11 @@ export default function SideBar({
   return (
     <Sidebar
       className={cn(
-        '[&_[data-slot=sidebar-gap]]:duration-300 [&_[data-slot=sidebar-gap]]:ease-in-out',
-        '[&_[data-slot=sidebar-container]]:duration-300 [&_[data-slot=sidebar-container]]:ease-in-out',
-        '[&_[data-slot=sidebar-inner]]:transition-opacity [&_[data-slot=sidebar-inner]]:duration-300',
+        '[&_[data-slot=sidebar-gap]]:transition-[width] [&_[data-slot=sidebar-gap]]:duration-220 [&_[data-slot=sidebar-gap]]:ease-out',
+        '[&_[data-slot=sidebar-container]]:translate-x-0 [&_[data-slot=sidebar-container]]:opacity-100 [&_[data-slot=sidebar-container]]:transform-gpu [&_[data-slot=sidebar-container]]:will-change-[transform,opacity,top] [&_[data-slot=sidebar-container]]:transition-[transform,opacity,top] [&_[data-slot=sidebar-container]]:duration-220 [&_[data-slot=sidebar-container]]:ease-out',
+        '[&_[data-slot=sidebar-inner]]:transition-opacity [&_[data-slot=sidebar-inner]]:duration-200',
         hidden &&
-          '[&_[data-slot=sidebar-gap]]:!w-0 [&_[data-slot=sidebar-container]]:!w-0 [&_[data-slot=sidebar-container]]:overflow-hidden [&_[data-slot=sidebar-inner]]:opacity-0',
+          '[&_[data-slot=sidebar-gap]]:w-0 [&_[data-slot=sidebar-container]]:pointer-events-none [&_[data-slot=sidebar-container]]:-translate-x-full [&_[data-slot=sidebar-container]]:opacity-0 [&_[data-slot=sidebar-inner]]:opacity-0',
         className,
       )}
       variant="floating"

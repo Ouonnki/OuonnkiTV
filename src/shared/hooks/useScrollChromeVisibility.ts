@@ -58,7 +58,10 @@ export function useScrollChromeVisibility({
     }
     setIsChromeVisible(true)
 
-    const handleScroll = () => {
+    let frameId: number | null = null
+
+    const runTransition = () => {
+      frameId = null
       const currentState = stateRef.current
       const next = computeNextScrollChromeState({
         currentScrollTop: viewport.scrollTop,
@@ -83,12 +86,22 @@ export function useScrollChromeVisibility({
       }
     }
 
+    const handleScroll = () => {
+      if (frameId !== null) {
+        return
+      }
+
+      frameId = window.requestAnimationFrame(runTransition)
+    }
+
     viewport.addEventListener('scroll', handleScroll, { passive: true })
     return () => {
       viewport.removeEventListener('scroll', handleScroll)
+      if (frameId !== null) {
+        window.cancelAnimationFrame(frameId)
+      }
     }
   }, [scrollRootSelector, resetKey, hideThreshold, showThreshold, topRevealOffset])
 
   return isChromeVisible
 }
-

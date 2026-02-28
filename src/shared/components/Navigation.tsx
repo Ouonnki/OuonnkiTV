@@ -26,20 +26,20 @@ export default function Navigation({ hidden = false }: NavigationProps) {
   return (
     <div
       className={cn(
-        'sticky top-0 z-50 w-full overflow-hidden transition-[height] duration-300 ease-in-out motion-reduce:transition-none',
+        'sticky top-0 z-50 w-full overflow-hidden transition-[height] duration-220 ease-out motion-reduce:transition-none',
       )}
       style={{ height: hidden ? '0rem' : '4rem' }}
     >
       <div
         className={cn(
-          'flex w-full justify-center transition-[opacity,transform] duration-300 ease-in-out motion-reduce:transition-none',
+          'flex w-full justify-center transform-gpu will-change-[transform,opacity] transition-[opacity,transform] duration-220 ease-out motion-reduce:transition-none',
           hidden ? 'pointer-events-none -translate-y-2 opacity-0' : 'translate-y-0 opacity-100',
         )}
       >
-        <Navbar>
+        <Navbar className={cn('transition-[backdrop-filter,box-shadow] duration-200', hidden && 'backdrop-blur-none shadow-none')}>
           {/* Logo 和侧边栏触发器 - 移动端搜索模式下隐藏 */}
           <NavbarBrand
-            className={`!flex-none transition-all duration-300 ease-out ${
+            className={`!flex-none transition-[opacity,transform] duration-220 ease-out ${
               isMobileSearchOpen
                 ? 'pointer-events-none -translate-x-4 opacity-0 sm:pointer-events-auto sm:translate-x-0 sm:opacity-100'
                 : ''
@@ -77,7 +77,7 @@ export default function Navigation({ hidden = false }: NavigationProps) {
             </AnimatePresence>
 
             <div
-              className={`flex flex-1 justify-end gap-2 transition-all duration-300 ease-out sm:gap-0 ${
+              className={`flex flex-1 justify-end gap-2 transition-[opacity,transform] duration-220 ease-out sm:gap-0 ${
                 isMobileSearchOpen
                   ? 'pointer-events-none translate-x-4 opacity-0 sm:pointer-events-auto sm:translate-x-0 sm:opacity-100'
                   : ''
