@@ -238,7 +238,7 @@ export function useMobilePlayerGestures({
 
         current.longPressTriggered = true
         suppressContextMenu(1000)
-        art.playbackRate = mergedConfig.longPressPlaybackRate
+        art.playbackRate = clampValue(mergedConfig.longPressPlaybackRate, 1, 5)
       }, mergedConfig.longPressDurationMs)
     }
 

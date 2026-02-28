@@ -683,9 +683,17 @@ export default function UnifiedPlayer() {
     setGestureSeekPreviewTime(null)
   }, [])
 
+  const mobileGestureConfig = useMemo(
+    () => ({
+      longPressPlaybackRate: Math.max(1, Math.min(5, playback.longPressPlaybackRate)),
+    }),
+    [playback.longPressPlaybackRate],
+  )
+
   useMobilePlayerGestures({
     art: activeArt,
     enabled: playback.isMobileGestureEnabled,
+    config: mobileGestureConfig,
     onVolumeGestureChange: handleVolumeGestureChange,
     onVolumeGestureEnd: handleVolumeGestureEnd,
     onSeekGesturePreviewChange: handleSeekGesturePreviewChange,

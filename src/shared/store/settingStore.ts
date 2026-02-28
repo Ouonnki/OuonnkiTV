@@ -31,6 +31,7 @@ interface PlaybackSettings {
   isAutoMiniEnabled: boolean
   isScreenshotEnabled: boolean
   isMobileGestureEnabled: boolean
+  longPressPlaybackRate: number
 }
 
 interface SystemSettings {
@@ -119,7 +120,7 @@ export const useSettingStore = create<SettingStore>()(
       })),
       {
         name: 'ouonnki-tv-setting-store',
-        version: 11,
+        version: 12,
         migrate: (persistedState: unknown, version: number) => {
           const state = persistedState as Record<string, unknown>
           if (version < 2 && state.playback) {
@@ -190,6 +191,11 @@ export const useSettingStore = create<SettingStore>()(
             const system = (state.system ?? {}) as Record<string, unknown>
             system.isScrollChromeAnimationEnabled ??= DEFAULT_SETTINGS.system.isScrollChromeAnimationEnabled
             state.system = system
+          }
+          if (version < 12) {
+            const playback = (state.playback ?? {}) as Record<string, unknown>
+            playback.longPressPlaybackRate ??= DEFAULT_SETTINGS.playback.longPressPlaybackRate
+            state.playback = playback
           }
           return state
         },

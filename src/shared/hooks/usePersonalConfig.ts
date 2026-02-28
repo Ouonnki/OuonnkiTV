@@ -64,6 +64,7 @@ const personalConfigSchema = z.object({
         isAutoMiniEnabled: z.boolean().optional(),
         isScreenshotEnabled: z.boolean().optional(),
         isMobileGestureEnabled: z.boolean().optional(),
+        longPressPlaybackRate: z.number().min(1).max(5).optional(),
         // 向后兼容：旧版配置可能在 playback 中包含 adFilteringEnabled
         adFilteringEnabled: z.boolean().optional(),
       })

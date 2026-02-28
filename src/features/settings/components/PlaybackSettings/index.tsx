@@ -211,6 +211,28 @@ export default function PlaybackSettings() {
           }
         />
         <SettingsItem
+          title="长按倍速倍率"
+          description="设置移动端长按时的播放倍率，范围 1~5，支持 0.5 步进。"
+          control={
+            <div className="relative w-full sm:w-44">
+              <Input
+                type="number"
+                min={1}
+                max={5}
+                step={0.5}
+                value={playback.longPressPlaybackRate}
+                onChange={e => {
+                  const val = Number.parseFloat(e.target.value)
+                  if (Number.isNaN(val)) return
+                  setPlaybackSettings({
+                    longPressPlaybackRate: Math.max(1, Math.min(5, val)),
+                  })
+                }}
+              />
+            </div>
+          }
+        />
+        <SettingsItem
           title="截图"
           description="在播放器中显示截图按钮。"
           controlClassName="self-end mt-1"

@@ -174,4 +174,44 @@ describe('settingStore migrate', () => {
 
     expect(migrated.system.isScrollChromeAnimationEnabled).toBe(true)
   })
+
+  it('v11 -> v12 会补齐 longPressPlaybackRate 默认值', async () => {
+    const migrate = useSettingStore.persist.getOptions().migrate
+
+    const legacyState = {
+      network: DEFAULT_SETTINGS.network,
+      search: DEFAULT_SETTINGS.search,
+      playback: {
+        ...DEFAULT_SETTINGS.playback,
+      },
+      system: DEFAULT_SETTINGS.system,
+    }
+    delete (legacyState.playback as Record<string, unknown>).longPressPlaybackRate
+
+    const migrated = (await Promise.resolve(migrate?.(legacyState, 11))) as {
+      playback: { longPressPlaybackRate?: number }
+    }
+
+    expect(migrated.playback.longPressPlaybackRate).toBe(DEFAULT_SETTINGS.playback.longPressPlaybackRate)
+  })
+
+  it('已有 longPressPlaybackRate 时不覆盖', async () => {
+    const migrate = useSettingStore.persist.getOptions().migrate
+
+    const legacyState = {
+      network: DEFAULT_SETTINGS.network,
+      search: DEFAULT_SETTINGS.search,
+      playback: {
+        ...DEFAULT_SETTINGS.playback,
+        longPressPlaybackRate: 3.5,
+      },
+      system: DEFAULT_SETTINGS.system,
+    }
+
+    const migrated = (await Promise.resolve(migrate?.(legacyState, 11))) as {
+      playback: { longPressPlaybackRate?: number }
+    }
+
+    expect(migrated.playback.longPressPlaybackRate).toBe(3.5)
+  })
 })

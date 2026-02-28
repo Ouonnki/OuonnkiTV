@@ -25,6 +25,7 @@ interface SettingsConfig {
     isAutoMiniEnabled?: boolean
     isScreenshotEnabled?: boolean
     isMobileGestureEnabled?: boolean
+    longPressPlaybackRate?: number
   }
   system?: {
     tmdbEnabled?: boolean
