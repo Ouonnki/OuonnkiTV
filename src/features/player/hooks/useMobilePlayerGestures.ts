@@ -82,6 +82,7 @@ export function useMobilePlayerGestures({
   const lockStateRef = useRef(false)
   const playbackRateBeforeLongPressRef = useRef<number>(1)
   const suppressClickUntilRef = useRef(0)
+  const suppressContextMenuUntilRef = useRef(0)
 
   useEffect(() => {
     if (!art) return
@@ -125,6 +126,11 @@ export function useMobilePlayerGestures({
 
     const suppressFollowupClicks = (durationMs: number) => {
       suppressClickUntilRef.current = Date.now() + durationMs
+    }
+
+    const suppressContextMenu = (durationMs: number) => {
+      const until = Date.now() + durationMs
+      suppressContextMenuUntilRef.current = Math.max(suppressContextMenuUntilRef.current, until)
     }
 
     const isFullscreenActive = () => {
@@ -220,6 +226,8 @@ export function useMobilePlayerGestures({
       }
 
       playbackRateBeforeLongPressRef.current = art.playbackRate || 1
+      // 触屏全屏手势期间抑制系统长按菜单，避免与长按加速冲突
+      suppressContextMenu(mergedConfig.longPressDurationMs + 800)
       clearLongPressTimer()
       longPressTimerRef.current = window.setTimeout(() => {
         const current = sessionRef.current
@@ -229,6 +237,7 @@ export function useMobilePlayerGestures({
         if (!canHandleGesture()) return
 
         current.longPressTriggered = true
+        suppressContextMenu(1000)
         art.playbackRate = mergedConfig.longPressPlaybackRate
       }, mergedConfig.longPressDurationMs)
     }
@@ -319,6 +328,7 @@ export function useMobilePlayerGestures({
 
       // 长按加速中 → 恢复播放速度
       if (session.longPressTriggered) {
+        suppressContextMenu(500)
         restorePlaybackRate()
         sessionRef.current = null
         return
@@ -393,12 +403,25 @@ export function useMobilePlayerGestures({
     }
 
     const onTouchCancel = () => {
+      suppressContextMenu(500)
       resetSession()
     }
 
     const onClickCapture = (event: Event) => {
       if (Date.now() > suppressClickUntilRef.current) return
       if (shouldIgnoreTarget(event.target)) return
+      event.preventDefault()
+      event.stopPropagation()
+      const stopImmediatePropagation = (event as Event & { stopImmediatePropagation?: () => void })
+        .stopImmediatePropagation
+      stopImmediatePropagation?.call(event)
+    }
+
+    const onContextMenuCapture = (event: Event) => {
+      if (!canHandleGesture()) return
+      const hasActiveTouchSession = Boolean(sessionRef.current)
+      const shouldSuppress = hasActiveTouchSession || Date.now() <= suppressContextMenuUntilRef.current
+      if (!shouldSuppress) return
       event.preventDefault()
       event.stopPropagation()
       const stopImmediatePropagation = (event as Event & { stopImmediatePropagation?: () => void })
@@ -413,6 +436,7 @@ export function useMobilePlayerGestures({
     art.template.$player.addEventListener('touchcancel', onTouchCancel)
     art.template.$player.addEventListener('click', onClickCapture, true)
     art.template.$player.addEventListener('dblclick', onClickCapture, true)
+    art.template.$player.addEventListener('contextmenu', onContextMenuCapture, true)
 
     art.on('lock', onLock)
     art.on('fullscreenWeb', onFullscreenChange)
@@ -428,6 +452,7 @@ export function useMobilePlayerGestures({
       art.template.$player.removeEventListener('touchcancel', onTouchCancel)
       art.template.$player.removeEventListener('click', onClickCapture, true)
       art.template.$player.removeEventListener('dblclick', onClickCapture, true)
+      art.template.$player.removeEventListener('contextmenu', onContextMenuCapture, true)
       art.off('lock', onLock)
       art.off('fullscreenWeb', onFullscreenChange)
       art.off('fullscreen', onFullscreenChange)
