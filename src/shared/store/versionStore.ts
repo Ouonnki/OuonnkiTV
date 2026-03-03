@@ -51,6 +51,20 @@ const formatDate = (dateStr: string) => {
 // 版本更新历史
 const VERSION_UPDATES: VersionUpdate[] = [
   {
+    version: '2.0.3',
+    title: '全屏进度条显示控制',
+    date: formatDate('2026-03-03'),
+    features: [
+      '新增「全屏隐藏收起态进度条」设置，支持网页全屏与系统全屏场景',
+      '播放器按全屏状态与用户配置动态切换迷你进度条显示，避免遮挡画面',
+      '个人配置导入与环境配置新增 isFullscreenProgressHidden 字段支持',
+    ],
+    fixes: [
+      '补充设置迁移与测试覆盖，确保旧配置升级后自动补齐默认值',
+    ],
+    breaking: [],
+  },
+  {
     version: '2.0.2',
     title: '移动端手势与导航体验优化',
     date: formatDate('2026-02-28'),
