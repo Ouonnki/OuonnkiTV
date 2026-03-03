@@ -241,3 +241,9 @@
   width: 50% !important;
   height: 50% !important;
 }
+
+/* 全屏场景下按设置隐藏 Artplayer 收起态迷你进度条 */
+.art-video-player.oki-hide-mini-progress.art-mini-progress-bar .art-bottom .art-progress,
+.art-video-player.oki-hide-mini-progress.art-lock .art-bottom .art-progress {
+  display: none !important;
+}

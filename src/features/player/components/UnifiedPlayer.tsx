@@ -792,6 +792,13 @@ export default function UnifiedPlayer() {
     playerRef.current = art
     setActiveArt(art)
 
+    const syncFullscreenMiniProgressBar = () => {
+      const isFullscreenActive = art.fullscreen || art.fullscreenWeb
+      const shouldHideMiniProgress =
+        playbackRef.current.isFullscreenProgressHidden && isFullscreenActive
+      art.template.$player.classList.toggle('oki-hide-mini-progress', shouldHideMiniProgress)
+    }
+
     const syncMobileControlBar = () => {
       const isFullscreenActive = art.fullscreen || art.fullscreenWeb
       const isMobileNow = isTouchDevice()
@@ -817,6 +824,8 @@ export default function UnifiedPlayer() {
       if (preferredFullscreenControl) {
         preferredFullscreenControl.style.display = ''
       }
+
+      syncFullscreenMiniProgressBar()
     }
 
     const handleControlViewportChange = _.throttle(() => {

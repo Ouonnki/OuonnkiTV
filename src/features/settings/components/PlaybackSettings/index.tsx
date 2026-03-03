@@ -233,6 +233,17 @@ export default function PlaybackSettings() {
           }
         />
         <SettingsItem
+          title="全屏隐藏收起态进度条"
+          description="开启后在网页全屏/系统全屏时隐藏操作栏收起后的底部迷你进度条。"
+          controlClassName="self-end mt-1"
+          control={
+            <Switch
+              checked={playback.isFullscreenProgressHidden}
+              onCheckedChange={checked => setPlaybackSettings({ isFullscreenProgressHidden: checked })}
+            />
+          }
+        />
+        <SettingsItem
           title="截图"
           description="在播放器中显示截图按钮。"
           controlClassName="self-end mt-1"

@@ -32,6 +32,7 @@ export const DEFAULT_SETTINGS = {
     isScreenshotEnabled: envSettings?.playback?.isScreenshotEnabled ?? true,
     isMobileGestureEnabled: envSettings?.playback?.isMobileGestureEnabled ?? true,
     longPressPlaybackRate: envSettings?.playback?.longPressPlaybackRate ?? 2,
+    isFullscreenProgressHidden: envSettings?.playback?.isFullscreenProgressHidden ?? false,
   },
   system: {
     tmdbEnabled: envSettings?.system?.tmdbEnabled ?? Boolean(import.meta.env.OKI_TMDB_API_TOKEN),

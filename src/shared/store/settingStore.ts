@@ -32,6 +32,7 @@ interface PlaybackSettings {
   isScreenshotEnabled: boolean
   isMobileGestureEnabled: boolean
   longPressPlaybackRate: number
+  isFullscreenProgressHidden: boolean
 }
 
 interface SystemSettings {
@@ -120,7 +121,7 @@ export const useSettingStore = create<SettingStore>()(
       })),
       {
         name: 'ouonnki-tv-setting-store',
-        version: 12,
+        version: 13,
         migrate: (persistedState: unknown, version: number) => {
           const state = persistedState as Record<string, unknown>
           if (version < 2 && state.playback) {
@@ -195,6 +196,11 @@ export const useSettingStore = create<SettingStore>()(
           if (version < 12) {
             const playback = (state.playback ?? {}) as Record<string, unknown>
             playback.longPressPlaybackRate ??= DEFAULT_SETTINGS.playback.longPressPlaybackRate
+            state.playback = playback
+          }
+          if (version < 13) {
+            const playback = (state.playback ?? {}) as Record<string, unknown>
+            playback.isFullscreenProgressHidden ??= DEFAULT_SETTINGS.playback.isFullscreenProgressHidden
             state.playback = playback
           }
           return state

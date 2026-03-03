@@ -26,6 +26,7 @@ interface SettingsConfig {
     isScreenshotEnabled?: boolean
     isMobileGestureEnabled?: boolean
     longPressPlaybackRate?: number
+    isFullscreenProgressHidden?: boolean
   }
   system?: {
     tmdbEnabled?: boolean

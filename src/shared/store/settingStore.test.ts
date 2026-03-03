@@ -214,4 +214,46 @@ describe('settingStore migrate', () => {
 
     expect(migrated.playback.longPressPlaybackRate).toBe(3.5)
   })
+
+  it('v12 -> v13 会补齐 isFullscreenProgressHidden 默认值', async () => {
+    const migrate = useSettingStore.persist.getOptions().migrate
+
+    const legacyState = {
+      network: DEFAULT_SETTINGS.network,
+      search: DEFAULT_SETTINGS.search,
+      playback: {
+        ...DEFAULT_SETTINGS.playback,
+      },
+      system: DEFAULT_SETTINGS.system,
+    }
+    delete (legacyState.playback as Record<string, unknown>).isFullscreenProgressHidden
+
+    const migrated = (await Promise.resolve(migrate?.(legacyState, 12))) as {
+      playback: { isFullscreenProgressHidden?: boolean }
+    }
+
+    expect(migrated.playback.isFullscreenProgressHidden).toBe(
+      DEFAULT_SETTINGS.playback.isFullscreenProgressHidden,
+    )
+  })
+
+  it('已有 isFullscreenProgressHidden 时不覆盖', async () => {
+    const migrate = useSettingStore.persist.getOptions().migrate
+
+    const legacyState = {
+      network: DEFAULT_SETTINGS.network,
+      search: DEFAULT_SETTINGS.search,
+      playback: {
+        ...DEFAULT_SETTINGS.playback,
+        isFullscreenProgressHidden: true,
+      },
+      system: DEFAULT_SETTINGS.system,
+    }
+
+    const migrated = (await Promise.resolve(migrate?.(legacyState, 12))) as {
+      playback: { isFullscreenProgressHidden?: boolean }
+    }
+
+    expect(migrated.playback.isFullscreenProgressHidden).toBe(true)
+  })
 })
