@@ -51,6 +51,19 @@ const formatDate = (dateStr: string) => {
 // 版本更新历史
 const VERSION_UPDATES: VersionUpdate[] = [
   {
+    version: '2.0.4',
+    title: '播放页右侧面板滚动体验优化',
+    date: formatDate('2026-03-19'),
+    features: [
+      '播放页「换源」区域改为使用 shadcn/ui 的 ScrollArea 包裹，资源数量较多时支持区域内滚动。',
+      '优化大屏下换源面板的高度分配策略，展开后内容区域可占满可用高度，减少底部空白。',
+    ],
+    fixes: [
+      '修复换源列表在容器仍有剩余空间时提前滚动、导致下方留白过多的显示问题。',
+    ],
+    breaking: [],
+  },
+  {
     version: '2.0.3',
     title: '全屏进度条显示控制',
     date: formatDate('2026-03-03'),
