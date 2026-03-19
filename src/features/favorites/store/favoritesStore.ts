@@ -122,9 +122,20 @@ function generateTmdbFavoriteId(tmdbId: number, mediaType: 'movie' | 'tv'): stri
 /**
  * 生成 CMS 收藏项的唯一标识
  */
+function utf8ToBase64(value: string): string {
+  const bytes = new TextEncoder().encode(value)
+  let binary = ''
+
+  for (let i = 0; i < bytes.length; i += 0x8000) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000))
+  }
+
+  return btoa(binary)
+}
+
 function generateCmsFavoriteId(vodId: string, sourceCode: string): string {
   const combined = `${sourceCode}::${vodId}`
-  return `cms_${btoa(combined)}`
+  return `cms_${utf8ToBase64(combined)}`
 }
 
 /**

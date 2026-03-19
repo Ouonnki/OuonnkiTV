@@ -27,7 +27,6 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/shared/components/ui/collapsible'
-import { ScrollArea } from '@/shared/components/ui/scroll-area'
 import type { VideoApi } from '@/shared/types'
 
 const formSchema = z.object({
@@ -111,7 +110,7 @@ export default function VideoSourceEditDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="flex h-[80vh] max-h-[90vh] flex-col gap-4 sm:max-w-md">
+        <DialogContent className="flex flex-col gap-3 p-4 sm:right-auto sm:bottom-auto sm:max-w-md sm:p-5">
           <DialogHeader>
             <DialogTitle>{isEditing ? '编辑视频源' : '添加视频源'}</DialogTitle>
             <DialogDescription>
@@ -119,15 +118,14 @@ export default function VideoSourceEditDialog({
             </DialogDescription>
           </DialogHeader>
 
-          <ScrollArea className="min-h-0 flex-1">
-            <form
-              id="video-source-form"
-              onSubmit={handleSubmit(handleSave, () =>
-                toast.error('保存失败，请检查表单填写是否正确'),
-              )}
-              className="px-1"
-            >
-              <div className="grid gap-4 py-1">
+          <form
+            id="video-source-form"
+            onSubmit={handleSubmit(handleSave, () =>
+              toast.error('保存失败，请检查表单填写是否正确'),
+            )}
+            className=""
+          >
+            <div className="grid gap-3">
               {/* 名称 */}
               <div className="grid gap-2">
                 <Label htmlFor="name">视频源名称</Label>
@@ -269,8 +267,7 @@ export default function VideoSourceEditDialog({
                 </CollapsibleContent>
               </Collapsible>
             </div>
-            </form>
-          </ScrollArea>
+          </form>
 
           <DialogFooter className="shrink-0 flex-row gap-2">
             {isEditing && (
