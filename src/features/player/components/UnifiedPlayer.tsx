@@ -13,6 +13,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/shared/components/ui/collapsible'
+import { ScrollArea } from '@/shared/components/ui/scroll-area'
 import { Spinner } from '@/shared/components/ui/spinner'
 import { useApiStore } from '@/shared/store/apiStore'
 import { useViewingHistoryStore } from '@/shared/store/viewingHistoryStore'
@@ -1666,28 +1667,30 @@ export default function UnifiedPlayer() {
                 <CollapsibleContent
                   className={cn(
                     collapsibleContentClassName,
-                    activeRightPanel === 'source' && 'xl:flex-1 xl:min-h-0',
+                    activeRightPanel === 'source' && 'xl:flex xl:flex-1 xl:min-h-0 xl:flex-col',
                   )}
                 >
-                  <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
-                    {sourceOptions.map(option => {
-                      const active = option.sourceCode === resolvedSourceCode
-                      return (
-                        <Button
-                          key={option.sourceCode}
-                          size="sm"
-                          variant={active ? 'default' : 'secondary'}
-                          className="min-w-0 max-w-full justify-between rounded-full sm:w-auto sm:max-w-[240px]"
-                          aria-current={active ? 'true' : undefined}
-                          aria-label={`切换到视频源 ${option.sourceName}`}
-                          onClick={() => handleSourceChange(option.sourceCode)}
-                        >
-                          <span className="truncate">{option.sourceName}</span>
-                          {isTmdbRoute && <span className="shrink-0 text-[11px] opacity-70">{option.bestScore}</span>}
-                        </Button>
-                      )
-                    })}
-                  </div>
+                  <ScrollArea className="max-h-44 sm:max-h-56 xl:h-full xl:max-h-none">
+                    <div className="grid grid-cols-2 gap-2 pr-2 sm:flex sm:flex-wrap">
+                      {sourceOptions.map(option => {
+                        const active = option.sourceCode === resolvedSourceCode
+                        return (
+                          <Button
+                            key={option.sourceCode}
+                            size="sm"
+                            variant={active ? 'default' : 'secondary'}
+                            className="min-w-0 max-w-full justify-between rounded-full sm:w-auto sm:max-w-[240px]"
+                            aria-current={active ? 'true' : undefined}
+                            aria-label={`切换到视频源 ${option.sourceName}`}
+                            onClick={() => handleSourceChange(option.sourceCode)}
+                          >
+                            <span className="truncate">{option.sourceName}</span>
+                            {isTmdbRoute && <span className="shrink-0 text-[11px] opacity-70">{option.bestScore}</span>}
+                          </Button>
+                        )
+                      })}
+                    </div>
+                  </ScrollArea>
                 </CollapsibleContent>
               </Collapsible>
 
