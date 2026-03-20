@@ -61,8 +61,10 @@ docker-compose up -d --build
 
 ```bash
 # Docker Hub（推荐国内用户）
-docker pull ouonnki/ouonnkitv:latest
-docker run -d -p 3000:80 ouonnki/ouonnkitv:latest
+docker pull archiewang0307/ouonnkitv:latest
+docker run -d -p 3000:80 archiewang0307/ouonnkitv:latest
+
+!!!: feixiangii/ouonnkitv是之前其他使用者上传的旧版本，不要拉错镜像了
 
 # GitHub Container Registry
 docker pull ghcr.io/ouonnki/ouonnkitv:latest
@@ -186,11 +188,11 @@ docker stop <container_id>
 docker rm <container_id>
 
 # 拉取最新镜像（选择其一）
-docker pull ouonnki/ouonnkitv:latest
+docker pull archiewang0307/ouonnkitv:latest
 docker pull ghcr.io/ouonnki/ouonnkitv:latest
 
 # 运行新容器
-docker run -d -p 3000:80 ouonnki/ouonnkitv:latest
+docker run -d -p 3000:80 archiewang0307/ouonnkitv:latest
 ```
 
 ### 本地更新
