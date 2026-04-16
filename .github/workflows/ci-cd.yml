@@ -85,6 +85,7 @@ jobs:
           fi
 
       - name: Normalize Docker Hub credentials
+        id: dockerhub-creds
         if: steps.dockerhub.outputs.enabled == 'true'
         env:
           RAW_DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -100,22 +101,23 @@ jobs:
           fi
 
           echo "::add-mask::$DOCKERHUB_TOKEN_CLEAN"
-          echo "DOCKERHUB_USERNAME_CLEAN=$DOCKERHUB_USERNAME_CLEAN" >> $GITHUB_ENV
-          echo "DOCKERHUB_TOKEN_CLEAN=$DOCKERHUB_TOKEN_CLEAN" >> $GITHUB_ENV
+          echo "enabled=true" >> $GITHUB_OUTPUT
+          echo "username=$DOCKERHUB_USERNAME_CLEAN" >> $GITHUB_OUTPUT
+          echo "token=$DOCKERHUB_TOKEN_CLEAN" >> $GITHUB_OUTPUT
 
       - name: Log in to Docker Hub
         id: dockerhub-login
-        if: steps.dockerhub.outputs.enabled == 'true'
+        if: steps.dockerhub-creds.outputs.enabled == 'true'
         continue-on-error: true
         uses: docker/login-action@v3
         with:
-          username: ${{ env.DOCKERHUB_USERNAME_CLEAN }}
-          password: ${{ env.DOCKERHUB_TOKEN_CLEAN }}
+          username: ${{ steps.dockerhub-creds.outputs.username }}
+          password: ${{ steps.dockerhub-creds.outputs.token }}
 
       - name: Decide Docker Hub publish
         id: dockerhub-publish
         run: |
-          if [ "${{ steps.dockerhub.outputs.enabled }}" != "true" ]; then
+          if [ "${{ steps.dockerhub-creds.outputs.enabled }}" != "true" ]; then
             echo "enabled=false" >> $GITHUB_OUTPUT
           elif [ "${{ steps.dockerhub-login.outcome }}" = "success" ]; then
             echo "enabled=true" >> $GITHUB_OUTPUT
@@ -128,7 +130,7 @@ jobs:
         id: dockerhub-image
         run: |
           if [ "${{ steps.dockerhub-publish.outputs.enabled }}" = "true" ]; then
-            echo "value=${{ env.DOCKERHUB_USERNAME_CLEAN }}/${{ env.IMAGE_NAME }}" >> $GITHUB_OUTPUT
+            echo "value=${{ steps.dockerhub-creds.outputs.username }}/${{ env.IMAGE_NAME }}" >> $GITHUB_OUTPUT
           else
             echo "value=" >> $GITHUB_OUTPUT
           fi
@@ -209,7 +211,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.34.0
+        uses: aquasecurity/trivy-action@v0.35.0
         with:
           image-ref: 'ghcr.io/${{ steps.ghcr-owner.outputs.value }}/${{ env.IMAGE_NAME }}:latest'
           format: 'sarif'
