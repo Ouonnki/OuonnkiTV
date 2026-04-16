@@ -58,9 +58,7 @@ const VERSION_UPDATES: VersionUpdate[] = [
       '播放页「换源」区域改为使用 shadcn/ui 的 ScrollArea 包裹，资源数量较多时支持区域内滚动。',
       '优化大屏下换源面板的高度分配策略，展开后内容区域可占满可用高度，减少底部空白。',
     ],
-    fixes: [
-      '修复换源列表在容器仍有剩余空间时提前滚动、导致下方留白过多的显示问题。',
-    ],
+    fixes: ['修复换源列表在容器仍有剩余空间时提前滚动、导致下方留白过多的显示问题。'],
     breaking: [],
   },
   {
@@ -72,9 +70,7 @@ const VERSION_UPDATES: VersionUpdate[] = [
       '播放器按全屏状态与用户配置动态切换迷你进度条显示，避免遮挡画面',
       '个人配置导入与环境配置新增 isFullscreenProgressHidden 字段支持',
     ],
-    fixes: [
-      '补充设置迁移与测试覆盖，确保旧配置升级后自动补齐默认值',
-    ],
+    fixes: ['补充设置迁移与测试覆盖，确保旧配置升级后自动补齐默认值'],
     breaking: [],
   },
   {
@@ -236,7 +232,7 @@ const VERSION_UPDATES: VersionUpdate[] = [
     ],
     fixes: ['优化了视频源管理功能', '优化视频搜索逻辑，增快搜索速度'],
     breaking: [
-      '旧版域名https://tv.new.ouonnki.site即将失效,请尽快使用新版域名访问https://tv.ouonnki.site',
+      '旧版域名https://tv.new.ouonnki.com即将失效,请尽快使用新版域名访问https://tv.ouonnki.com',
     ],
   },
   {

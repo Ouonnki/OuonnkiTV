@@ -1,5 +1,5 @@
 <h1 align="center">
-  <img src="https://cdn.ouonnki.site/gh/Ouonnki/blog-pictures/posts/logo.svg" alt="OuonnkiTV Logo" width="80"/><br/>
+  <img src="https://cdn.ouonnki.com/gh/Ouonnki/blog-pictures/posts/logo.svg" alt="OuonnkiTV Logo" width="80"/><br/>
   OuonnkiTV
 </h1>
 
