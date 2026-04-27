@@ -93,7 +93,11 @@ export default function VideoSourceEditDialog({
       }
       removeVideoAPI(source.id)
     }
-    addAndUpdateVideoAPI(data)
+    addAndUpdateVideoAPI({
+      ...data,
+      syncOrigin: source?.syncOrigin === 'env' ? 'manual' : source?.syncOrigin ?? 'manual',
+      sortIndex: source?.sortIndex,
+    })
     toast.success('保存成功')
     onOpenChange(false)
   }

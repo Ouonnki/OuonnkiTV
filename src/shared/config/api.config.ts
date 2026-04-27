@@ -111,6 +111,8 @@ const parseVideoSources = (sources: any[]): VideoApi[] => {
         url: source.url as string,
         detailUrl: (source.detailUrl as string) || source.url,
         isEnabled: source.isEnabled !== undefined ? (source.isEnabled as boolean) : true,
+        syncOrigin: 'env',
+        sortIndex: typeof source.sortIndex === 'number' ? source.sortIndex : index,
         updatedAt: source.updatedAt ? new Date(source.updatedAt) : new Date(),
         timeout: (source.timeout as number) || DEFAULT_SETTINGS.network.defaultTimeout,
         retry: (source.retry as number) || DEFAULT_SETTINGS.network.defaultRetry,

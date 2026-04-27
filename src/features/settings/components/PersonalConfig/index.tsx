@@ -4,6 +4,7 @@ import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { ConfirmModal } from '@/shared/components/common/ConfirmModal'
 import ActionDropdown from '@/shared/components/common/ActionDropdown'
+import { SyncSettingsSection } from '@/features/sync'
 import { usePersonalConfig } from '@/shared/hooks/usePersonalConfig'
 import { SettingsItem, SettingsPageShell, SettingsSection } from '../common'
 import { TextConfigModal, URLConfigModal } from '../AboutProject/ImportConfigModal'
@@ -31,6 +32,7 @@ export default function PersonalConfig() {
       description="导入、导出和恢复你的完整配置（设置 + 视频源）。"
       showHeader={false}
     >
+      <SyncSettingsSection />
       <SettingsSection
         title="配置管理"
         description="支持文件、URL、文本三种导入方式与两种导出方式。"

@@ -39,6 +39,14 @@ docker-compose up -d --build
 
    # 访问密码（可选）
    OKI_ACCESS_PASSWORD=your_secure_password
+
+   # 多设备同步数据库（Docker Compose 默认会拼接成容器内连接串）
+   SYNC_DB_NAME=ouonnkitv
+   SYNC_DB_USER=ouonnki
+   SYNC_DB_PASSWORD=replace_me
+
+   # 多设备同步会话密钥（生产环境必须替换为强随机字符串）
+   SYNC_SESSION_SECRET=replace_with_a_long_random_secret
    ```
 
    > 中国大陆网络环境如遇 TMDB 官方域名访问不稳定，建议改为：
@@ -48,12 +56,25 @@ docker-compose up -d --build
    > 📘 完整环境变量说明 → [配置管理](./configuration.md)
    > 📘 TMDB Token 申请方法 → [TMDB API Key 申请指南](./tmdb-key.md)
 
-3. 构建并启动：
+3. 先启动同步数据库：
    ```bash
-   docker-compose up -d --build
+   docker compose up -d sync-db
    ```
 
-> **重要提示**：环境变量在**构建时**注入，修改后必须使用 `--build` 参数重新构建。如果只运行 `docker-compose up -d`，环境变量的修改不会生效。
+4. 执行数据库迁移：
+   ```bash
+   pnpm docker:migrate
+   ```
+
+5. 构建并启动：
+   ```bash
+   docker compose up -d --build
+   ```
+
+> **重要提示**：
+> - `OKI_*` 变量在**构建时**注入，修改后需要重新构建镜像。
+> - `SYNC_*` 变量用于后端运行时，不会进入前端包，但数据库迁移前必须先配置完成。
+> - 生产环境不要保留 `docker-compose.yml` 里的默认 `SYNC_SESSION_SECRET`。
 
 ### 方式二：预构建镜像（快速启动）
 
@@ -81,7 +102,9 @@ docker run -d -p 3000:80 ghcr.io/ouonnki/ouonnkitv:latest
 | `main` | main 分支每次推送自动生成 |
 | `main-abc1234` | 带 7 位提交哈希的精确标签 |
 
-> **限制说明**：预构建镜像**无法通过环境变量修改初始配置**，只能使用镜像构建时的默认值。如需自定义视频源，请在应用内手动导入，或使用 Docker Compose 方式本地构建。
+> **限制说明**：
+> - 预构建镜像**无法通过环境变量修改初始配置**，只能使用镜像构建时的默认值。
+> - 如需启用多设备同步，仍需额外提供 Postgres 数据库和 `SYNC_DATABASE_URL`、`SYNC_SESSION_SECRET` 等运行时变量。
 
 ---
 
@@ -99,8 +122,19 @@ docker run -d -p 3000:80 ghcr.io/ouonnki/ouonnkitv:latest
    - Install Command: `pnpm install`
    - Build Command: `pnpm build`
    - Output Directory: `dist`
-5. （可选）配置环境变量（参考 [配置管理](./configuration.md)，TMDB Token 申请参考 [TMDB API Key 申请指南](./tmdb-key.md)）
-6. 点击 "Deploy" 开始部署
+5. 创建一套托管 Postgres，并拿到连接串。
+6. 在 Vercel 项目设置中添加运行时变量：
+   - `SYNC_DATABASE_URL`
+   - `SYNC_SESSION_SECRET`
+   - `SYNC_SESSION_COOKIE_NAME`（可选）
+7. （可选）继续配置 `OKI_*` 构建变量，TMDB Token 申请参考 [TMDB API Key 申请指南](./tmdb-key.md)。
+8. 在一台能访问该数据库的环境中执行一次迁移：
+   ```bash
+   pnpm sync:migrate
+   ```
+9. 点击 "Deploy" 开始部署
+
+> **建议顺序**：先完成数据库创建和迁移，再上线 Vercel 部署，这样 `/api/sync/*` 首次请求不会因为缺表直接失败。
 
 ---
 
@@ -149,6 +183,9 @@ cd OuonnkiTV
 
 # 安装依赖
 pnpm install
+
+# 如需本地验证多设备同步，先配置 SYNC_DATABASE_URL / SYNC_SESSION_SECRET 并执行迁移
+pnpm sync:migrate
 
 # 启动开发服务器
 pnpm dev

@@ -1,3 +1,6 @@
 export * from './utils'
 export * from './routes'
 export * from './viewingHistory'
+export * from './searchHistory'
+export * from './settingsSync'
+export * from './videoSourceSync'

@@ -1,4 +1,20 @@
 services:
+  sync-db:
+    image: postgres:16-alpine
+    container_name: ouonnkitv-sync-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${SYNC_DB_NAME:-ouonnkitv}
+      POSTGRES_USER: ${SYNC_DB_USER:-ouonnki}
+      POSTGRES_PASSWORD: ${SYNC_DB_PASSWORD:-ouonnki_sync}
+    volumes:
+      - sync-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${SYNC_DB_USER:-ouonnki} -d ${SYNC_DB_NAME:-ouonnkitv}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   ouonnkitv:
     build:
       context: .
@@ -14,31 +30,34 @@ services:
         OKI_ACCESS_PASSWORD: ${OKI_ACCESS_PASSWORD:-}
         OKI_DISABLE_ANALYTICS: ${OKI_DISABLE_ANALYTICS:-true}
         OKI_INITIAL_CONFIG: ${OKI_INITIAL_CONFIG:-}
+    container_name: ouonnkitv-dev
+    depends_on:
+      sync-db:
+        condition: service_healthy
     ports:
       - "3000:80"
     environment:
-      - NODE_ENV=production
+      NODE_ENV: production
+      SYNC_DATABASE_URL: postgresql://${SYNC_DB_USER:-ouonnki}:${SYNC_DB_PASSWORD:-ouonnki_sync}@sync-db:5432/${SYNC_DB_NAME:-ouonnkitv}
+      SYNC_SESSION_SECRET: ${SYNC_SESSION_SECRET:-change-this-sync-secret}
+      SYNC_SESSION_COOKIE_NAME: ${SYNC_SESSION_COOKIE_NAME:-ouonnki_sync_session}
     restart: unless-stopped
-    container_name: ouonnkitv-dev
-
-    # 日志轮转
     logging:
       driver: json-file
       options:
         max-size: "10m"
         max-file: "3"
-
-    # 资源限制
     deploy:
       resources:
         limits:
           memory: 512M
           cpus: "1.0"
-
-    # 健康检查
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
+
+volumes:
+  sync-db-data:

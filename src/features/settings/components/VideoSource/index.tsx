@@ -138,6 +138,7 @@ export default function VideoSource() {
       timeout: useSettingStore.getState().network.defaultTimeout || 3000,
       retry: useSettingStore.getState().network.defaultRetry || 3,
       isEnabled: true,
+      syncOrigin: 'manual',
       updatedAt: new Date(),
     })
     setEditDialogOpen(true)

@@ -2,8 +2,13 @@ import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
 import { immer } from 'zustand/middleware/immer'
 import { DEFAULT_SETTINGS } from '@/shared/config/settings.config'
+import {
+  buildDefaultSettingsFieldUpdatedAt,
+  type SettingsFieldUpdatedAt,
+  updateSettingsFieldUpdatedAt,
+} from '@/shared/lib/settingsSync'
 
-interface NetworkSettings {
+export interface NetworkSettings {
   defaultTimeout: number
   defaultRetry: number
   concurrencyLimit: number
@@ -11,13 +16,13 @@ interface NetworkSettings {
   proxyUrl: string
 }
 
-interface SearchSettings {
+export interface SearchSettings {
   isSearchHistoryEnabled: boolean
   isSearchHistoryVisible: boolean
   maxSearchHistoryCount: number
 }
 
-interface PlaybackSettings {
+export interface PlaybackSettings {
   isViewingHistoryEnabled: boolean
   isViewingHistoryVisible: boolean
   isAutoPlayEnabled: boolean
@@ -35,7 +40,7 @@ interface PlaybackSettings {
   isFullscreenProgressHidden: boolean
 }
 
-interface SystemSettings {
+export interface SystemSettings {
   tmdbEnabled: boolean
   tmdbApiToken: string
   tmdbApiBaseUrl: string
@@ -46,31 +51,42 @@ interface SystemSettings {
   tmdbImageQuality: 'low' | 'medium' | 'high'
 }
 
-interface SettingState {
+export interface SettingsSyncMeta {
+  fieldUpdatedAt: SettingsFieldUpdatedAt
+}
+
+export interface SettingState {
   network: NetworkSettings
   search: SearchSettings
   playback: PlaybackSettings
   system: SystemSettings
+  syncMeta: SettingsSyncMeta
 }
 
 interface SettingActions {
-  // Network
   setNetworkSettings: (settings: Partial<NetworkSettings>) => void
-
-  // Search
   setSearchSettings: (settings: Partial<SearchSettings>) => void
-
-  // Playback
   setPlaybackSettings: (settings: Partial<PlaybackSettings>) => void
-
-  // System
   setSystemSettings: (settings: Partial<SystemSettings>) => void
-
-  // Reset
   resetSettings: () => void
 }
 
 type SettingStore = SettingState & SettingActions
+
+const buildDefaultSyncMeta = (): SettingsSyncMeta => ({
+  fieldUpdatedAt: buildDefaultSettingsFieldUpdatedAt(),
+})
+
+const applySyncMetaMigration = (state: Record<string, unknown>, version: number): void => {
+  if (version >= 14) return
+  const syncMeta = (state.syncMeta ?? {}) as Partial<SettingsSyncMeta>
+  state.syncMeta = {
+    fieldUpdatedAt: {
+      ...buildDefaultSettingsFieldUpdatedAt(),
+      ...(syncMeta.fieldUpdatedAt ?? {}),
+    },
+  }
+}
 
 export const useSettingStore = create<SettingStore>()(
   devtools(
@@ -80,33 +96,53 @@ export const useSettingStore = create<SettingStore>()(
         search: DEFAULT_SETTINGS.search,
         playback: DEFAULT_SETTINGS.playback,
         system: DEFAULT_SETTINGS.system,
+        syncMeta: buildDefaultSyncMeta(),
 
         setNetworkSettings: settings => {
           set(state => {
             state.network = { ...state.network, ...settings }
+            state.syncMeta.fieldUpdatedAt = updateSettingsFieldUpdatedAt(
+              state.syncMeta.fieldUpdatedAt,
+              'network',
+              settings,
+            )
           })
         },
 
         setSearchSettings: settings => {
           set(state => {
             state.search = { ...state.search, ...settings }
+            state.syncMeta.fieldUpdatedAt = updateSettingsFieldUpdatedAt(
+              state.syncMeta.fieldUpdatedAt,
+              'search',
+              settings,
+            )
           })
         },
 
         setPlaybackSettings: settings => {
           set(state => {
             state.playback = { ...state.playback, ...settings }
+            state.syncMeta.fieldUpdatedAt = updateSettingsFieldUpdatedAt(
+              state.syncMeta.fieldUpdatedAt,
+              'playback',
+              settings,
+            )
           })
         },
 
         setSystemSettings: settings => {
           set(state => {
             const merged = { ...state.system, ...settings }
-            // 清空 token 且无环境变量 token 时，自动关闭 tmdbEnabled
             if ('tmdbApiToken' in settings && !settings.tmdbApiToken && !import.meta.env.OKI_TMDB_API_TOKEN) {
               merged.tmdbEnabled = false
             }
             state.system = merged
+            state.syncMeta.fieldUpdatedAt = updateSettingsFieldUpdatedAt(
+              state.syncMeta.fieldUpdatedAt,
+              'system',
+              settings,
+            )
           })
         },
 
@@ -116,14 +152,16 @@ export const useSettingStore = create<SettingStore>()(
             state.search = DEFAULT_SETTINGS.search
             state.playback = DEFAULT_SETTINGS.playback
             state.system = DEFAULT_SETTINGS.system
+            state.syncMeta = buildDefaultSyncMeta()
           })
         },
       })),
       {
         name: 'ouonnki-tv-setting-store',
-        version: 13,
+        version: 14,
         migrate: (persistedState: unknown, version: number) => {
           const state = persistedState as Record<string, unknown>
+
           if (version < 2 && state.playback) {
             delete (state.playback as Record<string, unknown>).adFilteringEnabled
           }
@@ -144,7 +182,6 @@ export const useSettingStore = create<SettingStore>()(
             state.system = system
           }
           if (version < 4) {
-            // v3→v4: 搜索历史上限 + 播放器功能开关
             const search = (state.search ?? {}) as Record<string, unknown>
             search.maxSearchHistoryCount ??= DEFAULT_SETTINGS.search.maxSearchHistoryCount
             state.search = search
@@ -203,7 +240,9 @@ export const useSettingStore = create<SettingStore>()(
             playback.isFullscreenProgressHidden ??= DEFAULT_SETTINGS.playback.isFullscreenProgressHidden
             state.playback = playback
           }
-          return state
+
+          applySyncMetaMigration(state, version)
+          return state as unknown as SettingState
         },
       },
     ),

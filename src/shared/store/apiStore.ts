@@ -4,74 +4,80 @@ import { immer } from 'zustand/middleware/immer'
 import type { VideoSource, SourceStore } from '@ouonnki/cms-core'
 import {
   addSource,
-  removeSource,
-  setSourceEnabled,
-  selectAllSources,
   deselectAllSources,
   getEnabledSources,
   importSources,
+  removeSource,
+  selectAllSources,
+  setSourceEnabled,
 } from '@ouonnki/cms-core/source'
+import { v4 as uuidv4 } from 'uuid'
 import { getInitialVideoSources } from '@/shared/config/api.config'
 import { DEFAULT_SETTINGS } from '@/shared/config/settings.config'
-import { v4 as uuidv4 } from 'uuid'
+import { normalizeVideoSource } from '@/shared/lib'
 import { useSettingStore } from './settingStore'
 
-// 保持向后兼容的类型别名
 export type VideoApi = VideoSource
 
 interface ApiState {
-  // 视频源列表
   videoAPIs: VideoSource[]
-  // 广告过滤开关
   adFilteringEnabled: boolean
+  adFilteringUpdatedAt: number
 }
 
 interface ApiActions {
-  // 设置 API 启用状态
   setApiEnabled: (apiId: string, enabled: boolean) => void
-  // 添加视频 API
   addAndUpdateVideoAPI: (api: VideoSource) => void
-  // 删除视频 API
   removeVideoAPI: (apiId: string) => void
-  // 设置广告过滤
   setAdFilteringEnabled: (enabled: boolean) => void
-  // 全选 API
   selectAllAPIs: () => void
-  // 取消全选
   deselectAllAPIs: () => void
-  // 初始化环境变量中的视频源
-  initializeEnvSources: () => void
-  // 批量导入视频源
+  initializeEnvSources: () => Promise<void>
   importVideoAPIs: (apis: VideoSource[]) => void
-  // 获取选中的视频源
   getSelectedAPIs: () => VideoSource[]
-  // 重置视频源
   resetVideoSources: () => Promise<void>
-  // 替换指定订阅的所有视频源（保留用户之前的 isEnabled 设置）
   replaceSubscriptionSources: (subscriptionId: string, sources: VideoSource[]) => void
-  // 移除指定订阅的所有视频源
   removeSubscriptionSources: (subscriptionId: string) => void
-  // 按 ID 数组顺序重排视频源（拖拽排序 / 一键按延迟排序）
   reorderVideoAPIs: (orderedIds: string[]) => void
 }
 
 type ApiStore = ApiState & ApiActions
 
-/**
- * 将ApiState转换为SourceStore格式以便使用cms-core纯函数
- */
-function toSourceStore(state: ApiState): SourceStore {
-  return {
-    sources: state.videoAPIs,
-    version: 1,
-  }
+const toSourceStore = (state: ApiState): SourceStore => ({
+  sources: state.videoAPIs,
+  version: 1,
+})
+
+const fromSourceStore = (store: SourceStore): VideoSource[] => store.sources
+
+const normalizeSourceList = (sources: VideoSource[]): VideoSource[] => {
+  return sources.map((source, index) => normalizeVideoSource(source, index))
 }
 
-/**
- * 从SourceStore提取sources到videoAPIs
- */
-function fromSourceStore(store: SourceStore): VideoSource[] {
-  return store.sources
+const reindexSourceList = (
+  sources: VideoSource[],
+  touchUpdatedAt = false,
+  timestamp = Date.now(),
+): VideoSource[] => {
+  return normalizeSourceList(sources).map((source, index) => ({
+    ...source,
+    sortIndex: index,
+    updatedAt: touchUpdatedAt ? new Date(timestamp) : source.updatedAt,
+  }))
+}
+
+const applyDefaultNetworkSettings = (sources: VideoSource[]): VideoSource[] => {
+  return sources.map((source, index) =>
+    normalizeVideoSource(
+      {
+        ...source,
+        timeout: source.timeout ?? DEFAULT_SETTINGS.network.defaultTimeout,
+        retry: source.retry ?? DEFAULT_SETTINGS.network.defaultRetry,
+        updatedAt: source.updatedAt ? new Date(source.updatedAt) : new Date(),
+      },
+      index,
+    ),
+  )
 }
 
 export const useApiStore = create<ApiStore>()(
@@ -80,107 +86,109 @@ export const useApiStore = create<ApiStore>()(
       immer<ApiStore>((set, get) => ({
         videoAPIs: [],
         adFilteringEnabled: true,
+        adFilteringUpdatedAt: Date.now(),
 
-        // Actions - 使用cms-core纯函数
-        setApiEnabled: (apiId: string, enabled: boolean) => {
+        setApiEnabled: (apiId, enabled) => {
           set(state => {
-            const store = toSourceStore(state)
-            const newStore = setSourceEnabled(store, apiId, enabled)
-            state.videoAPIs = fromSourceStore(newStore)
+            const nextStore = setSourceEnabled(toSourceStore(state), apiId, enabled)
+            state.videoAPIs = normalizeSourceList(fromSourceStore(nextStore))
           })
         },
 
-        addAndUpdateVideoAPI: (api: VideoSource) => {
+        addAndUpdateVideoAPI: api => {
           set(state => {
             const store = toSourceStore(state)
             const isExisting = store.sources.some(
-              s => s.id === api.id || (s.name === api.name && s.url === api.url),
+              source => source.id === api.id || (source.name === api.name && source.url === api.url),
             )
-            // addSource会自动处理添加或更新
+
             const newStore = addSource(store, {
               ...api,
+              syncOrigin: api.syncOrigin ?? 'manual',
               updatedAt: new Date(),
             })
-            const nextSources = fromSourceStore(newStore)
 
-            // 新增源默认置顶；更新源保持原有顺序
+            const nextSources = normalizeSourceList(fromSourceStore(newStore))
             if (!isExisting) {
               const inserted = nextSources.find(source => source.id === api.id)
-              state.videoAPIs = inserted
-                ? [inserted, ...nextSources.filter(source => source.id !== inserted.id)]
-                : nextSources
-            } else {
-              state.videoAPIs = nextSources
+              state.videoAPIs = reindexSourceList(
+                inserted
+                  ? [inserted, ...nextSources.filter(source => source.id !== inserted.id)]
+                  : nextSources,
+              )
+              return
             }
+
+            state.videoAPIs = reindexSourceList(nextSources)
           })
         },
 
-        removeVideoAPI: (apiId: string) => {
+        removeVideoAPI: apiId => {
           set(state => {
-            const store = toSourceStore(state)
-            const newStore = removeSource(store, apiId)
-            state.videoAPIs = fromSourceStore(newStore)
+            const nextStore = removeSource(toSourceStore(state), apiId)
+            state.videoAPIs = reindexSourceList(fromSourceStore(nextStore))
           })
         },
 
-        setAdFilteringEnabled: (enabled: boolean) => {
+        setAdFilteringEnabled: enabled => {
           set(state => {
             state.adFilteringEnabled = enabled
+            state.adFilteringUpdatedAt = Date.now()
           })
         },
 
         selectAllAPIs: () => {
           set(state => {
-            const store = toSourceStore(state)
-            const newStore = selectAllSources(store)
-            state.videoAPIs = fromSourceStore(newStore)
+            const timestamp = Date.now()
+            const nextStore = selectAllSources(toSourceStore(state))
+            state.videoAPIs = reindexSourceList(fromSourceStore(nextStore), true, timestamp)
           })
         },
 
         deselectAllAPIs: () => {
           set(state => {
-            const store = toSourceStore(state)
-            const newStore = deselectAllSources(store)
-            state.videoAPIs = fromSourceStore(newStore)
+            const timestamp = Date.now()
+            const nextStore = deselectAllSources(toSourceStore(state))
+            state.videoAPIs = reindexSourceList(fromSourceStore(nextStore), true, timestamp)
           })
         },
 
         initializeEnvSources: async () => {
           const envSources = await getInitialVideoSources()
-          console.log(envSources)
-          set(state => {
-            if (envSources.length > 0) {
-              const store = toSourceStore(state)
-              const { store: newStore } = importSources(store, envSources, {
-                defaultTimeout: useSettingStore.getState().network.defaultTimeout,
-                defaultRetry: useSettingStore.getState().network.defaultRetry,
-                skipInvalid: true,
-              })
-              state.videoAPIs = fromSourceStore(newStore)
-            }
-          })
-        },
+          if (envSources.length === 0) return
 
-        importVideoAPIs: (apis: VideoSource[]) => {
           set(state => {
-            const store = toSourceStore(state)
-            // 为没有ID的源生成UUID
-            const apisWithIds = apis.map(api => ({
-              ...api,
-              id: api.id || uuidv4(),
-            }))
-            const { store: newStore } = importSources(store, apisWithIds, {
+            const { store } = importSources(toSourceStore(state), envSources, {
               defaultTimeout: useSettingStore.getState().network.defaultTimeout,
               defaultRetry: useSettingStore.getState().network.defaultRetry,
               skipInvalid: true,
             })
-            state.videoAPIs = fromSourceStore(newStore)
+            state.videoAPIs = reindexSourceList(fromSourceStore(store))
+          })
+        },
+
+        importVideoAPIs: apis => {
+          set(state => {
+            const store = toSourceStore(state)
+            const apisWithIds = apis.map((api, index) => ({
+              ...api,
+              id: api.id || uuidv4(),
+              syncOrigin: api.syncOrigin ?? 'manual',
+              sortIndex: api.sortIndex ?? store.sources.length + index,
+            }))
+
+            const { store: nextStore } = importSources(store, apisWithIds, {
+              defaultTimeout: useSettingStore.getState().network.defaultTimeout,
+              defaultRetry: useSettingStore.getState().network.defaultRetry,
+              skipInvalid: true,
+            })
+
+            state.videoAPIs = reindexSourceList(fromSourceStore(nextStore))
           })
         },
 
         getSelectedAPIs: () => {
-          const store = toSourceStore(get())
-          return getEnabledSources(store)
+          return getEnabledSources(toSourceStore(get()))
         },
 
         resetVideoSources: async () => {
@@ -190,59 +198,65 @@ export const useApiStore = create<ApiStore>()(
           await get().initializeEnvSources()
         },
 
-        replaceSubscriptionSources: (subscriptionId: string, sources: VideoSource[]) => {
+        replaceSubscriptionSources: (subscriptionId, sources) => {
           set(state => {
             const prefix = `sub:${subscriptionId}:`
-            // 记录旧源的 isEnabled 状态（按 name+url 匹配，因为 index 可能变化）
             const oldEnabledMap = new Map<string, boolean>()
+
             state.videoAPIs
-              .filter(s => s.id.startsWith(prefix))
-              .forEach(s => {
-                oldEnabledMap.set(`${s.name}||${s.url}`, s.isEnabled)
+              .filter(source => source.id.startsWith(prefix))
+              .forEach(source => {
+                oldEnabledMap.set(`${source.name}||${source.url}`, source.isEnabled)
               })
 
-            // 移除旧的订阅源
-            const nonSubscriptionSources = state.videoAPIs.filter(s => !s.id.startsWith(prefix))
-
-            // 对新源应用之前的 isEnabled 设置
-            const newSources = sources.map(s => {
-              const key = `${s.name}||${s.url}`
+            const nonSubscriptionSources = state.videoAPIs.filter(source => !source.id.startsWith(prefix))
+            const newSources = sources.map((source, index) => {
+              const key = `${source.name}||${source.url}`
               const prevEnabled = oldEnabledMap.get(key)
-              return {
-                ...s,
-                isEnabled: prevEnabled !== undefined ? prevEnabled : s.isEnabled,
-              }
+              return normalizeVideoSource(
+                {
+                  ...source,
+                  isEnabled: prevEnabled !== undefined ? prevEnabled : source.isEnabled,
+                  syncOrigin: 'subscription',
+                },
+                nonSubscriptionSources.length + index,
+                'subscription',
+              )
             })
 
-            // 手动源在前，订阅源追加到末尾
-            state.videoAPIs = [...nonSubscriptionSources, ...newSources]
+            state.videoAPIs = reindexSourceList([...nonSubscriptionSources, ...newSources])
           })
         },
 
-        removeSubscriptionSources: (subscriptionId: string) => {
+        removeSubscriptionSources: subscriptionId => {
           set(state => {
             const prefix = `sub:${subscriptionId}:`
-            state.videoAPIs = state.videoAPIs.filter(s => !s.id.startsWith(prefix))
+            state.videoAPIs = reindexSourceList(
+              state.videoAPIs.filter(source => !source.id.startsWith(prefix)),
+            )
           })
         },
 
-        reorderVideoAPIs: (orderedIds: string[]) => {
+        reorderVideoAPIs: orderedIds => {
           set(state => {
+            const timestamp = Date.now()
             const idIndexMap = new Map(orderedIds.map((id, index) => [id, index]))
-            state.videoAPIs = [...state.videoAPIs].sort((a, b) => {
-              const indexA = idIndexMap.get(a.id)
-              const indexB = idIndexMap.get(b.id)
-              if (indexA !== undefined && indexB !== undefined) return indexA - indexB
-              if (indexA !== undefined) return -1
-              if (indexB !== undefined) return 1
+            const sorted = [...state.videoAPIs].sort((left, right) => {
+              const leftIndex = idIndexMap.get(left.id)
+              const rightIndex = idIndexMap.get(right.id)
+              if (leftIndex !== undefined && rightIndex !== undefined) return leftIndex - rightIndex
+              if (leftIndex !== undefined) return -1
+              if (rightIndex !== undefined) return 1
               return 0
             })
+
+            state.videoAPIs = reindexSourceList(sorted, true, timestamp)
           })
         },
       })),
       {
         name: 'ouonnki-tv-api-store',
-        version: 6,
+        version: 7,
         migrate: (persistedState: unknown, version: number) => {
           const state = persistedState as Partial<ApiState>
 
@@ -251,21 +265,22 @@ export const useApiStore = create<ApiStore>()(
           }
 
           if (version < 5) {
-            state.videoAPIs =
-              state.videoAPIs?.map(api => ({
-                ...api,
-                timeout: DEFAULT_SETTINGS.network.defaultTimeout,
-                retry: DEFAULT_SETTINGS.network.defaultRetry,
-                updatedAt: new Date(),
-              })) || []
+            state.videoAPIs = applyDefaultNetworkSettings(state.videoAPIs ?? [])
           }
 
-          return state
+          if (version < 7) {
+            state.videoAPIs = reindexSourceList(state.videoAPIs ?? [])
+            state.adFilteringUpdatedAt = Date.now()
+          }
+
+          state.videoAPIs = normalizeSourceList(state.videoAPIs ?? [])
+          state.adFilteringUpdatedAt ??= Date.now()
+          return state as ApiState
         },
       },
     ),
     {
-      name: 'ApiStore', // DevTools 中显示的名称
+      name: 'ApiStore',
     },
   ),
 )

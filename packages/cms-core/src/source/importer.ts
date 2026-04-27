@@ -61,6 +61,8 @@ export function importSources(
       timeout: source.timeout ?? defaultTimeout,
       retry: source.retry ?? defaultRetry,
       isEnabled: source.isEnabled ?? true,
+      syncOrigin: source.syncOrigin,
+      sortIndex: source.sortIndex,
       updatedAt: source.updatedAt || new Date(),
     }
 

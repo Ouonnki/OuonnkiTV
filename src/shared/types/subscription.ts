@@ -16,8 +16,10 @@ export interface VideoSourceSubscription {
   lastRefreshSuccess: boolean
   /** 上次刷新失败时的错误信息 */
   lastRefreshError: string | null
-  /** 自动刷新间隔（分钟），0 = 不自动刷新 */
+  /** 自动刷新间隔，分钟；0 = 不自动刷新 */
   refreshInterval: number
   /** 创建时间 */
   createdAt: Date
+  /** 用户配置最后更新时间 */
+  updatedAt: Date
 }

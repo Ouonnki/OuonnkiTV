@@ -8,47 +8,40 @@ import type { VideoSourceSubscription } from '@/shared/types/subscription'
 import { useApiStore } from './apiStore'
 import { useSettingStore } from './settingStore'
 
-// ==================== 工具函数 ====================
-
-/** 判断视频源 ID 是否属于订阅源 */
 export function isSubscriptionSource(sourceId: string): boolean {
   return sourceId.startsWith('sub:')
 }
 
-/** 从视频源 ID 提取订阅 ID */
 export function extractSubscriptionId(sourceId: string): string | null {
   if (!isSubscriptionSource(sourceId)) return null
   return sourceId.split(':')[1]
 }
 
-/** 为订阅源生成带前缀的 ID */
 function buildSubscriptionSourceId(subscriptionId: string, index: number): string {
   return `sub:${subscriptionId}:${index}`
 }
 
-// ==================== 远程拉取与转换 ====================
-
-/** 从远程 URL 拉取视频源列表 */
-async function fetchSourcesFromUrl(url: string): Promise<Partial<VideoSource>[]> {
+export async function fetchSourcesFromUrl(url: string): Promise<Partial<VideoSource>[]> {
   const response = await fetch(url)
   if (!response.ok) {
     throw new Error(`HTTP ${response.status}: ${response.statusText}`)
   }
+
   const data = await response.json()
   if (!Array.isArray(data)) {
     throw new Error('返回数据不是数组格式')
   }
+
   return data
 }
 
-/** 将原始数据转换为带订阅前缀 ID 的 VideoSource 数组 */
-function mapToSubscriptionSources(
+export function mapToSubscriptionSources(
   subscriptionId: string,
   rawSources: Partial<VideoSource>[],
 ): VideoSource[] {
   const { defaultTimeout, defaultRetry } = useSettingStore.getState().network
   return rawSources
-    .filter(s => s.name && s.url)
+    .filter(source => source.name && source.url)
     .map((source, index) => ({
       id: buildSubscriptionSourceId(subscriptionId, index),
       name: source.name!,
@@ -57,33 +50,37 @@ function mapToSubscriptionSources(
       timeout: source.timeout ?? defaultTimeout,
       retry: source.retry ?? defaultRetry,
       isEnabled: source.isEnabled ?? true,
+      syncOrigin: 'subscription',
+      sortIndex: source.sortIndex ?? index,
       updatedAt: new Date(),
     }))
 }
 
-// ==================== Store 定义 ====================
-
 interface SubscriptionState {
-  /** 所有订阅列表 */
   subscriptions: VideoSourceSubscription[]
 }
 
 interface SubscriptionActions {
-  /** 添加新订阅（添加后立即拉取一次） */
   addSubscription: (url: string, name?: string, refreshInterval?: number) => Promise<void>
-  /** 移除订阅（同时从 apiStore 移除对应视频源） */
   removeSubscription: (subscriptionId: string) => void
-  /** 刷新指定订阅 */
   refreshSubscription: (subscriptionId: string) => Promise<void>
-  /** 刷新所有订阅 */
   refreshAllSubscriptions: () => Promise<void>
-  /** 更新订阅的自动刷新间隔 */
   setRefreshInterval: (subscriptionId: string, intervalMinutes: number) => void
-  /** 判断 URL 是否已被订阅 */
   isUrlSubscribed: (url: string) => boolean
 }
 
 type SubscriptionStore = SubscriptionState & SubscriptionActions
+
+const migrateSubscriptions = (
+  subscriptions: VideoSourceSubscription[] | undefined,
+): VideoSourceSubscription[] => {
+  return (subscriptions ?? []).map(subscription => ({
+    ...subscription,
+    createdAt: new Date(subscription.createdAt),
+    updatedAt: new Date(subscription.updatedAt ?? subscription.createdAt ?? new Date()),
+    lastRefreshedAt: subscription.lastRefreshedAt ? new Date(subscription.lastRefreshedAt) : null,
+  }))
+}
 
 export const useSubscriptionStore = create<SubscriptionStore>()(
   devtools(
@@ -91,17 +88,12 @@ export const useSubscriptionStore = create<SubscriptionStore>()(
       immer<SubscriptionStore>((set, get) => ({
         subscriptions: [],
 
-        addSubscription: async (
-          url: string,
-          name?: string,
-          refreshInterval?: number,
-        ) => {
+        addSubscription: async (url, name, refreshInterval) => {
           if (get().isUrlSubscribed(url)) {
             toast.error('该 URL 已存在订阅')
             return
           }
 
-          // 尝试从 URL 推断名称
           let resolvedName = name || ''
           if (!resolvedName) {
             try {
@@ -112,6 +104,7 @@ export const useSubscriptionStore = create<SubscriptionStore>()(
           }
 
           const subscriptionId = uuidv4()
+          const now = new Date()
           const subscription: VideoSourceSubscription = {
             id: subscriptionId,
             name: resolvedName,
@@ -121,23 +114,23 @@ export const useSubscriptionStore = create<SubscriptionStore>()(
             lastRefreshSuccess: false,
             lastRefreshError: null,
             refreshInterval: refreshInterval ?? 60,
-            createdAt: new Date(),
+            createdAt: now,
+            updatedAt: now,
           }
 
           set(state => {
             state.subscriptions.push(subscription)
           })
 
-          // 立即拉取一次
           await get().refreshSubscription(subscriptionId)
         },
 
-        removeSubscription: (subscriptionId: string) => {
-          const subscription = get().subscriptions.find(s => s.id === subscriptionId)
+        removeSubscription: subscriptionId => {
+          const subscription = get().subscriptions.find(item => item.id === subscriptionId)
           useApiStore.getState().removeSubscriptionSources(subscriptionId)
 
           set(state => {
-            state.subscriptions = state.subscriptions.filter(s => s.id !== subscriptionId)
+            state.subscriptions = state.subscriptions.filter(item => item.id !== subscriptionId)
           })
 
           if (subscription) {
@@ -145,8 +138,8 @@ export const useSubscriptionStore = create<SubscriptionStore>()(
           }
         },
 
-        refreshSubscription: async (subscriptionId: string) => {
-          const subscription = get().subscriptions.find(s => s.id === subscriptionId)
+        refreshSubscription: async subscriptionId => {
+          const subscription = get().subscriptions.find(item => item.id === subscriptionId)
           if (!subscription) return
 
           try {
@@ -156,13 +149,12 @@ export const useSubscriptionStore = create<SubscriptionStore>()(
             useApiStore.getState().replaceSubscriptionSources(subscriptionId, sources)
 
             set(state => {
-              const sub = state.subscriptions.find(s => s.id === subscriptionId)
-              if (sub) {
-                sub.sourceCount = sources.length
-                sub.lastRefreshedAt = new Date()
-                sub.lastRefreshSuccess = true
-                sub.lastRefreshError = null
-              }
+              const target = state.subscriptions.find(item => item.id === subscriptionId)
+              if (!target) return
+              target.sourceCount = sources.length
+              target.lastRefreshedAt = new Date()
+              target.lastRefreshSuccess = true
+              target.lastRefreshError = null
             })
 
             toast.success(`订阅「${subscription.name}」已刷新，共 ${sources.length} 个源`)
@@ -170,12 +162,11 @@ export const useSubscriptionStore = create<SubscriptionStore>()(
             const errorMessage = error instanceof Error ? error.message : '未知错误'
 
             set(state => {
-              const sub = state.subscriptions.find(s => s.id === subscriptionId)
-              if (sub) {
-                sub.lastRefreshedAt = new Date()
-                sub.lastRefreshSuccess = false
-                sub.lastRefreshError = errorMessage
-              }
+              const target = state.subscriptions.find(item => item.id === subscriptionId)
+              if (!target) return
+              target.lastRefreshedAt = new Date()
+              target.lastRefreshSuccess = false
+              target.lastRefreshError = errorMessage
             })
 
             toast.error(`刷新订阅「${subscription.name}」失败：${errorMessage}`)
@@ -186,27 +177,31 @@ export const useSubscriptionStore = create<SubscriptionStore>()(
           const { subscriptions } = get()
           if (subscriptions.length === 0) return
 
-          await Promise.allSettled(
-            subscriptions.map(sub => get().refreshSubscription(sub.id)),
-          )
+          await Promise.allSettled(subscriptions.map(subscription => get().refreshSubscription(subscription.id)))
         },
 
-        setRefreshInterval: (subscriptionId: string, intervalMinutes: number) => {
+        setRefreshInterval: (subscriptionId, intervalMinutes) => {
           set(state => {
-            const sub = state.subscriptions.find(s => s.id === subscriptionId)
-            if (sub) {
-              sub.refreshInterval = intervalMinutes
-            }
+            const subscription = state.subscriptions.find(item => item.id === subscriptionId)
+            if (!subscription) return
+            subscription.refreshInterval = intervalMinutes
+            subscription.updatedAt = new Date()
           })
         },
 
-        isUrlSubscribed: (url: string) => {
-          return get().subscriptions.some(s => s.url === url)
+        isUrlSubscribed: url => {
+          return get().subscriptions.some(subscription => subscription.url === url)
         },
       })),
       {
         name: 'ouonnki-tv-subscription-store',
-        version: 1,
+        version: 2,
+        migrate: persistedState => {
+          const state = persistedState as Partial<SubscriptionState> | undefined
+          return {
+            subscriptions: migrateSubscriptions(state?.subscriptions),
+          }
+        },
       },
     ),
     {

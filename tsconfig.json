@@ -22,5 +22,5 @@
     "noFallthroughCasesInSwitch": true,
     "noEmit": true
   },
-  "include": ["src", "vite.config.ts", "functions", "netlify"]
+  "include": ["src", "api", "vite.config.ts", "functions", "netlify"]
 }

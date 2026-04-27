@@ -65,20 +65,21 @@ RUN apk add --no-cache nginx supervisor && \
     rm -rf /var/cache/apk/*
 
 # 创建必要的目录
-RUN mkdir -p /run/nginx /var/log/supervisor /app
+RUN mkdir -p /run/nginx /var/log/supervisor /app /app/scripts
 
 # 设置工作目录
 WORKDIR /app
 
 # 复制代理服务器文件和共享模块
 COPY proxy-server.js ./
+COPY scripts/sync-migrate.js ./scripts/
 COPY shared/ ./shared/
 
 # 创建最小 package.json 确保 Node.js 以 ESM 模式解析 .js 文件
 RUN echo '{"type":"module"}' > package.json
 
 # 只安装代理所需的依赖（使用 npm 而非 pnpm，避免额外安装 pnpm）
-RUN npm install --no-audit --no-fund express@4.21.2 cors@2.8.5 && \
+RUN npm install --no-audit --no-fund express@4.21.2 cors@2.8.5 pg@8.20.0 zod@4.1.13 && \
     npm cache clean --force
 
 # 复制构建产物到 nginx 静态文件目录

@@ -45,6 +45,8 @@ interface VideoSourceConfig {
   url: string
   detailUrl?: string
   isEnabled?: boolean
+  syncOrigin?: 'env' | 'manual' | 'subscription'
+  sortIndex?: number
   updatedAt?: string | Date
   timeout?: number
   retry?: number
