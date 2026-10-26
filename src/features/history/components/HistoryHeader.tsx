@@ -43,7 +43,7 @@ export function HistoryHeader({
   onOpenBatchDelete,
   onOpenClearAll,
 }: HistoryHeaderProps) {
-  const actionButtonClass = 'shrink-0 rounded-xl px-2 md:h-8 md:px-3 md:text-sm'
+  const actionButtonClass = 'h-11 min-w-11 shrink-0 rounded-md px-2 md:h-8 md:px-3 md:text-sm'
 
   const renderEditingActions = () => (
     <div className="flex shrink-0 items-center gap-1">
@@ -80,7 +80,7 @@ export function HistoryHeader({
       <Button
         variant="ghost"
         size="xs"
-        className="text-destructive hover:text-destructive hover:bg-transparent dark:hover:bg-transparent shrink-0 rounded-xl px-2 md:px-3"
+        className="text-destructive hover:text-destructive hover:bg-transparent dark:hover:bg-transparent h-11 min-w-11 shrink-0 rounded-md px-2 md:h-8 md:px-3"
         disabled={!hasHistory}
         onClick={onOpenClearAll}
       >
@@ -91,7 +91,7 @@ export function HistoryHeader({
 
   return (
     <header className="border-border bg-sidebar/80 sticky top-0 z-20 border-b backdrop-blur-md">
-      <div className="flex h-14 items-center gap-2 px-4">
+      <div className="flex min-h-14 flex-wrap items-center gap-2 px-4 py-1.5 md:flex-nowrap md:py-0">
         <div className="flex min-w-0 shrink items-center gap-2">
           <h1 className="shrink-0 text-base font-bold md:text-lg">观看历史</h1>
           <span className="text-muted-foreground hidden shrink-0 text-xs sm:inline md:text-sm">
@@ -99,7 +99,7 @@ export function HistoryHeader({
           </span>
         </div>
 
-        <div className="ml-auto relative shrink-0">
+        <div className="ml-auto relative max-w-full shrink-0">
           <div className="invisible pointer-events-none" aria-hidden>
             {renderEditingActions()}
           </div>
