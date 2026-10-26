@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { toast } from 'sonner'
+import { Button } from '@/shared/components/ui/button'
 import { StatusTabs } from '../components/StatusTabs'
 import { FavoritesSortControl } from '../components/FavoritesSortControl'
 import { FavoritesGrid } from '../components/ui/favoritesGrid'
@@ -76,8 +77,10 @@ export default function FavoritesView() {
   const handleTabChange = useCallback(
     (status: FavoriteWatchStatus | 'all') => {
       setActiveTab(status)
+      setSelectedIds(new Set())
+      setStoreSelectedIds(new Set())
     },
-    [],
+    [setStoreSelectedIds],
   )
 
   // 切换排序方案
@@ -119,14 +122,16 @@ export default function FavoritesView() {
     const idsToDelete = Array.from(selectedIds)
     removeFavorites(idsToDelete)
     setSelectedIds(new Set())
+    setStoreSelectedIds(new Set())
+    setSelectionMode(false)
     toast.success(`已删除 ${idsToDelete.length} 个收藏`)
-  }, [selectedIds, removeFavorites])
+  }, [selectedIds, removeFavorites, setStoreSelectedIds])
 
   const hasContent = displayFavorites.length > 0
   const isAllSelected = selectedIds.size === displayFavorites.length && displayFavorites.length > 0
 
   return (
-    <div className="min-h-full">
+    <div className={`min-h-full ${selectionMode ? 'pb-44 md:pb-24' : ''}`}>
       {/* 页面头部 */}
       <header className="border-border bg-sidebar/80 sticky top-0 z-20 border-b backdrop-blur-md">
         <div className="px-4 py-1.5 md:py-2">
@@ -141,9 +146,22 @@ export default function FavoritesView() {
                 )}
               </div>
             </div>
-            <div className="order-3 w-full md:order-none md:ml-auto md:flex md:w-[min(58vw,760px)] md:justify-end">
-              <StatusTabs currentStatus={activeTab} onStatusChange={handleTabChange} stats={stats} />
+            <div className="order-3 w-full md:order-none md:ml-auto md:flex md:w-auto md:justify-end">
+              <StatusTabs
+                currentStatus={activeTab}
+                onStatusChange={handleTabChange}
+                stats={stats}
+              />
             </div>
+            <Button
+              variant={selectionMode ? 'ghost' : 'outline'}
+              size="sm"
+              className="h-11 min-w-11 px-3 md:h-8"
+              disabled={!hasContent && !selectionMode}
+              onClick={toggleSelectionMode}
+            >
+              {selectionMode ? '完成' : '编辑'}
+            </Button>
           </div>
         </div>
       </header>

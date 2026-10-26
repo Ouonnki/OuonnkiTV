@@ -1,4 +1,5 @@
 import { Trash2 } from 'lucide-react'
+import type { RefObject } from 'react'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,6 +21,7 @@ interface ConfirmModalProps {
   confirmText?: string
   cancelText?: string
   isDestructive?: boolean
+  returnFocusRef?: RefObject<HTMLElement | null>
 }
 
 export const ConfirmModal = ({
@@ -31,6 +33,7 @@ export const ConfirmModal = ({
   confirmText = '确认',
   cancelText = '取消',
   isDestructive = false,
+  returnFocusRef,
 }: ConfirmModalProps) => (
   <AlertDialog
     open={isOpen}
@@ -38,7 +41,16 @@ export const ConfirmModal = ({
       if (!open) onClose()
     }}
   >
-    <AlertDialogContent size="sm" className="max-h-[calc(100dvh-2rem)] overflow-y-auto">
+    <AlertDialogContent
+      size="sm"
+      className="max-h-[calc(100dvh-2rem)] overflow-y-auto"
+      onCloseAutoFocus={event => {
+        if (returnFocusRef?.current?.isConnected) {
+          event.preventDefault()
+          returnFocusRef.current.focus()
+        }
+      }}
+    >
       <AlertDialogHeader>
         {isDestructive && (
           <AlertDialogMedia className="bg-destructive/10 text-destructive dark:bg-destructive/20">

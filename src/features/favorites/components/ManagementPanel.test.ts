@@ -34,13 +34,13 @@ describe('favorites batch toolbar', () => {
     expect(grid.textContent).not.toContain('100/100')
     expect(grid.textContent).not.toContain('完成')
     expect(panel.querySelector('.overflow-hidden')).toBeNull()
-    expect(panel.firstElementChild?.classList.contains('md:left-1/2')).toBe(true)
-    expect(panel.firstElementChild?.classList.contains('md:-translate-x-1/2')).toBe(true)
+    expect(panel.querySelector('aside')?.classList.contains('md:left-1/2')).toBe(true)
+    expect(panel.querySelector('aside')?.classList.contains('md:-translate-x-1/2')).toBe(true)
   })
 
   it('disables deletion when the selection is empty', () => {
     const button = renderPanel(0).querySelector<HTMLButtonElement>(
-      '[aria-label="删除选中的 0 个收藏"]',
+      '[aria-label="删除选中的 0 项"]',
     )!
     expect(button.disabled).toBe(true)
   })

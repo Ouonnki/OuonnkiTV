@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
+import { SelectionToolbar } from '@/shared/components/common/SelectionToolbar'
+import { usePortalToSidebarInset } from '@/shared/hooks/usePortalToSidebarInset'
 import { useViewingHistoryStore } from '@/shared/store'
 import { useTmdbEnabled } from '@/shared/hooks/useTmdbMode'
 import type { ViewingHistoryItem } from '@/shared/types'
@@ -13,13 +15,14 @@ import { getHistoryItemKey, groupHistoryBySection } from '../utils/history'
 export default function HistoryView() {
   const { viewingHistory, removeViewingHistoryItem, clearViewingHistory } = useViewingHistoryStore()
   const tmdbEnabled = useTmdbEnabled()
+  const { SidebarInsetPortal } = usePortalToSidebarInset()
 
   const [selectionMode, setSelectionMode] = useState(false)
-  const [actionDirection, setActionDirection] = useState(1)
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set())
   const [pendingDeleteItem, setPendingDeleteItem] = useState<ViewingHistoryItem | null>(null)
   const [batchDeleteOpen, setBatchDeleteOpen] = useState(false)
   const [clearAllOpen, setClearAllOpen] = useState(false)
+  const returnFocusRef = useRef<HTMLButtonElement>(null)
 
   const sortedHistory = useMemo(() => {
     const list = tmdbEnabled
@@ -54,7 +57,6 @@ export default function HistoryView() {
   const toggleSelectionMode = useCallback(() => {
     setSelectionMode(previous => {
       const next = !previous
-      setActionDirection(next ? 1 : -1)
       if (!next) setSelectedKeys(new Set())
       return next
     })
@@ -63,7 +65,6 @@ export default function HistoryView() {
   const enableSelectionMode = useCallback(() => {
     setSelectionMode(previous => {
       if (previous) return previous
-      setActionDirection(1)
       return true
     })
   }, [])
@@ -126,19 +127,12 @@ export default function HistoryView() {
   }, [clearViewingHistory])
 
   return (
-    <div className="min-h-full">
+    <div className={`min-h-full ${selectionMode ? 'pb-44 md:pb-24' : ''}`}>
       <HistoryHeader
         totalCount={sortedHistory.length}
         hasHistory={hasHistory}
         selectionMode={selectionMode}
-        selectedCount={selectedKeys.size}
-        isAllSelected={isAllSelected}
-        actionDirection={actionDirection}
         onToggleSelectionMode={toggleSelectionMode}
-        onSelectAll={handleSelectAll}
-        onDeselectAll={handleDeselectAll}
-        onOpenBatchDelete={() => setBatchDeleteOpen(true)}
-        onOpenClearAll={() => setClearAllOpen(true)}
       />
 
       <HistoryTimeline
@@ -151,7 +145,28 @@ export default function HistoryView() {
         onRequestDeleteItem={setPendingDeleteItem}
       />
 
+      <SidebarInsetPortal>
+        <SelectionToolbar
+          isOpen={selectionMode}
+          selectedCount={selectedKeys.size}
+          totalCount={sortedHistory.length}
+          isAllSelected={isAllSelected}
+          onExit={toggleSelectionMode}
+          onSelectAll={handleSelectAll}
+          onDeselectAll={handleDeselectAll}
+          onClearAll={event => {
+            returnFocusRef.current = event?.currentTarget ?? null
+            setClearAllOpen(true)
+          }}
+          onDeleteSelected={event => {
+            returnFocusRef.current = event?.currentTarget ?? null
+            setBatchDeleteOpen(true)
+          }}
+        />
+      </SidebarInsetPortal>
+
       <HistoryDialogs
+        returnFocusRef={returnFocusRef}
         pendingDeleteItem={pendingDeleteItem}
         batchDeleteOpen={batchDeleteOpen}
         clearAllOpen={clearAllOpen}
