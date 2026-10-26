@@ -2,16 +2,11 @@ import NetworkSettings from '../components/NetworkSettings'
 import SearchSettings from '../components/SearchSettings'
 import ThemeSettings from '../components/ThemeSettings'
 import { useSettingStore } from '@/shared/store/settingStore'
-import { Switch } from '@/shared/components/ui/switch'
-import { Input } from '@/shared/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/shared/components/ui/select'
-import { Cog, Image, KeyRound, Link2 } from 'lucide-react'
+import { SettingsSwitch as Switch } from '../components/common'
+import { SettingsInput as Input } from '../components/common'
+import { SettingsSelectTrigger as SelectTrigger } from '../components/common'
+import { Select, SelectContent, SelectItem, SelectValue } from '@/shared/components/ui/select'
+import { Cog, Film, Image, KeyRound, Link2 } from 'lucide-react'
 import { SettingsItem, SettingsPageShell, SettingsSection } from '../components/common'
 import { getPublicEnv } from '@/shared/config/runtimeEnv'
 
@@ -29,22 +24,19 @@ export default function SystemSettings() {
   return (
     <SettingsPageShell
       title="系统设置"
-      description="组合网络、搜索、主题与系统行为，统一管理应用偏好。"
-      showHeader={false}
+      description="调整界面外观、搜索与网络，让应用按你的习惯运行。"
     >
-      <NetworkSettings />
-      <SearchSettings />
       <ThemeSettings />
+      <SearchSettings />
+      <NetworkSettings />
       <SettingsSection
         title="系统行为"
         description="控制系统级交互与提示策略。"
         icon={<Cog className="size-4" />}
-        tone="cyan"
       >
         <SettingsItem
           title="自动显示更新日志"
           description="检测到新版本时自动弹出更新说明窗口。"
-          controlClassName="self-end mt-1"
           control={
             <Switch
               checked={system.isUpdateLogEnabled}
@@ -63,7 +55,6 @@ export default function SystemSettings() {
               </span>
             </span>
           }
-          controlClassName="self-end mt-1"
           control={
             <Switch
               checked={system.isScrollChromeAnimationEnabled}
@@ -73,6 +64,12 @@ export default function SystemSettings() {
             />
           }
         />
+      </SettingsSection>
+      <SettingsSection
+        title="TMDB 智能服务"
+        description="管理影片元数据、海报与推荐内容的连接方式。"
+        icon={<Film className="size-4" />}
+      >
         {!hasEnvToken && (
           <SettingsItem
             title="TMDB API Token"
@@ -98,7 +95,6 @@ export default function SystemSettings() {
               ? '启用后通过 TMDB 获取影片元数据、海报和推荐内容，关闭后仅使用视频源数据。'
               : '请先在上方输入 TMDB API Token 后启用。'
           }
-          controlClassName="self-end mt-1"
           control={
             <Switch
               checked={system.tmdbEnabled}

@@ -2,6 +2,7 @@ import {
   Dialog,
   DialogClose,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -28,6 +29,7 @@ export default function SubscriptionSourceDialog({
       <DialogContent className="h-fit sm:max-w-md">
         <DialogHeader>
           <DialogTitle>订阅源详情</DialogTitle>
+          <DialogDescription>查看远程维护的视频源信息，或调整启用状态。</DialogDescription>
         </DialogHeader>
         <SubscriptionSourceDetail source={source} />
         <DialogFooter>

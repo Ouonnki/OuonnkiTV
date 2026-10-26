@@ -9,11 +9,10 @@ export default function SourceSettings() {
   return (
     <SettingsPageShell
       title="视频源管理"
-      description="管理站点可用视频源，支持导入、导出、启停与参数编辑。"
-      showHeader={false}
+      description="管理你的内容来源。添加视频源或订阅，启用后即可用于搜索与播放。"
     >
-      <SubscriptionManager />
       <VideoSource />
+      <SubscriptionManager />
     </SettingsPageShell>
   )
 }

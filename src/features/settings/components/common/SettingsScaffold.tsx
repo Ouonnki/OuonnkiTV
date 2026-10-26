@@ -1,13 +1,13 @@
-import type { ReactNode } from 'react'
+import { createContext, useContext, useId, type ComponentProps, type ReactNode } from 'react'
+import { Input } from '@/shared/components/ui/input'
+import { Switch } from '@/shared/components/ui/switch'
+import { SelectTrigger } from '@/shared/components/ui/select'
 import { cn } from '@/shared/lib'
 
 interface SettingsPageShellProps {
   title: string
   description: string
-  actions?: ReactNode
-  badges?: ReactNode
   children: ReactNode
-  showHeader?: boolean
 }
 
 interface SettingsSectionProps {
@@ -17,9 +17,7 @@ interface SettingsSectionProps {
   action?: ReactNode
   children: ReactNode
   className?: string
-  headerClassName?: string
-  variant?: 'card' | 'flat'
-  tone?: 'slate' | 'sky' | 'emerald' | 'violet' | 'amber' | 'rose' | 'cyan'
+  layout?: 'split' | 'stack'
 }
 
 interface SettingsItemProps {
@@ -28,34 +26,33 @@ interface SettingsItemProps {
   control?: ReactNode
   children?: ReactNode
   className?: string
-  controlClassName?: string
 }
 
-export function SettingsPageShell({
-  title,
-  description,
-  actions,
-  badges,
-  children,
-  showHeader = true,
-}: SettingsPageShellProps) {
-  if (!showHeader) {
-    return <div className="space-y-6">{children}</div>
-  }
+const SettingsControlContext = createContext<{ id?: string; 'aria-describedby'?: string }>({})
 
+export function SettingsInput(props: ComponentProps<typeof Input>) {
+  const field = useContext(SettingsControlContext)
+  return <Input {...props} {...field} />
+}
+
+export function SettingsSwitch(props: ComponentProps<typeof Switch>) {
+  const field = useContext(SettingsControlContext)
+  return <Switch {...props} {...field} />
+}
+
+export function SettingsSelectTrigger(props: ComponentProps<typeof SelectTrigger>) {
+  const field = useContext(SettingsControlContext)
+  return <SelectTrigger {...props} {...field} />
+}
+
+export function SettingsPageShell({ title, description, children }: SettingsPageShellProps) {
   return (
-    <div className="space-y-6">
-      <section className="space-y-3 px-1">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="space-y-1">
-            <h1 className="text-xl font-semibold md:text-2xl">{title}</h1>
-            <p className="text-muted-foreground text-sm">{description}</p>
-          </div>
-          {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
-        </div>
-        {badges ? <div className="mt-4 flex flex-wrap gap-2">{badges}</div> : null}
-      </section>
-      {children}
+    <div>
+      <div className="mb-8 space-y-2">
+        <h2 className="text-xl font-semibold tracking-tight md:text-2xl">{title}</h2>
+        <p className="text-muted-foreground text-sm leading-relaxed">{description}</p>
+      </div>
+      <div className="space-y-8 md:space-y-10">{children}</div>
     </div>
   )
 }
@@ -67,91 +64,41 @@ export function SettingsSection({
   action,
   children,
   className,
-  headerClassName,
-  variant = 'card',
-  tone = 'slate',
+  layout = 'split',
 }: SettingsSectionProps) {
-  const toneStyles = {
-    slate: {
-      section: '',
-      line: 'from-zinc-400/28 to-transparent',
-      icon: 'bg-muted/70 text-muted-foreground ring-zinc-400/20',
-    },
-    sky: {
-      section: '',
-      line: 'from-sky-500/30 to-transparent',
-      icon: 'bg-muted/70 text-sky-700 dark:text-sky-300 ring-sky-500/25',
-    },
-    emerald: {
-      section: '',
-      line: 'from-emerald-500/30 to-transparent',
-      icon: 'bg-muted/70 text-emerald-700 dark:text-emerald-300 ring-emerald-500/25',
-    },
-    violet: {
-      section: '',
-      line: 'from-violet-500/30 to-transparent',
-      icon: 'bg-muted/70 text-violet-700 dark:text-violet-300 ring-violet-500/25',
-    },
-    amber: {
-      section: '',
-      line: 'from-amber-500/32 to-transparent',
-      icon: 'bg-muted/70 text-amber-700 dark:text-amber-300 ring-amber-500/25',
-    },
-    rose: {
-      section: '',
-      line: 'from-rose-500/30 to-transparent',
-      icon: 'bg-muted/70 text-rose-700 dark:text-rose-300 ring-rose-500/25',
-    },
-    cyan: {
-      section: '',
-      line: 'from-cyan-500/30 to-transparent',
-      icon: 'bg-muted/70 text-cyan-700 dark:text-cyan-300 ring-cyan-500/25',
-    },
-  }[tone]
+  const headingId = useId()
 
   return (
     <section
+      aria-labelledby={headingId}
       className={cn(
-        variant === 'card'
-          ? 'bg-card/70 relative overflow-hidden rounded-xl p-4 md:p-5'
-          : 'relative p-0',
-        variant === 'card' ? toneStyles.section : '',
+        'border-border/80 border-t pt-5',
+        layout === 'split' && 'grid gap-4 lg:grid-cols-[180px_minmax(0,1fr)] lg:gap-8',
         className,
       )}
     >
-      {variant === 'card' ? (
-        <span
-          className={cn(
-            'pointer-events-none absolute inset-x-4 top-0 h-px bg-gradient-to-r md:inset-x-5',
-            toneStyles.line,
-          )}
-        />
-      ) : null}
       <div
         className={cn(
-          'mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between',
-          headerClassName,
+          'flex min-w-0 flex-wrap items-start justify-between gap-3',
+          layout === 'stack' && 'mb-5',
         )}
       >
-        <div className="flex items-start gap-3">
-          {icon ? (
-            <div
-              className={cn(
-                'mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg ring-1',
-                toneStyles.icon,
-              )}
-            >
-              {icon}
-            </div>
+        <div className="min-w-0 space-y-2">
+          <h3 id={headingId} className="flex items-center gap-2 text-sm font-semibold">
+            {icon ? (
+              <span aria-hidden="true" className="text-muted-foreground">
+                {icon}
+              </span>
+            ) : null}
+            {title}
+          </h3>
+          {description ? (
+            <p className="text-muted-foreground text-xs leading-5">{description}</p>
           ) : null}
-          <div className="space-y-1">
-            <h2 className="text-base font-semibold md:text-lg">{title}</h2>
-            {description ? <p className="text-muted-foreground text-sm">{description}</p> : null}
-          </div>
         </div>
-        {action ? <div className="shrink-0">{action}</div> : null}
+        {action ? <div className="flex flex-wrap items-center gap-2">{action}</div> : null}
       </div>
-      <div className="space-y-3">{children}</div>
+      <div className="min-w-0">{children}</div>
     </section>
   )
 }
@@ -162,21 +109,35 @@ export function SettingsItem({
   control,
   children,
   className,
-  controlClassName,
 }: SettingsItemProps) {
+  const id = useId()
+  const descriptionId = description ? `${id}-description` : undefined
+
   return (
-    <div
-      className={cn(
-        'bg-muted/35 flex flex-col gap-3 rounded-lg px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4',
-        className,
-      )}
-    >
-      <div className="space-y-1">
-        <p className="text-sm font-medium md:text-base">{title}</p>
-        {description ? <p className="text-muted-foreground text-sm">{description}</p> : null}
+    <SettingsControlContext.Provider value={{ id, 'aria-describedby': descriptionId }}>
+      <div
+        className={cn(
+          'border-border/60 flex min-w-0 flex-wrap items-center justify-between gap-x-6 gap-y-3 border-b py-4 first:pt-0 last:border-b-0 last:pb-0',
+          className,
+        )}
+      >
+        <div className="min-w-0 flex-1 basis-48 space-y-1.5">
+          <label htmlFor={id} className="text-sm leading-5 font-medium">
+            {title}
+          </label>
+          {description ? (
+            <p id={descriptionId} className="text-muted-foreground text-xs leading-5">
+              {description}
+            </p>
+          ) : null}
+        </div>
+        {control ? (
+          <div className="max-w-full shrink-0 has-[[data-slot=input]]:w-full has-[[data-slot=select-trigger]]:w-full sm:has-[[data-slot=input]]:w-auto sm:has-[[data-slot=select-trigger]]:w-auto">
+            {control}
+          </div>
+        ) : null}
+        {children}
       </div>
-      {control ? <div className={cn('shrink-0', controlClassName)}>{control}</div> : null}
-      {children}
-    </div>
+    </SettingsControlContext.Provider>
   )
 }

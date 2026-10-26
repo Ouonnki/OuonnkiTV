@@ -4,15 +4,10 @@ import { useApiStore } from '@/shared/store/apiStore'
 import { useTmdbEnabled } from '@/shared/hooks/useTmdbMode'
 import { clearBusinessCaches } from '@/shared/lib/cache/businessCache'
 import { ConfirmModal } from '@/shared/components/common/ConfirmModal'
-import { Switch } from '@/shared/components/ui/switch'
-import { Input } from '@/shared/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/shared/components/ui/select'
+import { SettingsSwitch as Switch } from '../common'
+import { SettingsInput as Input } from '../common'
+import { SettingsSelectTrigger as SelectTrigger } from '../common'
+import { Select, SelectContent, SelectItem, SelectValue } from '@/shared/components/ui/select'
 import { toast } from 'sonner'
 import {
   Database,
@@ -38,19 +33,16 @@ export default function PlaybackSettings() {
   return (
     <SettingsPageShell
       title="播放设置"
-      description="按你的观看习惯组合播放行为与剧集展示方式。"
-      showHeader={false}
+      description="从自动续播到播放器细节，打造顺手的观看体验。播放器选项在下次打开播放页时生效。"
     >
       <SettingsSection
         title="播放行为"
         description="控制自动续播、观看记录和广告片段过滤。"
         icon={<PlaySquare className="size-4" />}
-        tone="violet"
       >
         <SettingsItem
           title="开启观看记录"
           description="自动记录您的观看进度，便于下次续播。"
-          controlClassName="self-end mt-1"
           control={
             <Switch
               checked={playback.isViewingHistoryEnabled}
@@ -61,7 +53,6 @@ export default function PlaybackSettings() {
         <SettingsItem
           title="详情页显示观看进度"
           description="在媒体详情页展示已观看剧集与当前进度。"
-          controlClassName="self-end mt-1"
           control={
             <Switch
               checked={playback.isViewingHistoryVisible}
@@ -72,7 +63,6 @@ export default function PlaybackSettings() {
         <SettingsItem
           title="自动续播下一集"
           description="当前一集播放完毕后自动切换到下一集。"
-          controlClassName="self-end mt-1"
           control={
             <Switch
               checked={playback.isAutoPlayEnabled}
@@ -83,7 +73,6 @@ export default function PlaybackSettings() {
         <SettingsItem
           title="跳过切片广告"
           description="尝试检测并跳过 #EXT-X-DISCONTINUITY 标记的广告片段。"
-          controlClassName="self-end mt-1"
           control={
             <Switch
               checked={adFilteringEnabled}
@@ -97,7 +86,6 @@ export default function PlaybackSettings() {
         title="播放器外观"
         description="自定义播放器的默认音量、主题色和记录上限。"
         icon={<Monitor className="size-4" />}
-        tone="cyan"
       >
         <SettingsItem
           title="默认音量"
@@ -128,9 +116,10 @@ export default function PlaybackSettings() {
           control={
             <div className="flex items-center gap-2">
               <Palette className="text-muted-foreground size-4" />
-              <input
+              <Input
+                aria-label="播放器主题色"
                 type="color"
-                className="size-9 cursor-pointer rounded-md border border-border bg-transparent p-0.5"
+                className="border-border size-9 cursor-pointer rounded-md border bg-transparent p-0.5"
                 value={playback.playerThemeColor}
                 onChange={e => setPlaybackSettings({ playerThemeColor: e.target.value })}
               />
@@ -164,12 +153,10 @@ export default function PlaybackSettings() {
         title="播放器功能"
         description="控制播放器内置功能的启用状态，修改后下次打开播放页生效。"
         icon={<Settings2 className="size-4" />}
-        tone="rose"
       >
         <SettingsItem
           title="循环播放"
           description="单集播放完毕后自动重头开始。"
-          controlClassName="self-end mt-1"
           control={
             <Switch
               checked={playback.isLoopEnabled}
@@ -180,7 +167,6 @@ export default function PlaybackSettings() {
         <SettingsItem
           title="画中画"
           description="允许将视频以悬浮小窗形式播放。"
-          controlClassName="self-end mt-1"
           control={
             <Switch
               checked={playback.isPipEnabled}
@@ -191,7 +177,6 @@ export default function PlaybackSettings() {
         <SettingsItem
           title="自动迷你播放器"
           description="页面滚动时自动将视频缩小为迷你播放器。"
-          controlClassName="self-end mt-1"
           control={
             <Switch
               checked={playback.isAutoMiniEnabled}
@@ -202,7 +187,6 @@ export default function PlaybackSettings() {
         <SettingsItem
           title="移动端手势操作"
           description="仅在移动端网页全屏下启用滑动、双击和长按手势。"
-          controlClassName="self-end mt-1"
           control={
             <Switch
               checked={playback.isMobileGestureEnabled}
@@ -235,18 +219,18 @@ export default function PlaybackSettings() {
         <SettingsItem
           title="全屏隐藏收起态进度条"
           description="开启后在网页全屏/系统全屏时隐藏操作栏收起后的底部迷你进度条。"
-          controlClassName="self-end mt-1"
           control={
             <Switch
               checked={playback.isFullscreenProgressHidden}
-              onCheckedChange={checked => setPlaybackSettings({ isFullscreenProgressHidden: checked })}
+              onCheckedChange={checked =>
+                setPlaybackSettings({ isFullscreenProgressHidden: checked })
+              }
             />
           }
         />
         <SettingsItem
           title="截图"
           description="在播放器中显示截图按钮。"
-          controlClassName="self-end mt-1"
           control={
             <Switch
               checked={playback.isScreenshotEnabled}
@@ -261,7 +245,6 @@ export default function PlaybackSettings() {
           title="TMDB 匹配缓存"
           description="缓存详情页和播放器的匹配结果，减少重复检索。"
           icon={<Database className="size-4" />}
-          tone="sky"
         >
           <SettingsItem
             title="缓存过期时长（小时）"
@@ -322,7 +305,6 @@ export default function PlaybackSettings() {
         title="剧集展示"
         description="定义详情页剧集列表排序与信息呈现方式。"
         icon={<ListFilter className="size-4" />}
-        tone="amber"
       >
         <SettingsItem
           title="剧集默认显示顺序"
@@ -335,7 +317,7 @@ export default function PlaybackSettings() {
                   setPlaybackSettings({ defaultEpisodeOrder: value })
                 }
               >
-                <SelectTrigger id="order" className="w-full">
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="选择顺序" />
                 </SelectTrigger>
                 <SelectContent>

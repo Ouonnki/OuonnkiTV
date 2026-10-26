@@ -2,10 +2,7 @@ import { Rss, Lock } from 'lucide-react'
 import { Badge } from '@/shared/components/ui/badge'
 import { Switch } from '@/shared/components/ui/switch'
 import { useApiStore } from '@/shared/store/apiStore'
-import {
-  extractSubscriptionId,
-  useSubscriptionStore,
-} from '@/shared/store/subscriptionStore'
+import { extractSubscriptionId, useSubscriptionStore } from '@/shared/store/subscriptionStore'
 import dayjs from 'dayjs'
 import type { VideoSource } from '@ouonnki/cms-core'
 
@@ -13,17 +10,16 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
       <span className="text-muted-foreground w-20 shrink-0 text-sm">{label}</span>
-      <span className="break-all text-sm">{value}</span>
+      <span className="text-sm break-all">{value}</span>
     </div>
   )
 }
 
-export default function SubscriptionSourceDetail({
-  source,
-}: {
-  source: VideoSource
-}) {
+export default function SubscriptionSourceDetail({ source }: { source: VideoSource }) {
   const { setApiEnabled } = useApiStore()
+  const isEnabled = useApiStore(
+    state => state.videoAPIs.find(item => item.id === source.id)?.isEnabled ?? source.isEnabled,
+  )
   const subscriptionId = extractSubscriptionId(source.id)
   const subscription = useSubscriptionStore(state =>
     state.subscriptions.find(s => s.id === subscriptionId),
@@ -34,25 +30,19 @@ export default function SubscriptionSourceDetail({
       <div className="border-border flex items-start justify-between gap-3 border-b pb-3">
         <div className="flex min-w-0 flex-col gap-1">
           <div className="flex items-center gap-2">
-            <h3 className="truncate text-base font-semibold md:text-lg">
-              {source.name}
-            </h3>
-            <Badge
-              variant="outline"
-              className="border-violet-500/30 text-violet-600 dark:text-violet-400 shrink-0 text-xs"
-            >
+            <h3 className="truncate text-base font-semibold md:text-lg">{source.name}</h3>
+            <Badge variant="outline" className="text-muted-foreground shrink-0 text-xs">
               <Rss className="mr-1 size-3" />
               订阅源
             </Badge>
           </div>
           {subscription && (
-            <p className="text-muted-foreground text-xs">
-              来自订阅「{subscription.name}」
-            </p>
+            <p className="text-muted-foreground text-xs">来自订阅「{subscription.name}」</p>
           )}
         </div>
         <Switch
-          checked={source.isEnabled}
+          aria-label={`启用 ${source.name}`}
+          checked={isEnabled}
           onCheckedChange={checked => setApiEnabled(source.id, checked)}
         />
       </div>
@@ -75,11 +65,7 @@ export default function SubscriptionSourceDetail({
           <InfoRow label="重试次数" value={`${source.retry ?? '-'} 次`} />
           <InfoRow
             label="更新时间"
-            value={
-              source.updatedAt
-                ? dayjs(source.updatedAt).format('YYYY-MM-DD HH:mm')
-                : '-'
-            }
+            value={source.updatedAt ? dayjs(source.updatedAt).format('YYYY-MM-DD HH:mm') : '-'}
           />
         </div>
       </div>

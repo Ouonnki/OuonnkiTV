@@ -1,79 +1,92 @@
 import { useTheme } from '@/shared/components/theme'
-import { useRef } from 'react'
-import { Palette, Sun, Moon, Monitor } from 'lucide-react'
-import { Badge } from '@/shared/components/ui/badge'
-import { motion } from 'framer-motion'
+import { Check, Monitor, Moon, Palette, Sun } from 'lucide-react'
 import { cn } from '@/shared/lib'
-import { SettingsItem, SettingsSection } from '../common'
+import { SettingsSection } from '../common'
+
+const modeOptions = [
+  { value: 'light', label: '浅色', description: '明亮清晰', icon: Sun },
+  { value: 'dark', label: '深色', description: '沉浸观影', icon: Moon },
+  { value: 'system', label: '跟随系统', description: '自动适应设备', icon: Monitor },
+] as const
 
 export default function ThemeSettings() {
   const { mode, changeMode } = useTheme()
 
-  const lastClickEvent = useRef<MouseEvent | null>(null)
-  const modeOptions = [
-    { value: 'light' as const, label: '亮色', icon: Sun },
-    { value: 'dark' as const, label: '暗色', icon: Moon },
-    { value: 'system' as const, label: '系统', icon: Monitor },
-  ]
-
-  const handleModeChange = (newMode: 'light' | 'dark' | 'system') => {
-    changeMode(newMode, lastClickEvent.current ?? undefined)
-    lastClickEvent.current = null
-  }
-
   return (
     <SettingsSection
-      title="主题设置"
-      description="选择你偏好的显示模式，支持跟随系统与动画切换。"
+      title="界面外观"
+      description="选择适合当前环境的显示模式。"
       icon={<Palette className="size-4" />}
-      tone="rose"
-      action={
-        <Badge variant="secondary">
-          当前：{mode === 'system' ? '系统' : mode === 'light' ? '亮色' : '暗色'}
-        </Badge>
-      }
     >
-      <SettingsItem
-        title="主题模式"
-        description="支持亮色、暗色与跟随系统。"
-        className="items-start sm:items-center"
-      >
-        <div className="bg-muted relative inline-flex w-full max-w-sm items-center rounded-full p-1">
-          {modeOptions.map(option => {
-            const isActive = mode === option.value
-            const Icon = option.icon
-
-            return (
-              <button
-                key={option.value}
-                type="button"
-                onPointerDown={e => {
-                  lastClickEvent.current = e.nativeEvent as unknown as MouseEvent
-                }}
-                onClick={() => handleModeChange(option.value)}
+      <fieldset>
+        <legend className="sr-only">主题模式</legend>
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
+          {modeOptions.map(({ value, label, description, icon: Icon }) => (
+            <label key={value} className="relative min-w-0 cursor-pointer">
+              <input
+                className="peer sr-only"
+                type="radio"
+                name="settings-theme"
+                value={value}
+                checked={mode === value}
+                onChange={() => changeMode(value)}
+              />
+              <div
                 className={cn(
-                  'relative z-10 flex min-w-0 flex-1 items-center justify-center gap-1 rounded-full px-2 py-1.5 text-xs font-medium transition-colors sm:gap-1.5 sm:px-3 sm:text-sm',
-                  isActive ? 'text-primary' : 'text-muted-foreground hover:text-primary/80',
+                  'border-border peer-focus-visible:ring-ring rounded-xl border p-2.5 transition-colors peer-focus-visible:ring-2 sm:p-3',
+                  mode === value ? 'border-primary bg-muted/40' : 'hover:bg-muted/30',
                 )}
               >
-                <Icon className="size-3.5 shrink-0" />
-                <span className="whitespace-nowrap leading-none">{option.label}</span>
-                {isActive ? (
-                  <motion.span
-                    layoutId="theme-mode-indicator"
-                    className="bg-background absolute inset-0 -z-10 rounded-full shadow-sm"
-                    transition={{
-                      type: 'spring',
-                      stiffness: 400,
-                      damping: 30,
-                    }}
+                <div
+                  aria-hidden="true"
+                  className={cn(
+                    'relative mb-3 h-16 overflow-hidden rounded-md border sm:h-20',
+                    value === 'dark' ? 'border-zinc-700 bg-zinc-900' : 'border-zinc-200 bg-white',
+                  )}
+                >
+                  {value === 'system' && (
+                    <div className="absolute inset-y-0 right-0 w-1/2 bg-zinc-900" />
+                  )}
+                  <div
+                    className={cn(
+                      'absolute inset-y-0 left-0 w-1/5 border-r',
+                      value === 'dark'
+                        ? 'border-zinc-700 bg-zinc-800'
+                        : 'border-zinc-200 bg-zinc-100',
+                    )}
                   />
-                ) : null}
-              </button>
-            )
-          })}
+                  <div className="absolute top-3 right-2 left-[30%] flex gap-1.5 sm:gap-2">
+                    {[0, 1, 2].map(index => (
+                      <span
+                        key={index}
+                        className={cn(
+                          'h-9 flex-1 rounded-sm sm:h-12',
+                          value === 'dark'
+                            ? 'bg-zinc-700'
+                            : value === 'system' && index > 0
+                              ? 'bg-zinc-600'
+                              : 'bg-zinc-200',
+                        )}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 text-xs font-medium sm:text-sm">
+                  <Icon aria-hidden="true" className="hidden size-3.5 shrink-0 sm:block" />
+                  <span className="truncate">{label}</span>
+                </div>
+                {mode === value && (
+                  <Check
+                    aria-hidden="true"
+                    className="bg-primary text-primary-foreground absolute top-2 right-2 size-4 rounded-full p-0.5"
+                  />
+                )}
+                <p className="text-muted-foreground mt-1 hidden text-xs sm:block">{description}</p>
+              </div>
+            </label>
+          ))}
         </div>
-      </SettingsItem>
+      </fieldset>
     </SettingsSection>
   )
 }

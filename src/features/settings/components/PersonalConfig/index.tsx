@@ -1,17 +1,23 @@
-import { ArchiveRestore, Settings2 } from 'lucide-react'
+import {
+  ArchiveRestore,
+  Copy,
+  Download,
+  FileUp,
+  Link,
+  ShieldCheck,
+  Text,
+  Upload,
+} from 'lucide-react'
 import { useRef, useState } from 'react'
-import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { ConfirmModal } from '@/shared/components/common/ConfirmModal'
-import ActionDropdown from '@/shared/components/common/ActionDropdown'
 import { usePersonalConfig } from '@/shared/hooks/usePersonalConfig'
-import { SettingsItem, SettingsPageShell, SettingsSection } from '../common'
+import { SettingsPageShell, SettingsSection } from '../common'
 import { TextConfigModal, URLConfigModal } from '../AboutProject/ImportConfigModal'
 
 export default function PersonalConfig() {
   const { exportConfig, exportConfigToText, importConfig, restoreDefault } = usePersonalConfig()
   const fileInputRef = useRef<HTMLInputElement>(null)
-
   const [urlConfigModalOpen, setUrlConfigModalOpen] = useState(false)
   const [textConfigModalOpen, setTextConfigModalOpen] = useState(false)
   const [confirmRestoreOpen, setConfirmRestoreOpen] = useState(false)
@@ -19,101 +25,91 @@ export default function PersonalConfig() {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
-    importConfig(file)
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
-    }
+    void importConfig(file)
+    event.target.value = ''
   }
 
   return (
     <SettingsPageShell
       title="个人配置"
-      description="导入、导出和恢复你的完整配置（设置 + 视频源）。"
-      showHeader={false}
+      description="备份、迁移或恢复你的偏好，在不同设备上延续熟悉的体验。"
     >
       <SettingsSection
-        title="配置管理"
-        description="支持文件、URL、文本三种导入方式与两种导出方式。"
-        icon={<Settings2 className="size-4" />}
-        tone="amber"
-        action={
-          <ActionDropdown
-            label="配置操作"
-            buttonSize="sm"
-            buttonClassName="h-8 px-3"
-            items={[
-              {
-                label: '导出个人配置',
-                type: 'sub',
-                children: [
-                  {
-                    label: '导出为文件',
-                    onClick: exportConfig,
-                  },
-                  {
-                    label: '导出为文本',
-                    onClick: exportConfigToText,
-                  },
-                ],
-              },
-              {
-                label: '导入个人配置',
-                type: 'sub',
-                children: [
-                  {
-                    label: '从文件导入',
-                    onClick: () => fileInputRef.current?.click(),
-                  },
-                  {
-                    label: '从URL导入',
-                    onClick: () => setUrlConfigModalOpen(true),
-                  },
-                  {
-                    label: '从文本导入',
-                    onClick: () => setTextConfigModalOpen(true),
-                  },
-                ],
-              },
-              {
-                label: '恢复默认配置',
-                className: 'text-red-600 focus:text-red-600 focus:bg-red-50',
-                onClick: () => setConfirmRestoreOpen(true),
-              },
-            ]}
-          />
-        }
+        title="备份与迁移"
+        description="配置包含播放、网络、搜索与系统设置，以及视频源和订阅。"
+        icon={<ShieldCheck className="size-4" />}
       >
-        <SettingsItem
-          title="配置快照"
-          description="导出的配置包含系统设置、播放设置、搜索设置与全部视频源。"
-          control={
-            <Badge variant="outline" className="font-normal">
-              支持 JSON
-            </Badge>
-          }
-        />
-        <SettingsItem
-          title="恢复默认配置"
-          description="重置所有设置并清空已添加视频源。"
-          control={
-            <Button
-              variant="destructive"
-              size="sm"
-              className="h-8 px-3"
-              onClick={() => setConfirmRestoreOpen(true)}
-            >
-              <ArchiveRestore className="size-4" />
-              恢复默认
-            </Button>
-          }
-        />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="border-border bg-background/50 flex flex-col rounded-xl border p-4 sm:p-5">
+            <Download aria-hidden="true" className="text-muted-foreground mb-4 size-5" />
+            <h4 className="text-sm font-medium">导出配置</h4>
+            <p className="text-muted-foreground mt-2 mb-5 text-xs leading-5">
+              保存一份 JSON 备份，或复制文本用于迁移。配置可能包含 Token，请妥善保管。
+            </p>
+            <div className="mt-auto flex flex-wrap gap-2">
+              <Button size="sm" onClick={exportConfig}>
+                <Download />
+                下载文件
+              </Button>
+              <Button size="sm" variant="outline" onClick={exportConfigToText}>
+                <Copy />
+                复制文本
+              </Button>
+            </div>
+          </div>
+          <div className="border-border bg-background/50 flex flex-col rounded-xl border p-4 sm:p-5">
+            <Upload aria-hidden="true" className="text-muted-foreground mb-4 size-5" />
+            <h4 className="text-sm font-medium">导入配置</h4>
+            <p className="text-muted-foreground mt-2 mb-5 text-xs leading-5">
+              从已有备份恢复。导入会更新配置中的对应设置，建议先备份当前配置。
+            </p>
+            <div className="mt-auto flex flex-wrap gap-2">
+              <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()}>
+                <FileUp />
+                选择文件
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setUrlConfigModalOpen(true)}>
+                <Link />
+                URL
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setTextConfigModalOpen(true)}>
+                <Text />
+                文本
+              </Button>
+            </div>
+          </div>
+        </div>
         <input
+          aria-label="导入配置文件"
           type="file"
           ref={fileInputRef}
           className="hidden"
-          accept=".json"
+          accept=".json,application/json"
           onChange={handleFileChange}
         />
+      </SettingsSection>
+
+      <SettingsSection
+        title="恢复默认"
+        description="从初始状态重新开始。"
+        icon={<ArchiveRestore className="size-4" />}
+      >
+        <div className="border-destructive/20 flex flex-wrap items-center justify-between gap-4 rounded-xl border p-4 sm:p-5">
+          <div className="min-w-0 flex-1 basis-56 space-y-1.5">
+            <h4 className="text-sm font-medium">重置应用配置</h4>
+            <p className="text-muted-foreground text-xs leading-5">
+              重置偏好、视频源与订阅，并重新载入部署提供的默认源和订阅。此操作无法撤销。
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-destructive hover:text-destructive"
+            onClick={() => setConfirmRestoreOpen(true)}
+          >
+            恢复默认配置
+          </Button>
+        </div>
       </SettingsSection>
 
       <URLConfigModal open={urlConfigModalOpen} onOpenChange={setUrlConfigModalOpen} />
@@ -123,9 +119,9 @@ export default function PersonalConfig() {
         onClose={() => setConfirmRestoreOpen(false)}
         onConfirm={restoreDefault}
         title="确认恢复默认配置？"
-        description="此操作将重置所有设置并清除所有已添加的视频源，恢复到初始默认状态。该操作无法撤销。"
+        description="所有偏好将重置，当前视频源与订阅将被部署提供的默认内容替换。此操作无法撤销，建议先导出备份。"
         confirmText="确认恢复"
-        isDestructive={true}
+        isDestructive
       />
     </SettingsPageShell>
   )

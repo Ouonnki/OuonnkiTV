@@ -1,5 +1,5 @@
-import { Input } from '@/shared/components/ui/input'
-import { Switch } from '@/shared/components/ui/switch'
+import { SettingsInput as Input } from '../common'
+import { SettingsSwitch as Switch } from '../common'
 import { CloudLightning, Layers, Link, RefreshCw, Timer } from 'lucide-react'
 import { useSettingStore } from '@/shared/store/settingStore'
 import { SettingsItem, SettingsSection } from '../common'
@@ -12,12 +12,10 @@ export default function NetworkSettings() {
       title="网络设置"
       description="配置全局请求超时、重试、并发与代理策略。"
       icon={<CloudLightning className="size-4" />}
-      tone="sky"
     >
       <SettingsItem
         title="启用请求代理"
         description="关闭后视频源搜索、详情与测速将直接请求源站。"
-        controlClassName="self-end mt-1"
         control={
           <Switch
             checked={network.isProxyEnabled}
@@ -33,7 +31,6 @@ export default function NetworkSettings() {
             <Link className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
             <Input
               type="text"
-              id="proxyUrl"
               className="pl-9"
               value={network.proxyUrl}
               placeholder="/proxy?url="
@@ -50,7 +47,6 @@ export default function NetworkSettings() {
             <Timer className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
             <Input
               type="number"
-              id="timeout"
               min={300}
               step={100}
               className="pl-9"
@@ -70,7 +66,6 @@ export default function NetworkSettings() {
             <RefreshCw className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
             <Input
               type="number"
-              id="retry"
               min={0}
               max={10}
               className="pl-9"
@@ -90,7 +85,6 @@ export default function NetworkSettings() {
             <Layers className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
             <Input
               type="number"
-              id="concurrency"
               min={1}
               max={10}
               className="pl-9"

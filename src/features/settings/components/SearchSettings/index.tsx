@@ -1,5 +1,5 @@
-import { Switch } from '@/shared/components/ui/switch'
-import { Input } from '@/shared/components/ui/input'
+import { SettingsSwitch as Switch } from '../common'
+import { SettingsInput as Input } from '../common'
 import { Search } from 'lucide-react'
 import { useSettingStore } from '@/shared/store/settingStore'
 import { SettingsItem, SettingsSection } from '../common'
@@ -12,12 +12,10 @@ export default function SearchSettings() {
       title="搜索设置"
       description="管理关键词历史记录与搜索入口体验。"
       icon={<Search className="size-4" />}
-      tone="emerald"
     >
       <SettingsItem
         title="开启搜索历史"
         description="记录你的搜索关键词，用于快捷回填。"
-        controlClassName="self-end mt-1"
         control={
           <Switch
             checked={search.isSearchHistoryEnabled}
@@ -28,7 +26,6 @@ export default function SearchSettings() {
       <SettingsItem
         title="显示搜索历史"
         description="在搜索框聚焦时展示历史关键词。"
-        controlClassName="self-end mt-1"
         control={
           <Switch
             checked={search.isSearchHistoryVisible}

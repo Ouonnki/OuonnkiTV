@@ -1,6 +1,7 @@
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -33,10 +34,8 @@ export const ConfirmModal = ({
       <DialogContent className="h-fit">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
+          <DialogDescription className="py-2">{description}</DialogDescription>
         </DialogHeader>
-        <div className="py-2">
-          <p className="text-muted-foreground text-sm">{description}</p>
-        </div>
         <DialogFooter>
           <Button variant="ghost" onClick={onClose}>
             {cancelText}

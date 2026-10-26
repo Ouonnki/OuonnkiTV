@@ -7,6 +7,7 @@ import {
   ArrowUpDown,
   Loader2,
   GripVertical,
+  Plus,
 } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { toast } from 'sonner'
@@ -16,7 +17,6 @@ import { isSubscriptionSource } from '@/shared/store/subscriptionStore'
 import { useSettingStore } from '@/shared/store/settingStore'
 import { batchCheckVideoSources } from '@/shared/lib/health-check'
 import dayjs from 'dayjs'
-import { Badge } from '@/shared/components/ui/badge'
 import ActionDropdown from '@/shared/components/common/ActionDropdown'
 import {
   DndContext,
@@ -86,7 +86,7 @@ export default function VideoSource() {
     if (!over || active.id === over.id) return
 
     const oldIndex = videoAPIs.findIndex(s => s.id === active.id)
-    const newIndex = videoAPIs.findIndex(s => s.id === over.id as string)
+    const newIndex = videoAPIs.findIndex(s => s.id === (over.id as string))
     if (oldIndex === -1 || newIndex === -1) return
 
     const newOrder = [...videoAPIs]
@@ -136,7 +136,7 @@ export default function VideoSource() {
       url: '',
       detailUrl: '',
       timeout: useSettingStore.getState().network.defaultTimeout || 3000,
-      retry: useSettingStore.getState().network.defaultRetry || 3,
+      retry: useSettingStore.getState().network.defaultRetry,
       isEnabled: true,
       updatedAt: new Date(),
     })
@@ -232,9 +232,13 @@ export default function VideoSource() {
 
       <SettingsSection
         title="视频源列表"
-        description="在这里添加、编辑、导入、导出并控制视频源启用状态。"
+        description={
+          videoAPIs.length > 0
+            ? `共 ${videoAPIs.length} 个视频源，已启用 ${getSelectedAPIs().length} 个。`
+            : '手动添加，或从文件、链接和文本批量导入。'
+        }
         icon={<Database className="size-4" />}
-        tone="sky"
+        layout="stack"
         action={
           <div className="flex flex-wrap items-center gap-2">
             {videoAPIs.length > 0 && (
@@ -250,18 +254,11 @@ export default function VideoSource() {
                 ) : (
                   <Activity className="mr-1 size-3.5" />
                 )}
-                {isTesting
-                  ? `${testProgress.completed}/${testProgress.total}`
-                  : '测速'}
+                {isTesting ? `${testProgress.completed}/${testProgress.total}` : '测速'}
               </Button>
             )}
             {videoAPIs.length > 0 && hasResults && !isTesting && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 px-3"
-                onClick={handleSortByLatency}
-              >
+              <Button variant="ghost" size="sm" className="h-8 px-3" onClick={handleSortByLatency}>
                 <ArrowUpDown className="mr-1 size-3.5" />
                 按延迟排序
               </Button>
@@ -282,12 +279,9 @@ export default function VideoSource() {
               </Button>
             )}
             <ActionDropdown
-              label="添加源"
+              label="导入 / 导出"
+              buttonSize="sm"
               items={[
-                {
-                  label: '手动添加',
-                  onClick: handleAddSource,
-                },
                 {
                   label: '导入视频源',
                   type: 'sub',
@@ -322,23 +316,32 @@ export default function VideoSource() {
                 },
               ]}
             />
+            <Button size="sm" onClick={handleAddSource}>
+              <Plus className="size-4" />
+              添加视频源
+            </Button>
           </div>
         }
       >
         {videoAPIs.length === 0 ? (
-          <div className="text-muted-foreground flex h-20 items-center justify-center text-sm">
-            暂无视频源，点击右上角「添加源」开始使用。
+          <div className="border-border/80 flex flex-col items-center rounded-xl border border-dashed px-4 py-10 text-center">
+            <Database aria-hidden="true" className="text-muted-foreground/50 mb-3 size-8" />
+            <p className="text-sm font-medium">还没有视频源</p>
+            <p className="text-muted-foreground mt-2 max-w-sm text-xs leading-5">
+              添加一个视频源开始搜索，也可以在下方订阅远程源列表。
+            </p>
+            <Button variant="outline" size="sm" className="mt-5" onClick={handleAddSource}>
+              <Plus className="size-4" />
+              添加第一个源
+            </Button>
           </div>
         ) : (
           <>
             {/* 已启用统计 + 拖拽排序提示 */}
-            <div className="flex items-center justify-between gap-2">
-              <Badge variant="secondary" className="bg-sky-500/14 text-sky-700 dark:text-sky-300">
-                已启用 {getSelectedAPIs().length}/{videoAPIs.length}
-              </Badge>
-              <div className="text-muted-foreground/60 flex items-center gap-1.5 text-xs">
+            <div className="mb-3 flex items-center gap-2">
+              <div className="text-muted-foreground flex items-center gap-1.5 text-xs">
                 <GripVertical className="size-3" />
-                <span>拖拽左侧手柄可调整顺序</span>
+                <span>拖动手柄调整顺序，也可聚焦手柄后按空格及方向键排序</span>
               </div>
             </div>
 
@@ -351,7 +354,7 @@ export default function VideoSource() {
                 items={videoAPIs.map(s => s.id)}
                 strategy={verticalListSortingStrategy}
               >
-                <div className="space-y-2">
+                <div className="border-border bg-background/40 overflow-hidden rounded-xl border">
                   {videoAPIs.map(source => (
                     <SortableVideoSourceCard
                       key={source.id}

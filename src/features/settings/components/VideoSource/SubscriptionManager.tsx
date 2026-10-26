@@ -124,12 +124,12 @@ function AddSubscriptionModal({
             </div>
 
             <div className="grid gap-2">
-              <Label>自动刷新间隔</Label>
+              <Label htmlFor="sub-refresh-interval">自动刷新间隔</Label>
               <Select
                 value={refreshInterval}
                 onValueChange={val => setValue('refreshInterval', val)}
               >
-                <SelectTrigger className="w-full">
+                <SelectTrigger id="sub-refresh-interval" className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -179,12 +179,14 @@ function SubscriptionCard({ subscription }: { subscription: VideoSourceSubscript
 
   return (
     <>
-      <div className="bg-muted/35 space-y-2 rounded-lg px-4 py-3">
+      <div className="border-border bg-background/40 space-y-3 rounded-xl border p-4">
         {/* 第一行：名称 + 状态 + 操作 */}
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex min-w-0 items-center gap-2">
-            <Rss className="size-4 shrink-0 text-violet-600 dark:text-violet-400" />
-            <p className="truncate text-sm font-medium">{subscription.name}</p>
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div className="flex min-w-0 flex-1 basis-48 flex-wrap items-center gap-2">
+            <p className="flex max-w-full min-w-0 items-center gap-2 text-sm font-medium">
+              <Rss aria-hidden="true" className="text-muted-foreground size-4 shrink-0" />
+              <span className="truncate">{subscription.name}</span>
+            </p>
             <Badge
               variant="outline"
               className={cn(
@@ -209,6 +211,7 @@ function SubscriptionCard({ subscription }: { subscription: VideoSourceSubscript
               variant="ghost"
               size="icon"
               className="size-7"
+              aria-label={`刷新订阅 ${subscription.name}`}
               onClick={handleRefresh}
               disabled={isRefreshing}
             >
@@ -218,6 +221,7 @@ function SubscriptionCard({ subscription }: { subscription: VideoSourceSubscript
               variant="ghost"
               size="icon"
               className="size-7 text-red-500 hover:text-red-600"
+              aria-label={`取消订阅 ${subscription.name}`}
               onClick={() => setConfirmRemoveOpen(true)}
             >
               <Trash2 className="size-3.5" />
@@ -229,10 +233,14 @@ function SubscriptionCard({ subscription }: { subscription: VideoSourceSubscript
         <div className="text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
           <button
             type="button"
-            className="max-w-xs cursor-pointer truncate underline-offset-2 hover:underline"
-            onClick={() => {
-              navigator.clipboard.writeText(subscription.url)
-              toast.success('已复制订阅 URL')
+            className="max-w-full min-w-0 cursor-pointer truncate font-mono underline-offset-2 hover:underline"
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(subscription.url)
+                toast.success('已复制订阅 URL')
+              } catch {
+                toast.error('复制失败，请重试')
+              }
             }}
             title="点击复制"
           >
@@ -253,7 +261,10 @@ function SubscriptionCard({ subscription }: { subscription: VideoSourceSubscript
             value={String(subscription.refreshInterval)}
             onValueChange={val => setRefreshInterval(subscription.id, Number.parseInt(val, 10))}
           >
-            <SelectTrigger className="h-7 w-28 text-xs">
+            <SelectTrigger
+              aria-label={`${subscription.name} 自动刷新间隔`}
+              className="h-8 w-32 text-xs"
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -317,9 +328,9 @@ export default function SubscriptionManager() {
       <AddSubscriptionModal open={addModalOpen} onOpenChange={setAddModalOpen} />
       <SettingsSection
         title="视频源订阅"
-        description="订阅远程视频源列表，自动同步更新。订阅源不可手动编辑。"
+        description="通过远程链接同步视频源。订阅内的源由提供方维护，可单独启停。"
         icon={<Rss className="size-4" />}
-        tone="violet"
+        layout="stack"
         action={
           <div className="flex flex-wrap items-center gap-2">
             {subscriptions.length > 0 && (
@@ -362,11 +373,19 @@ export default function SubscriptionManager() {
         }
       >
         {subscriptions.length === 0 ? (
-          <div className="text-muted-foreground flex h-20 items-center justify-center text-sm">
-            暂无订阅，点击右上角「添加订阅」开始使用。
+          <div className="border-border/80 bg-muted/20 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-dashed px-4 py-5">
+            <div className="space-y-1.5">
+              <p className="text-sm font-medium">让视频源自动保持更新</p>
+              <p className="text-muted-foreground text-xs leading-5">
+                添加一个订阅链接，无需逐个维护视频源。
+              </p>
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => setAddModalOpen(true)}>
+              添加第一个订阅
+            </Button>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="grid gap-3 xl:grid-cols-2">
             {subscriptions.map(sub => (
               <SubscriptionCard key={sub.id} subscription={sub} />
             ))}
@@ -374,15 +393,10 @@ export default function SubscriptionManager() {
         )}
 
         {subscriptions.length > 0 && (
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <Badge
-              variant="outline"
-              className="border-violet-500/35 bg-violet-500/8 text-violet-700 dark:text-violet-300"
-            >
-              {subscriptions.length} 个订阅 ·{' '}
-              {subscriptions.reduce((sum, s) => sum + s.sourceCount, 0)} 个源
-            </Badge>
-          </div>
+          <p className="text-muted-foreground mt-3 text-xs">
+            {subscriptions.length} 个订阅 ·{' '}
+            {subscriptions.reduce((sum, s) => sum + s.sourceCount, 0)} 个源
+          </p>
         )}
       </SettingsSection>
     </>
