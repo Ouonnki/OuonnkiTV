@@ -27,8 +27,9 @@ function DesktopTimeline({ versions, selectedVersion, onSelectVersion }: Version
             <button
               key={version.version}
               type="button"
+              aria-pressed={isSelected}
               onClick={() => onSelectVersion(version)}
-              className="relative flex w-full items-start gap-3 rounded-lg px-2 py-2 text-left transition-colors"
+              className="focus-visible:ring-ring relative flex w-full items-start gap-3 rounded-lg px-2 py-2 text-left transition-colors outline-none focus-visible:ring-2"
             >
               {isSelected && (
                 <motion.span
@@ -94,9 +95,10 @@ function MobileAccordion({ versions }: { versions: VersionUpdate[] }) {
 
             <button
               type="button"
+              aria-expanded={isExpanded}
               onClick={() => toggleExpand(version.version)}
               className={cn(
-                'flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left transition-colors',
+                'focus-visible:ring-ring flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left transition-colors outline-none focus-visible:ring-2',
                 isExpanded ? 'bg-muted/55' : 'hover:bg-muted/35',
               )}
             >

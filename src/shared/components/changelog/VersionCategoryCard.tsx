@@ -30,18 +30,14 @@ export function VersionCategoryCard({ category, items }: VersionCategoryCardProp
   const Icon = config.icon
 
   return (
-    <div className="bg-muted/35 relative overflow-hidden rounded-xl px-4 py-3">
-      <span
-        className={cn(
-          'pointer-events-none absolute inset-x-4 top-0 h-px bg-gradient-to-r',
-          config.line,
-        )}
-      />
-
+    <section
+      aria-label={config.title}
+      className="border-border border-t pt-4 first:border-t-0 first:pt-0"
+    >
       <div className="mb-2.5 flex items-center gap-2">
         <Icon className={cn('size-4 shrink-0', config.text)} />
-        <h4 className={cn('text-sm font-semibold', config.text)}>{config.title}</h4>
-        <Badge variant="secondary" className="ml-auto text-xs font-normal">
+        <h4 className="text-sm font-semibold">{config.title}</h4>
+        <Badge variant="outline" className="ml-auto text-xs font-normal">
           {items.length}
         </Badge>
       </div>
@@ -53,16 +49,15 @@ export function VersionCategoryCard({ category, items }: VersionCategoryCardProp
         animate="animate"
       >
         {items.map((item, index) => (
-          <motion.li
-            key={index}
-            variants={itemVariants}
-            className="flex items-start gap-2 text-sm"
-          >
-            <span className={cn('mt-1.5 size-1.5 shrink-0 rounded-full', config.dot)} />
+          <motion.li key={index} variants={itemVariants} className="flex items-start gap-2 text-sm">
+            <span
+              aria-hidden="true"
+              className="bg-muted-foreground/40 mt-2 size-1 shrink-0 rounded-full"
+            />
             <span className="text-foreground leading-relaxed">{item}</span>
           </motion.li>
         ))}
       </motion.ul>
-    </div>
+    </section>
   )
 }
