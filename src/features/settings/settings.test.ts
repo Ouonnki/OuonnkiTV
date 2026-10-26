@@ -241,6 +241,14 @@ describe('settings interactions', () => {
       act(() => findButton('添加视频源').click())
       expect((document.getElementById('retry') as HTMLInputElement).value).toBe('0')
       expect(document.querySelector('[role="dialog"]')?.textContent).toContain('添加视频源')
+      const dialog = document.querySelector('[role="dialog"]')!
+      expect(dialog.classList.contains('max-h-[calc(100dvh-2rem)]')).toBe(true)
+      const form = dialog.querySelector('form')!
+      expect(form.classList.contains('min-h-0')).toBe(true)
+      expect(form.classList.contains('overflow-y-auto')).toBe(true)
+      expect(
+        dialog.querySelector('[data-slot="dialog-footer"]')?.classList.contains('shrink-0'),
+      ).toBe(true)
     } finally {
       act(() => useApiStore.setState({ videoAPIs: previousSources }))
     }

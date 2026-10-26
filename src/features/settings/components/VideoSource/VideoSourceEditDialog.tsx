@@ -110,8 +110,8 @@ export default function VideoSourceEditDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="flex flex-col gap-3 p-4 sm:right-auto sm:bottom-auto sm:max-w-md sm:p-5">
-          <DialogHeader>
+        <DialogContent className="flex flex-col gap-3 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:max-w-md sm:p-5">
+          <DialogHeader className="shrink-0">
             <DialogTitle>{isEditing ? '编辑视频源' : '添加视频源'}</DialogTitle>
             <DialogDescription>
               {isEditing ? '修改视频源的配置信息。' : '填写视频源基本信息后点击保存。'}
@@ -123,7 +123,7 @@ export default function VideoSourceEditDialog({
             onSubmit={handleSubmit(handleSave, () =>
               toast.error('保存失败，请检查表单填写是否正确'),
             )}
-            className=""
+            className="min-h-0 overflow-y-auto overscroll-contain px-0.5"
           >
             <div className="grid gap-3">
               {/* 名称 */}
