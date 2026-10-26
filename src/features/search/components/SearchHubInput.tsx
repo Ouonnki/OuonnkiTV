@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { Search, X, History, Trash2 } from 'lucide-react'
+import { Search, X, History } from 'lucide-react'
 import { Input } from '@/shared/components/ui/input'
 import { Button } from '@/shared/components/ui/button'
 import { Popover, PopoverContent, PopoverAnchor } from '@/shared/components/ui/popover'
 import { ScrollArea } from '@/shared/components/ui/scroll-area'
 import { useSearchHistory, useSearchSuggestions } from '@/shared/hooks'
+import { SearchHistoryDeleteButton } from '@/shared/components/common/SearchHistoryDeleteButton'
 
 interface SearchHubInputProps {
   /** Initial query from URL */
@@ -182,18 +183,7 @@ export function SearchHubInput({
                     >
                       <History className="text-muted-foreground mr-3 size-4 shrink-0" />
                       <span className="flex-1 truncate">{item.content}</span>
-                      <button
-                        type="button"
-                        className="text-muted-foreground hover:text-destructive shrink-0 p-1 opacity-0 transition-colors group-hover:opacity-100"
-                        onMouseDown={e => e.preventDefault()}
-                        onKeyDown={e => e.stopPropagation()}
-                        onClick={e => {
-                          e.stopPropagation()
-                          removeSearchHistoryItem(item.id)
-                        }}
-                      >
-                        <Trash2 className="size-4" />
-                      </button>
+                      <SearchHistoryDeleteButton content={item.content} onDelete={() => removeSearchHistoryItem(item.id)} />
                     </div>
                   ))}
                 </div>

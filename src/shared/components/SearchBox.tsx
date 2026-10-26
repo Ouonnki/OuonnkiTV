@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
-import { Search, X, ArrowLeft, History, Trash2 } from 'lucide-react'
+import { Search, X, ArrowLeft, History } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 import { Input } from '@/shared/components/ui/input'
@@ -7,6 +7,7 @@ import { Button } from '@/shared/components/ui/button'
 import { Popover, PopoverContent, PopoverAnchor } from '@/shared/components/ui/popover'
 import { useSearch, useSearchHistory, useSearchSuggestions } from '@/shared/hooks'
 import { ScrollArea } from '@/shared/components/ui/scroll-area'
+import { SearchHistoryDeleteButton } from './common/SearchHistoryDeleteButton'
 
 // 创建支持 motion 的 Button 组件
 const MotionButton = motion.create(Button)
@@ -97,14 +98,6 @@ export default function SearchBox({ onMobileSearchChange }: SearchBoxProps) {
     [searchMovie],
   )
 
-  const handleHistoryItemDelete = useCallback(
-    (e: React.MouseEvent, id: string) => {
-      e.stopPropagation()
-      removeSearchHistoryItem(id)
-    },
-    [removeSearchHistoryItem],
-  )
-
   const handleSuggestionClick = useCallback(
     (title: string) => {
       setInputContent(title)
@@ -139,7 +132,7 @@ export default function SearchBox({ onMobileSearchChange }: SearchBoxProps) {
   }, [])
 
   // 下拉框内容组件
-  const DropdownContent = ({ isMobile = false }: { isMobile?: boolean }) => (
+  const DropdownContent = () => (
     <div className="p-1">
       <ScrollArea className="max-h-100 px-3">
         {!hasContent ? (
@@ -157,17 +150,7 @@ export default function SearchBox({ onMobileSearchChange }: SearchBoxProps) {
               >
                 <History className="text-muted-foreground mr-3 size-4 shrink-0" />
                 <span className="flex-1 truncate">{item.content}</span>
-                <button
-                  type="button"
-                  className={`text-muted-foreground hover:text-destructive shrink-0 p-1 transition-colors ${
-                    isMobile ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                  }`}
-                  onMouseDown={e => e.preventDefault()}
-                  onKeyDown={e => e.stopPropagation()}
-                  onClick={e => handleHistoryItemDelete(e, item.id)}
-                >
-                  <Trash2 className="size-4" />
-                </button>
+                <SearchHistoryDeleteButton content={item.content} onDelete={() => removeSearchHistoryItem(item.id)} />
               </div>
             ))}
           </div>
@@ -328,7 +311,7 @@ export default function SearchBox({ onMobileSearchChange }: SearchBoxProps) {
             sideOffset={8}
             onOpenAutoFocus={e => e.preventDefault()}
           >
-            <DropdownContent isMobile />
+            <DropdownContent />
           </PopoverContent>
         </Popover>
       </div>

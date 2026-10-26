@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'react-router'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X } from 'lucide-react'
+import { SearchHistoryDeleteButton } from '@/shared/components/common/SearchHistoryDeleteButton'
 import { useDocumentTitle, useSearchHistory } from '@/shared/hooks'
 import { useTmdbEnabled } from '@/shared/hooks/useTmdbMode'
 import { useTmdbNowPlaying } from '@/shared/hooks/useTmdb'
@@ -173,32 +174,17 @@ export default function SearchHubView() {
               </div>
               <div className="flex flex-wrap gap-2">
                 {searchHistory.map(item => (
-                  <button
+                  <div
                     key={item.id}
-                    type="button"
-                    className="bg-secondary hover:bg-secondary/80 text-secondary-foreground group inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition-colors"
-                    onClick={() => handleSearch(item.content)}
+                    className="bg-secondary hover:bg-secondary/80 text-secondary-foreground group inline-flex items-center gap-1 rounded-full pr-1 pl-3 text-sm transition-colors"
                   >
-                    <span className="max-w-[10rem] truncate">{item.content}</span>
-                    <span
-                      role="button"
-                      tabIndex={0}
-                      className="text-muted-foreground hover:text-destructive -mr-1 shrink-0 rounded-full p-0.5 opacity-0 transition-all group-hover:opacity-100"
-                      onClick={e => {
-                        e.stopPropagation()
-                        removeSearchHistoryItem(item.id)
-                      }}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault()
-                          e.stopPropagation()
-                          removeSearchHistoryItem(item.id)
-                        }
-                      }}
-                    >
+                    <button type="button" className="focus-visible:ring-ring h-11 max-w-[10rem] truncate rounded-sm text-left outline-none focus-visible:ring-2 md:h-8" onClick={() => handleSearch(item.content)}>
+                      {item.content}
+                    </button>
+                    <SearchHistoryDeleteButton content={item.content} className="rounded-full" onDelete={() => removeSearchHistoryItem(item.id)}>
                       <X size={12} />
-                    </span>
-                  </button>
+                    </SearchHistoryDeleteButton>
+                  </div>
                 ))}
               </div>
             </motion.div>
