@@ -307,7 +307,7 @@ export function FeaturedCarousel({
                               className="group relative h-8 rounded-full gap-1.5 bg-[#E50914] px-3 font-semibold text-white hover:bg-[#ca0812] md:h-9 md:gap-2 md:px-4 md:text-sm"
                             >
                               <NavLink to={continueWatchingPath} className="relative inline-flex">
-                                <span className="inline-flex items-center gap-1.5 transition-opacity duration-200 group-hover:opacity-0 md:gap-2">
+                                <span className="inline-flex items-center gap-1.5 transition-opacity duration-200 md:group-hover:opacity-0 md:gap-2">
                                   <Play className="size-3.5 fill-current md:size-4" />
                                   继续观看
                                   {continueWatchingLabel ? (
@@ -389,7 +389,7 @@ export function FeaturedCarousel({
                           className="group relative rounded-full gap-2 bg-[#E50914] font-semibold text-white hover:bg-[#ca0812]"
                         >
                           <NavLink to={continueWatchingPath} className="relative inline-flex">
-                            <span className="inline-flex items-center gap-2 transition-opacity duration-200 group-hover:opacity-0">
+                            <span className="inline-flex items-center gap-2 transition-opacity duration-200 xl:group-hover:opacity-0">
                               <Play className="size-5 fill-current" />
                               继续观看
                               {continueWatchingLabel ? <span>· {continueWatchingLabel}</span> : null}

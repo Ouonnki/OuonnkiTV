@@ -224,7 +224,7 @@ export function DetailHeroSection({
                 className="group relative rounded-full bg-[#E50914] font-semibold text-white shadow-lg hover:bg-[#ca0812]"
                 onClick={onContinueWatching}
               >
-                <span className="inline-flex items-center gap-1.5 transition-opacity duration-200 group-hover:opacity-0">
+                <span className={`inline-flex items-center gap-1.5 transition-opacity duration-200 ${continueWatchingProgressLabel ? 'sm:group-hover:opacity-0' : ''}`}>
                   <Play className="size-4 fill-current" />
                   继续观看
                   {continueWatchingLabel ? (
