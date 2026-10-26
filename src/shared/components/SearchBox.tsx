@@ -29,6 +29,10 @@ export default function SearchBox({ onMobileSearchChange }: SearchBoxProps) {
   const desktopInputRef = useRef<HTMLInputElement>(null)
   const blurTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  useEffect(() => {
+    if (isMobileSearchOpen) mobileInputRef.current?.focus()
+  }, [isMobileSearchOpen])
+
   // 判断是否应该显示下拉框
   const hasContent = inputContent.trim().length > 0
   const hasHistory = searchHistory.length > 0
@@ -113,10 +117,6 @@ export default function SearchBox({ onMobileSearchChange }: SearchBoxProps) {
   const openMobileSearch = () => {
     setIsMobileSearchOpen(true)
     onMobileSearchChange?.(true)
-    // 等待动画开始后聚焦输入框
-    setTimeout(() => {
-      mobileInputRef.current?.focus()
-    }, 100)
   }
 
   const closeMobileSearch = () => {
@@ -204,13 +204,15 @@ export default function SearchBox({ onMobileSearchChange }: SearchBoxProps) {
     <>
       {/* 移动端搜索模式下的返回按钮 */}
       <div
+        inert={!isMobileSearchOpen}
+        aria-hidden={!isMobileSearchOpen}
         className={`absolute left-2 transition-all duration-300 ease-out sm:hidden ${
           isMobileSearchOpen
             ? 'translate-x-0 opacity-100'
             : 'pointer-events-none -translate-x-4 opacity-0'
         }`}
       >
-        <Button size="icon" variant="ghost" className="size-9" onClick={closeMobileSearch}>
+        <Button size="icon" variant="ghost" aria-label="关闭搜索" className="size-9" onClick={closeMobileSearch}>
           <ArrowLeft className="text-primary" size={20} />
         </Button>
       </div>
@@ -270,6 +272,8 @@ export default function SearchBox({ onMobileSearchChange }: SearchBoxProps) {
         <Popover open={shouldShowDropdown && isMobileSearchOpen}>
           <PopoverAnchor asChild>
             <div
+              inert={!isMobileSearchOpen}
+              aria-hidden={!isMobileSearchOpen}
               className={`absolute right-4 left-12 transition-all duration-300 ease-out sm:hidden ${
                 isMobileSearchOpen
                   ? 'scale-100 opacity-100'
@@ -330,19 +334,21 @@ export default function SearchBox({ onMobileSearchChange }: SearchBoxProps) {
       </div>
 
       {/* 移动端搜索触发按钮 */}
-      <MotionButton
+      <Button
+        aria-label="打开搜索"
+        inert={isMobileSearchOpen}
+        aria-hidden={isMobileSearchOpen}
         size="icon"
         variant="ghost"
-        className="size-7 sm:hidden"
+        className={`size-7 sm:hidden ${isMobileSearchOpen ? 'invisible' : ''}`}
         onClick={openMobileSearch}
-        layout
       >
         {!isMobileSearchOpen && (
           <motion.span layoutId="mobile-search-icon">
             <Search className="text-primary" size={20} />
           </motion.span>
         )}
-      </MotionButton>
+      </Button>
 
       {/* 用于传递移动端搜索状态给父组件的隐藏元素 */}
       <input type="hidden" data-mobile-search-open={isMobileSearchOpen} />

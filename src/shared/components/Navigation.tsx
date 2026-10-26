@@ -57,7 +57,7 @@ export default function Navigation({ hidden = false, enableScrollAnimation = fal
                 ? 'transition-[opacity,transform] duration-220 ease-out'
                 : 'transition-none',
               isMobileSearchOpen
-                ? 'pointer-events-none -translate-x-4 opacity-0 sm:pointer-events-auto sm:translate-x-0 sm:opacity-100'
+                ? 'invisible pointer-events-none -translate-x-4 opacity-0 sm:visible sm:pointer-events-auto sm:translate-x-0 sm:opacity-100'
                 : '',
             )}
           >
@@ -99,7 +99,7 @@ export default function Navigation({ hidden = false, enableScrollAnimation = fal
                   ? 'transition-[opacity,transform] duration-220 ease-out'
                   : 'transition-none',
                 isMobileSearchOpen
-                  ? 'pointer-events-none translate-x-4 opacity-0 sm:pointer-events-auto sm:translate-x-0 sm:opacity-100'
+                  ? 'invisible pointer-events-none translate-x-4 opacity-0 sm:visible sm:pointer-events-auto sm:translate-x-0 sm:opacity-100'
                   : '',
               )}
             >
