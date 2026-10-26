@@ -75,7 +75,7 @@ export function DetailHeroSection({
       <Button
         variant="ghost"
         onClick={onBack}
-        className="absolute top-4 left-4 z-20 h-8 rounded-full px-2.5 !bg-transparent text-white/90 transition-colors hover:!bg-transparent hover:text-primary dark:hover:!bg-transparent sm:h-9 sm:px-3"
+        className="absolute top-4 left-4 z-20 h-8 rounded-full px-2.5 !bg-transparent text-white/90 transition-colors hover:!bg-transparent hover:text-white dark:hover:!bg-transparent sm:h-9 sm:px-3"
       >
         <ArrowLeft className="size-4" />
         返回
