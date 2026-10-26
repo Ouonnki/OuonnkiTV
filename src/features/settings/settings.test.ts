@@ -196,13 +196,13 @@ describe('settings interactions', () => {
     expect(actions.exportConfigToText).toHaveBeenCalledOnce()
     act(() => findButton('恢复默认配置').click())
     expect(actions.restoreDefault).not.toHaveBeenCalled()
-    const dialog = document.querySelector('[role="dialog"]')!
+    const dialog = document.querySelector('[role="alertdialog"]')!
     expect(dialog.textContent).toContain('建议先导出备份')
     const cancel = [...dialog.querySelectorAll('button')].find(
       button => button.textContent === '取消',
     )!
     act(() => cancel.click())
-    expect(document.querySelector('[role="dialog"]')).toBeNull()
+    expect(document.querySelector('[role="alertdialog"]')).toBeNull()
     expect(actions.restoreDefault).not.toHaveBeenCalled()
   })
 
